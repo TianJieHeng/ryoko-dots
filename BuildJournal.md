@@ -168,3 +168,7 @@ Checks:
 Limits: actual microphone/device/browser/provider behavior and disconnect/restart/hangup receipts are not live-qualified. The backend must implement media leases, durable provider event ownership, exact mission independence and canonical transcript/call persistence. No provider activated or hardware accessed. Device switching is explicitly end-and-restart until qualified. Next FE10 adds verified Slack provenance and cross-surface delivery repair.
 
 Publication: FE09 implementation and journal share one main checkpoint. No live call, credential or deployment action performed.
+
+### FE09 corrective checkpoint — 2026-10-03
+
+Initial FE09 publication `559f6a41c211bb905c580b2ac951acd6a7c522bf` was verified on main, but the final caption bound edit (after the earlier successful typecheck) introduced TS18046 on `data.transcript`. The last-command wrapper allowed publication despite that compiler output; the preceding FE09 PASS claim applies to the earlier state and is corrected here. Replaced mutation of an unknown record field with a locally narrowed bounded string. Re-ran the exact focused voice suite, typecheck and targeted lint successfully before this corrective publication; no phase advancement occurred while the error remained.

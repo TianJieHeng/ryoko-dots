@@ -275,16 +275,16 @@ export function useVoice(
         if (typeof data.transcript === 'string') {
           if (current.transcript.length >= 1000)
             current.transcript.splice(0, 100);
-          data.transcript = data.transcript.slice(-20000);
+          const transcript = data.transcript.slice(-20000);
           if (
             data.type ===
             'conversation.item.input_audio_transcription.completed'
           ) {
-            current.transcript.push(`You: ${data.transcript}`);
-            setUserCaption(data.transcript.slice(-20000));
+            current.transcript.push(`You: ${transcript}`);
+            setUserCaption(transcript);
           }
           if (data.type === 'response.output_audio_transcript.done')
-            current.transcript.push(`Dot: ${data.transcript}`);
+            current.transcript.push(`Dot: ${transcript}`);
         }
         if (data.type === 'error')
           setError(
