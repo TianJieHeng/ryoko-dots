@@ -87,6 +87,23 @@ export function App() {
   useEffect(() => {
     let acceptedHash = location.hash;
     const navigate = () => {
+      const mission = location.hash.match(
+        /^#\/missions\/([A-Za-z0-9_-]+)(?:\/reviews\/([A-Za-z0-9_-]+))?$/,
+      );
+      if (mission) {
+        if (
+          dirtyPage.current &&
+          !window.confirm('Leave your unsaved page draft?')
+        ) {
+          history.replaceState(null, '', acceptedHash || location.pathname);
+          return;
+        }
+        acceptedHash = location.hash;
+        dirtyPage.current = false;
+        rawSetView('tasks');
+        setMobile(false);
+        return;
+      }
       const match = location.hash.match(
         /^#\/spaces\/([^/]+)(?:\/pages\/([^/]+))?$/,
       );
@@ -787,9 +804,11 @@ export function App() {
                   </div>
                   <div className="connection-note">
                     <span
-                      className={`online-dot ${workspace.setup.slack === 'online' ? '' : 'off'}`}
+                      className={`online-dot ${runtime.available('slack') ? '' : 'off'}`}
                     />
-                    Slack · {workspace.setup.slack.replaceAll('_', ' ')}
+                    Slack ·{' '}
+                    {runtime.setup?.features.slack.state.replaceAll('_', ' ') ??
+                      'unavailable'}
                     <button
                       className="text-button"
                       onClick={() => setDialog({ type: 'settings' })}

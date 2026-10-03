@@ -172,3 +172,17 @@ Publication: FE09 implementation and journal share one main checkpoint. No live 
 ### FE09 corrective checkpoint — 2026-10-03
 
 Initial FE09 publication `559f6a41c211bb905c580b2ac951acd6a7c522bf` was verified on main, but the final caption bound edit (after the earlier successful typecheck) introduced TS18046 on `data.transcript`. The last-command wrapper allowed publication despite that compiler output; the preceding FE09 PASS claim applies to the earlier state and is corrected here. Replaced mutation of an unknown record field with a locally narrowed bounded string. Re-ran the exact focused voice suite, typecheck and targeted lint successfully before this corrective publication; no phase advancement occurred while the error remained.
+
+## FE10 — Verified Slack provenance and delivery continuity — 2026-10-03
+
+Status: frontend cross-surface slice implemented; **BE10 real self-hosted ingress/egress, actor mapping and external Slack gates blocked**. Corrected FE09 checkpoint `164864f1792e8be0a2f5a7b0bf55a30601e5ade4` verified on main with matching tree/journal.
+
+Changes: setup displays self-hosted Slack state, verified team/human/channel allowlists, created-message-only/bot-ignore policy and event dedup declaration; no managed Channels connection UI remains. Conversation origins preserve provider event/thread identities and mark Slack verified only against exact qualified mappings. Display names and claimed owner IDs confer no trust. Safe Slack permalinks and same-origin mission/review links are validated. Review deep links navigate to the authenticated mission and focus the exact review where present in the current agent binding; inaccessible/mismatched bindings stay unavailable rather than remapped by the browser. Delivery records retain immutable output versions and mission success; only confirmed failed delivery offers delivery-only repair. Unknown acknowledgment offers inspection, not a send retry or mission replay.
+
+Checks:
+- `npx --no-install vitest run tests/runtime-channels.test.ts tests/slack-channel.test.ts tests/slack-channel-wiring.test.ts tests/dot-agent-channel.test.ts tests/runtime-scope.test.ts`: PASS, 5 files / 23 tests; 7 new tests cover foreign actor/team/channel, bot/changed-message policy, unsafe links, unknown acknowledgment and stable event identity.
+- `npx --no-install tsc --noEmit`: PASS; targeted ESLint, formatting and `git diff --check`: PASS.
+
+Limits: legacy server Slack/Channels internals are not replaced by frontend components; no external Slack qualification or service activation is claimed. Backend must bind verified provider ingress IDs, authenticate cross-agent links and persist an outbox/receipt path shared with web/voice. Private specialist memory is never part of these DTOs. Next FE11 adds migration/read-only ownership and frontend-only packaging while keeping backend cutover blocked.
+
+Publication: FE10 source and journal are one main checkpoint. No Slack message, live channel binding, migration or deployment performed.

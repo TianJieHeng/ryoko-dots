@@ -1,5 +1,5 @@
 import { SchedulesPanel } from './SchedulesPanel';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { missionsSchema } from '../../shared/runtime/missions';
 import { useResource } from './use-resource';
 import { runtimeAction } from './actions';
@@ -29,8 +29,27 @@ export function MissionsPanel({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
+  useEffect(() => {
+    const select = () => {
+      const match = location.hash.match(/^#\/missions\/([A-Za-z0-9_-]+)/);
+      if (match) setSelected(match[1]);
+    };
+    select();
+    window.addEventListener('hashchange', select);
+    return () => window.removeEventListener('hashchange', select);
+  }, []);
   const scope = connection.setup?.scope;
   const mission = data.data?.missions.find((item) => item.id === selected);
+  useEffect(() => {
+    const reviewId = location.hash.match(
+      /^#\/missions\/[A-Za-z0-9_-]+\/reviews\/([A-Za-z0-9_-]+)$/,
+    )?.[1];
+    if (reviewId && mission?.reviews.some((review) => review.id === reviewId)) {
+      const element = document.getElementById(`review-${reviewId}`);
+      element?.scrollIntoView({ block: 'nearest' });
+      element?.focus();
+    }
+  }, [mission]);
   const run = async (
     path: string,
     action: string,
@@ -59,6 +78,12 @@ export function MissionsPanel({
   };
   return (
     <section aria-label="Runtime missions">
+      {selected && data.data && !mission && (
+        <p className="notice">
+          This mission is not present in the current authorized agent binding.
+          Choose its specialist to inspect it.
+        </p>
+      )}
       <h2>Durable work</h2>
       <p>
         Execution, verified output, delivery and unresolved effects are separate

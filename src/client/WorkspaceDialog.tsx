@@ -1,3 +1,4 @@
+import { ChannelsPanel } from './runtime/ChannelsPanel';
 import { ScheduleForm } from './runtime/SchedulesPanel';
 import type { RuntimeSpecialist } from '../shared/runtime/agents';
 import { RuntimeStatus } from './runtime/RuntimeStatus';
@@ -310,7 +311,10 @@ export function WorkspaceDialog({
               </p>
             )}
             {dialog.type === 'settings' && runtime && (
-              <RuntimeStatus connection={runtime} />
+              <>
+                <RuntimeStatus connection={runtime} />
+                <ChannelsPanel connection={runtime} />
+              </>
             )}
             {dialog.type === 'memory' && (
               <p className="muted">

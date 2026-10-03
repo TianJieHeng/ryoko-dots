@@ -1,3 +1,4 @@
+import { ConversationOrigins } from './runtime/ChannelsPanel';
 import { useVoice } from './useVoice';
 import { CallView } from './CallView';
 import { useResource } from './runtime/use-resource';
@@ -330,6 +331,7 @@ export function Chat({
           </button>
         </div>
       </header>
+      <ConversationOrigins connection={runtime} conversationId={thread.id} />
       {!runtime.available('conversations') && (
         <RuntimeStatus connection={runtime} compact />
       )}

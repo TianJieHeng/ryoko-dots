@@ -78,7 +78,12 @@ function ReviewBody({ review, scope, decide, refresh }: Props) {
   };
   const enabled = phase === 'idle' && canDecideReview(review, scope, now);
   return (
-    <section className="page-review-card" aria-label="Exact action review">
+    <section
+      id={`review-${review.id}`}
+      tabIndex={-1}
+      className="page-review-card"
+      aria-label="Exact action review"
+    >
       <header>
         <strong>Review exact action</strong>
         <span>{review.status}</span>
