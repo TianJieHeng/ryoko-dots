@@ -109,6 +109,10 @@ export const historySchema = z.strictObject({
   conversationId: id,
   lineageId: id,
   messages: z.array(messageSchema).max(500),
+  pageContext: z
+    .strictObject({ id, spaceId: id, title: z.string().max(500), revision })
+    .nullable()
+    .optional(),
   nextCursor: id.nullable(),
   sessionSequence: revision,
   runtimeCursor: id.nullable(),
