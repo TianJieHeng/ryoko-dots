@@ -1,3 +1,6 @@
+import { useRuntime } from './runtime/use-runtime';
+import { RuntimeStatus } from './runtime/RuntimeStatus';
+import { subscribeAuthentication } from './api';
 import { openPageLink } from './page-navigation';
 import { SpaceNav } from './SpaceNav';
 import { SpaceWorkspace } from './SpaceWorkspace';
@@ -44,6 +47,7 @@ export function App() {
   const [state, setState] = useState<State>();
   const [workspace, setWorkspace] = useState<WorkspaceState>();
   const [selectedDot, setSelectedDot] = useState('');
+  const runtime = useRuntime(selectedDot);
   const [selectedThread, setSelectedThread] = useState<string>();
   const [view, rawSetView] = useState<'chat' | 'tasks' | 'memories' | 'space'>(
     'chat',
@@ -105,6 +109,20 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState('');
   const [taskDetail, setTaskDetail] = useState<Detail>();
+  useEffect(
+    () =>
+      subscribeAuthentication(() => {
+        setState(undefined);
+        setWorkspace(undefined);
+        setSelectedThread(undefined);
+        setCapture(undefined);
+        setTaskDetail(undefined);
+        setPendingPrompt(undefined);
+        setDialog(undefined);
+        setNeedsAuth(true);
+      }),
+    [],
+  );
   const refresh = useCallback(async () => {
     try {
       const [s, w] = await Promise.all([
@@ -116,8 +134,14 @@ export function App() {
       setNeedsAuth(false);
       setSelectedDot((previous) => previous || w.dots[0]?.id || '');
     } catch (e) {
-      if (e instanceof ApiError && e.status === 401) setNeedsAuth(true);
-      else
+      if (e instanceof ApiError && e.status === 401) {
+        setState(undefined);
+        setWorkspace(undefined);
+        setCapture(undefined);
+        setTaskDetail(undefined);
+        setSelectedThread(undefined);
+        setNeedsAuth(true);
+      } else
         setError(
           e instanceof Error ? e.message : 'Could not connect to the server.',
         );
@@ -166,7 +190,8 @@ export function App() {
   const thread = workspace?.conversations.find(
     (item) => item.id === selectedThread && item.dotId === dot?.id,
   );
-  const configured = !!workspace && workspace.setup.missing.length === 0;
+  const configured =
+    runtime.available('conversations') && runtime.available('commands');
   const chooseDot = (next: Dot) => {
     setSelectedDot(next.id);
     setSelectedThread(
@@ -610,19 +635,11 @@ export function App() {
                         <Settings2 size={20} />
                       </span>
                       <div>
-                        <strong>Connect your Dot</strong>
+                        <RuntimeStatus connection={runtime} compact />
                         <p>
-                          Connect your model and conversation service in
-                          Settings to start chatting. Your Spaces and Dot
-                          preferences are ready to use.
+                          Spaces remain available. Chat requires the
+                          authenticated self-hosted runtime adapter.
                         </p>
-                        <a
-                          href="https://github.com/CopilotKit/OpenDots/blob/main/docs/SETUP.md"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Open the setup guide <ArrowUpRight size={12} />
-                        </a>
                       </div>
                     </div>
                   )}
@@ -885,6 +902,7 @@ export function App() {
           workspace={workspace}
           onClose={() => setDialog(undefined)}
           mutate={mutate}
+          runtime={runtime}
         />
       )}
     </div>

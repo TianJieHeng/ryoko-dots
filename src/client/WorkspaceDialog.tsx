@@ -1,3 +1,5 @@
+import { RuntimeStatus } from './runtime/RuntimeStatus';
+import type { RuntimeConnection } from './runtime/use-runtime';
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import type { Dot, Memory, State, WorkspaceState } from '../shared/types';
@@ -13,7 +15,9 @@ export function WorkspaceDialog({
   workspace,
   onClose,
   mutate,
+  runtime,
 }: {
+  runtime?: RuntimeConnection;
   dialog: Dialog;
   state: State;
   workspace: WorkspaceState;
@@ -358,29 +362,8 @@ export function WorkspaceDialog({
               </p>
             </>
           )}
-          {dialog.type === 'settings' && (
-            <div className="config-note">
-              <strong>Service setup</strong>
-              <p>
-                {workspace.setup.missing.length
-                  ? `Add ${workspace.setup.missing.join(', ')} to the server environment, then restart.`
-                  : 'Text configuration is present. A successful conversation confirms connectivity.'}
-              </p>
-              <p>
-                Slack: {workspace.setup.slack.replaceAll('_', ' ')}. Voice:{' '}
-                {workspace.setup.voice
-                  ? 'configuration present'
-                  : 'needs VOICE_API_KEY and VOICE_MODEL'}
-                .
-              </p>
-              <a
-                href="https://github.com/CopilotKit/OpenDots/blob/main/docs/SETUP.md"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Template setup guide ↗
-              </a>
-            </div>
+          {dialog.type === 'settings' && runtime && (
+            <RuntimeStatus connection={runtime} />
           )}
           {dialog.type === 'memory' && (
             <p className="muted">

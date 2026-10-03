@@ -1,6 +1,22 @@
-let token = sessionStorage.getItem('opendots-token') ?? '';
+let token =
+  typeof sessionStorage === 'undefined'
+    ? ''
+    : (sessionStorage.getItem('opendots-token') ?? '');
+let authenticationGeneration = 0;
+const authenticationListeners = new Set<() => void>();
+export function subscribeAuthentication(listener: () => void) {
+  authenticationListeners.add(listener);
+  return () => {
+    authenticationListeners.delete(listener);
+  };
+}
+export function getAuthenticationGeneration() {
+  return authenticationGeneration;
+}
 export function setToken(value: string) {
   token = value;
+  authenticationGeneration++;
+  authenticationListeners.forEach((listener) => listener());
   if (value) sessionStorage.setItem('opendots-token', value);
   else sessionStorage.removeItem('opendots-token');
 }
@@ -18,7 +34,9 @@ export async function api<T>(
   body?: unknown,
   signal?: AbortSignal,
 ): Promise<T> {
+  const generation = authenticationGeneration;
   const response = await fetch(`/api${path}`, {
+    credentials: 'same-origin',
     method,
     signal,
     headers: {
@@ -34,6 +52,11 @@ export async function api<T>(
     .catch(() => ({ error: 'Server returned an unreadable response.' }))) as {
     error?: string;
   };
+  if (generation !== authenticationGeneration)
+    throw new ApiError(
+      'Authentication changed while the request was in flight.',
+      409,
+    );
   if (!response.ok)
     throw new ApiError(
       data.error ?? `Request failed (${response.status}).`,

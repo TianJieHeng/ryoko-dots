@@ -3993,3 +3993,28 @@ h3 {
   font-size: 14px;
   color: #c9e8dd;
 }
+
+.runtime-status {
+  padding: 14px;
+  border: 1px solid var(--line, #dedbd5);
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.runtime-status dl {
+  display: grid;
+  gap: 8px;
+  max-height: 40vh;
+  overflow: auto;
+}
+.runtime-status dl div {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) 2fr;
+  gap: 10px;
+}
+.runtime-status dt {
+  text-transform: capitalize;
+}
+.runtime-status dd {
+  margin: 0;
+  color: var(--muted, #736e66);
+}
