@@ -226,3 +226,27 @@ Browser qualification is blocked on both permitted routes: Chromium local single
 `docs/runtime/frontend-release.md` and `tests/fixtures/runtime/frontend-release-evidence.json` summarize exact source pins, build asset hashes, local outcomes and the BE00–BE12 handoff. Browser/provider/hardware/real backend fault-injection, backup/restore/migration/rollback and full no-hosted-server startup remain unqualified. Frontend-only preview is not a migrated production package. No deployment/cutover requested while these gates remain open; separate backend implementation and then explicit deployment approval are required.
 
 Publication: all FE12 fixes, reproducible evidence and this root journal are one main checkpoint. No PR, backend activation, credentials, external delivery, live media/executor use, migration or LAYA activation.
+
+## BE00 — Pinned read-only backend foundation — 2026-10-03
+
+Status: foundation checkpoint implemented; **integrated BE00/OD00 acceptance remains blocked** on production transport/owner binding and canonical producer prerequisites. This is not a passed live integration or completed backend release. Previous published Dots/FE12 checkpoint: `ee5450e188e9a0dcffecee4a20b30e4b44dc7be9`. No sibling repository edits, credential generation, deployment, provider execution, or channel activation occurred.
+
+Changes:
+- Extracted exact generated TypeScript/OpenRPC transitive schemas for capabilities, snapshot and durable replay from published producer `124931a916c8aa6beeaf60d08dd55ca5d20f6e3c`, with provenance and drift-rejecting regeneration. Promoted already-installed Ajv 6.15.0 to runtime dependency; no dependency version changed.
+- Added bounded read-only newline RPC consumer with request/response validation, private-notification discard, queue/byte/time limits, redacted failures and no execution/cancellation/retry route.
+- Added SQLite WAL read projection with separate live/durable IDs, persistent binding generation, atomic snapshot/event/cursor writes, duplicate/gap/foreign-session/lease checks, 1,000-event cache bound and restart tests.
+- Implemented `/api/runtime/setup` behind the current owner boundary. It explicitly reports all unqualified features unavailable; no service key or reachable endpoint can make them ready.
+- Added real producer dispatcher/identity/store synthetic pipe probe and documented the transport decision, limits and cross-repository prerequisites in `docs/runtime/backend-contract.md`. Existing parity inventory remains the full ingress/disposition reference.
+
+Environment: Linux x64, Node v24.19.0, npm 11.9.0, temporary Python 3.12.14 environment. Previously recorded producer Python symlink pointed to an unavailable path; created a temporary test venv and installed ordinary test dependencies from the configured registry. Initial replay failed for missing `ruamel.yaml`; installed the missing dependencies and reran successfully. Temporary fixture homes/databases are deleted by each harness; no real owner profile or provider credential was used.
+
+Checks:
+- `npx --no-install vitest run tests/backend-runtime.test.ts tests/runtime-contract.test.ts tests/app.test.ts`: PASS, 3 files / 21 tests.
+- `npx --no-install tsc --noEmit`: PASS.
+- Focused ESLint on changed runtime/app/tests/scripts: PASS.
+- Focused Prettier and `git diff --check`: PASS. Regeneration twice produced identical schema/type SHA256 `a219698a657e1f12b8227fe3d375667f9263855c0962f0275c7d7c5b38c2b62f` / `501ef7ee4190f0802c8eeb6f225e1c3d3fa8d3ab756a960d85059bc8eb57c3a7`.
+- `node scripts/check-runtime-contract.mjs --producer-root ../ryoko-agent --replay --python /tmp/dots-backend-python/bin/python`: PASS local source pins and isolated real dispatcher replay. Producer local source `eb6b89fd554bb29cc295732a9b9cba9c3a50a489`; published pinned sources unchanged.
+- `node --import tsx scripts/probe-runtime-readonly.mjs /tmp/dots-backend-python/bin/python ../ryoko-agent`: PASS actual Dots pipe consumer → real synthetic producer dispatcher for capabilities/snapshot/replay, foreign live-session denial and expired cursor snapshot replacement; zero provider dispatches. Fixture bridge is not the production entrypoint/authentication proof.
+- Production stdio/WS binding, full process restart/resubscribe, live provider, browser and target-host gates: NOT RUN / UNQUALIFIED. Full consolidated suite is reserved for BE12.
+
+Blocker/next: inspected producer generic session attachment warns but does not enforce foreign login ownership; create idempotency is process-memory/300-second only; no read-only command receipt lookup exists, and command replay can queue historical unclaimed work. Owner confirmation is pending for narrowly scoped producer conversation/receipt fixes. Continue independent BE01 Dots session/auth storage work with blocked integrated status; do not enable dependent writes until authority and durable canonical history are proven. Remote commit/tree/journal and exact-commit CI are checked after publication; no pending/absent CI is called a pass.

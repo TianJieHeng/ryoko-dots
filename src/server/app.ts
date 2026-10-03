@@ -1,3 +1,4 @@
+import { runtimeSetup } from './runtime/setup.js';
 import { computerRoutes } from './computer-routes.js';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
@@ -73,6 +74,7 @@ export function createApp({
       return c.json({ error: 'Use application/json.' }, 415);
     await next();
   });
+  app.get('/api/runtime/setup', (c) => c.json(runtimeSetup()));
   if (platform) app.route('/api', computerRoutes(platform.computers));
   const voice = platform ? new VoiceService(platform) : undefined;
   if (platform && voice) app.route('/api', workspaceRoutes(platform, voice));

@@ -115,3 +115,17 @@ it('rejects DNS-rebinding Host even with a matching hostile Origin', async () =>
   });
   expect(response.status).toBe(403);
 });
+
+it('exposes honest runtime setup only through the existing authenticated boundary', async () => {
+  const { app } = fixture('owner-runtime-test');
+  expect((await app.request('/api/runtime/setup')).status).toBe(401);
+  const response = await app.request('/api/runtime/setup', {
+    headers: { Authorization: 'Bearer owner-runtime-test' },
+  });
+  expect(response.status).toBe(200);
+  const setup = await response.json();
+  expect(setup.version).toBe('ryoko-dots/1');
+  expect(setup.qualified).toBe(false);
+  expect(setup.scope).toBeNull();
+  expect(JSON.stringify(setup)).not.toContain('owner-runtime-test');
+});

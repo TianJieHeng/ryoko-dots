@@ -3,3 +3,5 @@ dist
 package-lock.json
 RESEARCH.md
 docs/superpowers
+
+src/shared/runtime/producer/*.generated.ts

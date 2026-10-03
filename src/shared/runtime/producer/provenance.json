@@ -1,0 +1,12 @@
+{
+  "repository": "TianJieHeng/ryoko-agent",
+  "commit": "124931a916c8aa6beeaf60d08dd55ca5d20f6e3c",
+  "typescriptSha256": "73f089aeca65cbc1e90c8a54da0f7d11c144fc160e8d8cc99e28043e9eef1839",
+  "openrpcSha256": "1d3151320c621de5b7032a4e5fb4ba170fe09fa5400fd762df832bca09622909",
+  "methods": [
+    "runtime.capabilities",
+    "runtime.snapshot",
+    "runtime.events.since"
+  ],
+  "status": "read_only_subset_not_service_binding_qualification"
+}
