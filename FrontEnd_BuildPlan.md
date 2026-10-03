@@ -29,7 +29,7 @@ Apply this protocol to **every FE00–FE12 phase**:
 
 1. Confirm dependencies, pinned contracts and authorized scope before implementation. Keep a failed dependency blocked; do not simulate it with frontend authority
 2. Implement the bounded phase and run its focused tests. Record exact commands, environment, source commits, fixtures, expected/observed outcomes and passed/failed/blocked/not-run distinctions
-3. Update this repository’s single root `buildjournal.md`, shared with backend phases (create it at implementation start) with changes, decisions, known limits and next gate; link evidence rather than creating competing journal trees
+3. Update this repository’s single root `BuildJournal.md`, shared with backend phases (create it at implementation start) with changes, decisions, known limits and next gate; link evidence rather than creating competing journal trees
 4. Review the diff and Git status, create the phase checkpoint commit when authorized, and publish only through the authorized normal Git workflow. Record exact commit and remote verification separately; local commits do not imply push or CI success
 5. Give the user the checkpoint summary, evidence and remaining decisions, continue only within approved scope and pause for any new decision or authorization required. A test pass does not authorize new scope or deployment
 

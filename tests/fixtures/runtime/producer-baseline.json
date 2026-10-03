@@ -1,0 +1,312 @@
+{
+  "fixtureVersion": 1,
+  "evidenceKind": "producer_dispatcher_isolated_synthetic",
+  "capturedAt": "2026-10-03T12:20:27.134Z",
+  "producer": {
+    "repository": "TianJieHeng/ryoko-agent",
+    "commit": "eb6b89fd554bb29cc295732a9b9cba9c3a50a489",
+    "generatedFiles": [
+      {
+        "path": "apps/shared/src/gateway-contract.generated.ts",
+        "sha256": "73f089aeca65cbc1e90c8a54da0f7d11c144fc160e8d8cc99e28043e9eef1839"
+      },
+      {
+        "path": "apps/shared/src/gateway-contract.openrpc.json",
+        "sha256": "1d3151320c621de5b7032a4e5fb4ba170fe09fa5400fd762df832bca09622909"
+      }
+    ],
+    "sourceFiles": [
+      {
+        "path": "tui_gateway/methods_runtime.py",
+        "sha256": "3e427375b2902a4e7fb9e01162d0ac4c461414eb1c5b025b49430ee99dd10a46"
+      },
+      {
+        "path": "tui_gateway/contracts/runtime_v1.py",
+        "sha256": "fb13b97c695c307602234b6f61cc78f4648a494ea6a8c9c4df688e92243761e5"
+      },
+      {
+        "path": "tui_gateway/contracts/runtime_effects.py",
+        "sha256": "0f06c29ac606dad66a412f4b4287deb22dcd32e819fbca2a532e730cf8bb9572"
+      },
+      {
+        "path": "tests/tui_gateway/test_runtime_rpc.py",
+        "sha256": "a03b4641bf47b755f83e884a37b084271cc6c5f35e16d945362e9c717ea03e09"
+      },
+      {
+        "path": "tui_gateway/server.py",
+        "sha256": "6e767f2936ed928af89b942d3b98e003d6c2e375625b4cf3f7026c895dd04d00"
+      }
+    ]
+  },
+  "consumer": {
+    "baselineCommit": "3172aec95d304112c5adc06286e3535bc54d9755",
+    "inventory": "docs/runtime/parity-inventory.md"
+  },
+  "provenance": {
+    "handler": "tui_gateway/methods_runtime.py::_runtime_command",
+    "fixtureFactory": "tests/tui_gateway/test_runtime_rpc.py::runtime.__wrapped__",
+    "producerAssertion": "tests/tui_gateway/test_runtime_rpc.py::test_command_receipt_is_idempotent_restart_replay_and_protocol_freshness",
+    "captureProgramSha256": "6215996b08db8962525a3b1f18841e20ede1c038a00425f64d5d4657b56b934b",
+    "evidenceSha256": "9b5bbf0b61a0561621a46b5bccb97d8b8c5b8c14fe8b17c0ab51d67d8ac2749e",
+    "reproduction": "node scripts/check-runtime-contract.mjs --producer-root /path/to/ryoko-agent --replay [--python /path/to/python] [--python-site-packages /path/to/site-packages]",
+    "execution": {
+      "python": "3.12.14",
+      "pytest": "9.1.1",
+      "pydantic": "2.13.4",
+      "openai": "2.24.0",
+      "httpx": "0.28.1",
+      "providerDispatches": 0,
+      "runtimeRevisionAfter": 0
+    },
+    "limitations": [
+      "Real producer dispatch, profile ownership checks, Pydantic validation and temporary SQLite; provider worker from producer fixture is mocked and never invoked.",
+      "The unconfigured fixture substitutes an unsupported opaque client; it is not a live missing-credentials, speech, Slack, computer or personal-harness probe.",
+      "The historical rejection message mentions producer BE05/BE06; those labels are not the Dots plan phase numbers.",
+      "Hashes and Git identity are local observations; no remote publication, authenticated Dots transport, process restart, external provider or target-host qualification was run."
+    ]
+  },
+  "qualification": {
+    "dotsTransport": "not_run",
+    "liveIntegration": "not_run",
+    "externalProviders": "not_run",
+    "producerReleaseGates": "unqualified",
+    "productionReady": false
+  },
+  "consumerContracts": {
+    "status": "frontend_candidate_only_backend_unimplemented_unqualified",
+    "backendDependencies": [
+      "BE00",
+      "BE01",
+      "BE02",
+      "BE03",
+      "BE04",
+      "BE05",
+      "BE06",
+      "BE07",
+      "BE08",
+      "BE09",
+      "BE10",
+      "BE11",
+      "BE12"
+    ],
+    "routesShipped": false
+  },
+  "fixtures": {
+    "approvalRejected": {
+      "arrangement": "owned live-a transport; empty synthetic SQLite store",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "method": "runtime.command",
+        "params": {
+          "session_id": "live-a",
+          "schema_version": 1,
+          "command_id": "fe00-approval-rejected",
+          "idempotency_key": "fe00-approval-rejected",
+          "expected_revision": null,
+          "operation": "approval",
+          "payload": {
+            "approval_id": "unknown",
+            "decision": "approve"
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "result": {
+          "schema_version": 1,
+          "command_id": "fe00-approval-rejected",
+          "status": "rejected",
+          "durable_revision": 0,
+          "run_id": null,
+          "conflict": {
+            "code": "operation_not_supported",
+            "message": "Approval authorization requires BE05/BE06"
+          }
+        }
+      }
+    },
+    "idleSnapshot": {
+      "arrangement": "owned live-a transport; empty synthetic SQLite store",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "method": "runtime.snapshot",
+        "params": {
+          "session_id": "live-a",
+          "schema_version": 1
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "result": {
+          "schema_version": 1,
+          "session_id": "same-stored-id",
+          "revision": 0,
+          "state": {
+            "status": "idle",
+            "run_id": null,
+            "last_command_id": null,
+            "last_operation": null
+          },
+          "outstanding_requests": [],
+          "artifacts": [],
+          "unresolved_effects": [],
+          "unresolved_invocations": [],
+          "reference_counts": {
+            "outstanding_requests": 0,
+            "artifacts": 0,
+            "unresolved_effects": 0,
+            "unresolved_invocations": 0
+          },
+          "reference_limit": 100,
+          "references_truncated": false,
+          "last_cursor": "legacy:0",
+          "compatibility_status": "legacy",
+          "admission": {
+            "draining": false,
+            "jobs": []
+          }
+        }
+      }
+    },
+    "incompatibleSchema": {
+      "arrangement": "owned live-a transport; empty synthetic SQLite store",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "method": "runtime.snapshot",
+        "params": {
+          "session_id": "live-a",
+          "schema_version": 2
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "error": {
+          "code": 4000,
+          "message": "Invalid runtime parameters: schema_version",
+          "data": {
+            "code": "unsupported_schema",
+            "supported_versions": [1]
+          }
+        }
+      }
+    },
+    "unknownField": {
+      "arrangement": "owned live-a transport; empty synthetic SQLite store",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "method": "runtime.snapshot",
+        "params": {
+          "session_id": "live-a",
+          "schema_version": 1,
+          "principal_id": "forged-owner"
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "error": {
+          "code": 4000,
+          "message": "invalid params for runtime.snapshot: principal_id: Extra inputs are not permitted — the client and the Hermes backend are out of sync (different versions); run `hermes update` and restart both"
+        }
+      }
+    },
+    "foreignSession": {
+      "arrangement": "live-b transport attempting live-a in isolated fixture; ownership denial, not a public auth test",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "method": "runtime.snapshot",
+        "params": {
+          "session_id": "live-a",
+          "schema_version": 1
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "error": {
+          "code": 4001,
+          "message": "session not found or not owned by this transport"
+        }
+      }
+    },
+    "unconfiguredCapabilities": {
+      "arrangement": "bound identity/store with unsupported opaque provider client; NOT missing credentials or a deployed provider",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "method": "runtime.capabilities",
+        "params": {
+          "session_id": "live-a"
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": "fixture-rpc",
+        "result": {
+          "schema_versions": [1],
+          "operations": [
+            {
+              "operation": "submit",
+              "accepts_commands": false,
+              "executes": false,
+              "effects_enabled": false,
+              "reason": "runtime_transport_unsupported"
+            },
+            {
+              "operation": "steer",
+              "accepts_commands": false,
+              "executes": false,
+              "effects_enabled": false,
+              "reason": "runtime_transport_unsupported"
+            },
+            {
+              "operation": "cancel",
+              "accepts_commands": false,
+              "executes": false,
+              "effects_enabled": false,
+              "reason": "runtime_transport_unsupported"
+            },
+            {
+              "operation": "approval",
+              "accepts_commands": false,
+              "executes": false,
+              "effects_enabled": false,
+              "reason": "use runtime.approval.resolve for an exact durable request"
+            }
+          ],
+          "strict_identity_required": true,
+          "durable_replay": true,
+          "max_events": 200,
+          "admission": null,
+          "provider": {
+            "api_mode": "chat_completions",
+            "adapter": "unknown",
+            "streaming": "supported",
+            "parallel_tools": "supported",
+            "media_inputs": ["image", "audio"],
+            "usage": "final_response",
+            "cancellation": "local_only",
+            "cache_semantics": "stable_prefix_route_dependent",
+            "opaque_state_version": 1,
+            "execution_owner": "unknown",
+            "durable_execution": false,
+            "bounded_budget": "unsupported",
+            "schema_version": 1,
+            "declaration_scope": "adapter",
+            "model_capabilities": "unverified"
+          },
+          "tool_view": null,
+          "cursor_policy": "snapshot_required_on_expired_or_unknown_cursor"
+        }
+      }
+    }
+  }
+}
