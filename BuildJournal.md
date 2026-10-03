@@ -121,3 +121,20 @@ Checks:
 Limits: no memory harness, specialist namespace or workflow service was created/activated by frontend code. Legacy server global injection and managed Learning internals must be retired by backend migration; the new UI does not certify that server cutover. Cross-process privacy/revocation and actual workflow publication/rollback require BE06/FE12 evidence. Next FE07 adds durable schedules and independent notice delivery.
 
 Publication: FE06 source and journal share the checkpoint. No credentials, migration, workflow publication or deployment performed.
+
+## FE07 — Bounded schedules and independent notification delivery — 2026-10-03
+
+Status: frontend schedule/notice slice implemented; **BE07 durable occurrence, import and delivery backend gates blocked**. FE06 previous remote `2f9c604e60b03bbf976fcb2828f7571ca96a842b` verified with exact tree/journal.
+
+Changes: conversation schedule forms now state minutes, IANA timezone, missed-run/overlap policies, explicit requested authority boundary, UTC expiration and bounded occurrence count. Runtime-supplied next occurrences are formatted in the declared timezone; no browser timer calculates or executes recurrence. Activity shows exact revisions, edit/run-now/pause/resume/cancel, occurrence IDs, mission links/status and independent delivery. Imported/unreconciled schedules cannot activate; fresh expiry/budget guards run on activation. Scheduling cannot authorize publishing outputs. Held drafts return to exact reviews rather than rerunning work.
+
+Notification held/queued/delivered/failed/unknown states remain distinct. Delivery repair references the notice alone, never its mission. Explicit displayed-text acknowledgment checks connected rendered text, UTF-8 byte length and SHA256, and sends humanRead=false; transport/rendering is not human-reading evidence.
+
+Checks:
+- `npx --no-install vitest run tests/runtime-schedules.test.ts tests/store.test.ts tests/runner.test.ts tests/controls.test.tsx tests/runtime-actions.test.ts`: PASS, 5 files / 21 tests, including six schedule/notice tests for DST/zone, exact bounds, stale authority, imports and unknown delivery.
+- `npx --no-install tsc --noEmit`: PASS after removing unreachable legacy schedule-field comparison.
+- Targeted ESLint, formatting and `git diff --check`: PASS.
+
+Limits: server scheduler ownership, timezone recurrence rules, restart/overlap/missed-run execution, actual authority rechecks and notice outbox receipts remain BE07/FE12 obligations. No legacy schedule migrated or activated; no browser scheduler added. Next FE08 qualifies presentation/control boundaries for computers and research.
+
+Publication: FE07 and this journal are one main checkpoint. No deployed schedule, external notification or channel activation performed.

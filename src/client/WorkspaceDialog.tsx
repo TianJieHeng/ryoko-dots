@@ -1,3 +1,4 @@
+import { ScheduleForm } from './runtime/SchedulesPanel';
 import type { RuntimeSpecialist } from '../shared/runtime/agents';
 import { RuntimeStatus } from './runtime/RuntimeStatus';
 import type { RuntimeConnection } from './runtime/use-runtime';
@@ -53,7 +54,6 @@ export function WorkspaceDialog({
   const [defaultSpace, setDefaultSpace] = useState(
     dialog.type === 'dot' ? (dialog.dot?.spaceId ?? dialog.spaceId) : '',
   );
-  const [interval, setInterval] = useState('86400');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const container = useRef<HTMLElement>(null);
@@ -128,229 +128,214 @@ export function WorkspaceDialog({
             configuration edits do not rewrite it.
           </p>
         )}
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setBusy(true);
-            setError('');
-            let path = '',
-              method = 'POST',
-              body: unknown;
-            if (dialog.type === 'space') {
-              path = '/spaces';
-              body = { name, description: text };
-            }
-            if (dialog.type === 'dot') {
-              path = dialog.dot ? `/dots/${dialog.dot.id}` : '/dots';
-              method = dialog.dot ? 'PUT' : 'POST';
-              body = {
-                spaceId: defaultSpace,
-                spaceIds,
-                name,
-                instructions: text,
-                researchAllowed: research,
-                memoryAllowed: memory,
-              };
-            }
-            if (dialog.type === 'settings') {
-              path = '/settings';
-              method = 'PATCH';
-              body = { researchAllowed: research, memoryAllowed: memory };
-            }
-            if (dialog.type === 'memory') {
-              path = dialog.memory
-                ? `/memories/${dialog.memory.id}`
-                : '/memories';
-              method = dialog.memory ? 'PUT' : 'POST';
-              body = { text };
-            }
-            if (dialog.type === 'schedule') {
-              path = '/tasks';
-              body = {
-                prompt: text,
-                threadId: dialog.threadId,
-                intervalSeconds: Number(interval),
-              };
-            }
-            if (await mutate(path, method, body)) onClose();
-            else
-              setError('Could not save. Review the workspace error and retry.');
-            setBusy(false);
-          }}
-        >
-          {(dialog.type === 'space' || dialog.type === 'dot') && (
-            <>
-              <label className="field-label" htmlFor="entity-name">
-                Name
-              </label>
-              <input
-                id="entity-name"
-                value={name}
-                maxLength={40}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </>
-          )}
-          {dialog.type !== 'settings' && (
-            <>
-              <label className="field-label" htmlFor="entity-text">
-                {dialog.type === 'dot'
-                  ? 'Role instructions'
-                  : dialog.type === 'space'
-                    ? 'What belongs here?'
-                    : dialog.type === 'memory'
-                      ? 'Preference or context'
-                      : 'Task to revisit'}
-              </label>
-              <textarea
-                id="entity-text"
-                rows={4}
-                maxLength={dialog.type === 'schedule' ? 4000 : 2000}
-                required={dialog.type !== 'space'}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={
-                  dialog.type === 'dot'
-                    ? 'You are a thoughtful research partner. Compare evidence and be clear about uncertainty.'
-                    : ''
-                }
-              />
-            </>
-          )}
-          {dialog.type === 'dot' && (
-            <fieldset className="space-access-fields">
-              <legend>Space access</legend>
-              <p className="muted">
-                Choose where this Dot can read and edit pages.
-              </p>
-              {workspace.spaces.map((space) => (
-                <label className="permission-row" key={space.id}>
+        {dialog.type === 'schedule' ? (
+          runtime ? (
+            <ScheduleForm
+              connection={runtime}
+              threadId={dialog.threadId}
+              onDone={onClose}
+            />
+          ) : (
+            <p role="status">Runtime schedule setup is unavailable.</p>
+          )
+        ) : (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              setError('');
+              let path = '',
+                method = 'POST',
+                body: unknown;
+              if (dialog.type === 'space') {
+                path = '/spaces';
+                body = { name, description: text };
+              }
+              if (dialog.type === 'dot') {
+                path = dialog.dot ? `/dots/${dialog.dot.id}` : '/dots';
+                method = dialog.dot ? 'PUT' : 'POST';
+                body = {
+                  spaceId: defaultSpace,
+                  spaceIds,
+                  name,
+                  instructions: text,
+                  researchAllowed: research,
+                  memoryAllowed: memory,
+                };
+              }
+              if (dialog.type === 'settings') {
+                path = '/settings';
+                method = 'PATCH';
+                body = { researchAllowed: research, memoryAllowed: memory };
+              }
+              if (dialog.type === 'memory') {
+                path = dialog.memory
+                  ? `/memories/${dialog.memory.id}`
+                  : '/memories';
+                method = dialog.memory ? 'PUT' : 'POST';
+                body = { text };
+              }
+              if (await mutate(path, method, body)) onClose();
+              else
+                setError(
+                  'Could not save. Review the workspace error and retry.',
+                );
+              setBusy(false);
+            }}
+          >
+            {(dialog.type === 'space' || dialog.type === 'dot') && (
+              <>
+                <label className="field-label" htmlFor="entity-name">
+                  Name
+                </label>
+                <input
+                  id="entity-name"
+                  value={name}
+                  maxLength={40}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </>
+            )}
+            {dialog.type !== 'settings' && (
+              <>
+                <label className="field-label" htmlFor="entity-text">
+                  {dialog.type === 'dot'
+                    ? 'Role instructions'
+                    : dialog.type === 'space'
+                      ? 'What belongs here?'
+                      : dialog.type === 'memory'
+                        ? 'Preference or context'
+                        : 'Task to revisit'}
+                </label>
+                <textarea
+                  id="entity-text"
+                  rows={4}
+                  maxLength={2000}
+                  required={dialog.type !== 'space'}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder={
+                    dialog.type === 'dot'
+                      ? 'You are a thoughtful research partner. Compare evidence and be clear about uncertainty.'
+                      : ''
+                  }
+                />
+              </>
+            )}
+            {dialog.type === 'dot' && (
+              <fieldset className="space-access-fields">
+                <legend>Space access</legend>
+                <p className="muted">
+                  Choose where this Dot can read and edit pages.
+                </p>
+                {workspace.spaces.map((space) => (
+                  <label className="permission-row" key={space.id}>
+                    <input
+                      type="checkbox"
+                      checked={spaceIds.includes(space.id)}
+                      onChange={(event) => {
+                        const next = event.target.checked
+                          ? [...spaceIds, space.id]
+                          : spaceIds.filter((id) => id !== space.id);
+                        setSpaceIds(next);
+                        if (!next.includes(defaultSpace))
+                          setDefaultSpace(next[0] ?? '');
+                      }}
+                    />
+                    <span>{space.name}</span>
+                  </label>
+                ))}
+                <label className="field-label" htmlFor="default-space">
+                  Default destination for saved pages
+                </label>
+                <select
+                  id="default-space"
+                  value={defaultSpace}
+                  required
+                  onChange={(event) => setDefaultSpace(event.target.value)}
+                >
+                  <option value="" disabled>
+                    Choose a Space
+                  </option>
+                  {workspace.spaces
+                    .filter((space) => spaceIds.includes(space.id))
+                    .map((space) => (
+                      <option key={space.id} value={space.id}>
+                        {space.name}
+                      </option>
+                    ))}
+                </select>
+              </fieldset>
+            )}
+            {dialog.type === 'dot' && (
+              <>
+                <label className="permission-row">
                   <input
                     type="checkbox"
-                    checked={spaceIds.includes(space.id)}
-                    onChange={(event) => {
-                      const next = event.target.checked
-                        ? [...spaceIds, space.id]
-                        : spaceIds.filter((id) => id !== space.id);
-                      setSpaceIds(next);
-                      if (!next.includes(defaultSpace))
-                        setDefaultSpace(next[0] ?? '');
-                    }}
+                    checked={research}
+                    onChange={(e) => setResearch(e.target.checked)}
                   />
-                  <span>{space.name}</span>
+                  <span>
+                    <strong>Public-page research</strong>
+                    <small>
+                      Request scoped research capability. Effective runtime
+                      grants and policy remain authoritative.
+                    </small>
+                  </span>
                 </label>
-              ))}
-              <label className="field-label" htmlFor="default-space">
-                Default destination for saved pages
-              </label>
-              <select
-                id="default-space"
-                value={defaultSpace}
-                required
-                onChange={(event) => setDefaultSpace(event.target.value)}
-              >
-                <option value="" disabled>
-                  Choose a Space
-                </option>
-                {workspace.spaces
-                  .filter((space) => spaceIds.includes(space.id))
-                  .map((space) => (
-                    <option key={space.id} value={space.id}>
-                      {space.name}
-                    </option>
-                  ))}
-              </select>
-            </fieldset>
-          )}
-          {dialog.type === 'dot' && (
-            <>
-              <label className="permission-row">
-                <input
-                  type="checkbox"
-                  checked={research}
-                  onChange={(e) => setResearch(e.target.checked)}
-                />
-                <span>
-                  <strong>Public-page research</strong>
-                  <small>
-                    Request scoped research capability. Effective runtime grants
-                    and policy remain authoritative.
-                  </small>
-                </span>
-              </label>
-              <label className="permission-row">
-                <input
-                  type="checkbox"
-                  checked={memory}
-                  onChange={(e) => setMemory(e.target.checked)}
-                />
-                <span>
-                  <strong>Use saved memories</strong>
-                  <small>
-                    Use this agent’s assigned backend only. Primary Ryoko uses
-                    the personal harness; specialists use isolated built-in
-                    memory.
-                  </small>
-                </span>
-              </label>
-            </>
-          )}
-          {dialog.type === 'dot' && (
-            <p className="config-note">
-              Reviewed Learning is managed in Memory → Reviewed Learning.
-              Existing managed-service enrollment remains frozen until
-              migration; copied names and default Spaces never grant personal
-              memory access.
-            </p>
-          )}
-          {dialog.type === 'schedule' && (
-            <>
-              <label className="field-label" htmlFor="schedule-interval">
-                Repeat after each successful run
-              </label>
-              <select
-                id="schedule-interval"
-                value={interval}
-                onChange={(e) => setInterval(e.target.value)}
-              >
-                <option value="60">Every minute (testing)</option>
-                <option value="3600">Every hour</option>
-                <option value="86400">Every day</option>
-                <option value="604800">Every week</option>
-              </select>
-              <p className="muted">
-                Runs on the server in this same conversation, even with the tab
-                closed. Failed runs wait for manual retry.
+                <label className="permission-row">
+                  <input
+                    type="checkbox"
+                    checked={memory}
+                    onChange={(e) => setMemory(e.target.checked)}
+                  />
+                  <span>
+                    <strong>Use saved memories</strong>
+                    <small>
+                      Use this agent’s assigned backend only. Primary Ryoko uses
+                      the personal harness; specialists use isolated built-in
+                      memory.
+                    </small>
+                  </span>
+                </label>
+              </>
+            )}
+            {dialog.type === 'dot' && (
+              <p className="config-note">
+                Reviewed Learning is managed in Memory → Reviewed Learning.
+                Existing managed-service enrollment remains frozen until
+                migration; copied names and default Spaces never grant personal
+                memory access.
               </p>
-            </>
-          )}
-          {dialog.type === 'settings' && runtime && (
-            <RuntimeStatus connection={runtime} />
-          )}
-          {dialog.type === 'memory' && (
-            <p className="muted">
-              Memories are explicit preferences, not automatic learning. Avoid
-              secrets; enabled memories go to your model provider.
-            </p>
-          )}
-          {error && (
-            <p className="chat-error" role="alert">
-              {error}
-            </p>
-          )}
-          {dialog.type !== 'settings' && (
-            <button
-              className="primary full"
-              disabled={
-                busy ||
-                (dialog.type === 'dot' && !runtime?.available('specialists'))
-              }
-            >
-              {busy ? 'Saving…' : 'Save'}
-            </button>
-          )}
-        </form>
+            )}
+            {dialog.type === 'settings' && runtime && (
+              <RuntimeStatus connection={runtime} />
+            )}
+            {dialog.type === 'memory' && (
+              <p className="muted">
+                Memories are explicit preferences, not automatic learning. Avoid
+                secrets; enabled memories go to your model provider.
+              </p>
+            )}
+            {error && (
+              <p className="chat-error" role="alert">
+                {error}
+              </p>
+            )}
+            {dialog.type !== 'settings' && (
+              <button
+                className="primary full"
+                disabled={
+                  busy ||
+                  (dialog.type === 'dot' && !runtime?.available('specialists'))
+                }
+              >
+                {busy ? 'Saving…' : 'Save'}
+              </button>
+            )}
+          </form>
+        )}
       </section>
     </div>
   );

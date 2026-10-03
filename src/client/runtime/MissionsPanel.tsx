@@ -1,3 +1,4 @@
+import { SchedulesPanel } from './SchedulesPanel';
 import { useRef, useState } from 'react';
 import { missionsSchema } from '../../shared/runtime/missions';
 import { useResource } from './use-resource';
@@ -176,6 +177,7 @@ export function MissionsPanel({
           ))}
         </section>
       )}
+      <SchedulesPanel connection={connection} />
     </section>
   );
 }
