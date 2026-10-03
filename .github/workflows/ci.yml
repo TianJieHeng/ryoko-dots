@@ -18,5 +18,8 @@ jobs:
       - run: npm run check-format
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run check:runtime-contract
+      - run: npm run check:production-boundary
+      - run: npm run test:operations
       - run: npm test
       - run: npm run build

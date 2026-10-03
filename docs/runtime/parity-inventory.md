@@ -1,6 +1,16 @@
-# FE00 control and authority inventory
+# Current control disposition and historical parity inventory
 
-Frontend checkpoint, not live integration qualification. Legacy source is retained until each replacement is implemented; current server remains Intelligence-backed. All BE00–BE12 gates are unimplemented/unqualified in this consumer baseline. No fixture constitutes permission to activate a provider, migrate data or deploy.
+Final local qualification is recorded in [backend-release.md](backend-release.md):767 aggregate passes, all16 stdio cases exercised successfully after one fixture correction,175 producer-interface passes, and operational/production-only boot checks. Production readiness remains false; no external gate is waived.
+
+BE00–BE11 source now implements the self-hosted backend adapters. The original FE00 requirements below remain the baseline inventory, not a claim that current backend code is absent. Phase guides and `BuildJournal.md` describe implementation/local evidence; BE12 final aggregate and actual browser/host/provider/export/cutover gates remain separate. **Production readiness is false.**
+
+Owner authentication, canonical conversation/commands, exact controls/reviews, native page/artifact authority, scoped specialist memory/workflows, one scheduler and optional computer/voice/Slack adapters replace the legacy execution paths. The production entrypoint does not start Intelligence, DotAgent, the Dots timer or managed Channels. Historical source/tests are retained without becoming a fallback.
+
+Three audit-discovered retained behaviors are repaired in BE11 source and covered by `tests/retained-local-surfaces.test.ts`: bounded owner-local Space creation without inferred grants; owner-scoped read-only legacy task detail; and scoped legacy capture reads/explicit null for canonical conversation output. The four focused tests were reported passing; final aggregate acceptance is recorded separately. New canonical output is read from immutable runtime results/artifacts, never by restarting the legacy research engine.
+
+Current constraints remain explicit: primary-harness ingestion/mutation/supersession/delete/export unsupported; finite speech is not realtime UI; no broad teams/multi-child synthesis; LAYA off; schedules paused until actual scheduler proof; computers/voice/Slack default-off without their actual configured qualification; real history export/full-host encrypted restore/cutover unqualified. None of these mandatory acceptance gates was owner-excluded.
+
+## Baseline per-control requirements, with current phase mapping
 
 Every row requires authenticated scope, independently negotiated capability and the matching backend gate. Missing support must show unavailable/read-only state rather than invoke a legacy executor.
 
@@ -46,10 +56,27 @@ Every row requires authenticated scope, independently negotiated capability and 
 | Migration, legacy history, rollback notices                               | Sticky runtime owner, object disposition and recoverable migration receipts                | Only separately authorized migration/control                            | No new grants from old approvals, no uncertain schedule backfill; BE11                 |
 | Self-hosted startup/backup/restore/package                                | Exact server/producer versions and no-hosted-network proof                                 | No frontend deployment action                                           | Legacy server package remains until BE11; FE12 cutover blocked                         |
 
-## Evidence and limitations
+## Historical FE00 evidence and current limitations
 
 `producer-baseline.json` captures real dispatcher calls under isolated synthetic ownership and SQLite, with zero execution dispatches. It includes generic-approval rejection, foreign-session rejection, incompatible schema, unknown fields, an idle snapshot and an opaque/unconfigured-provider capability outcome. The fixture is not a public authentication, network transport or live provider test.
 
-The fixture source local commit is recorded exactly. Both generated schema files and all five pinned dispatcher/schema/test files are byte-identical to published producer `124931a916c8aa6beeaf60d08dd55ca5d20f6e3c`; unrelated producer history must not be rewritten. The consumer contract remains proposed until BE00 mapping is implemented.
+The fixture source local commit is recorded exactly. Both generated schema files and all five pinned dispatcher/schema/test files are byte-identical to published producer `124931a916c8aa6beeaf60d08dd55ca5d20f6e3c`; unrelated producer history must not be rewritten. That statement described FE00 only. The current backend adapters are implemented and use the later exact producer pin recorded by the phase guides and provenance manifests; the old fixture is not current end-to-end evidence.
 
-Per-control browser interaction, keyboard, narrow-screen, live channel/provider, actual hardware, server restart, migration and rollback evidence is deferred to its paired phase and consolidated FE12. Unsupported integration remains explicitly blocked, never marked green from this inventory.
+Per-control real browser interaction, keyboard, narrow-screen, live channel/provider, actual hardware, actual export, full-host recovery and cutover remain unqualified. Later phases have actual local protocol/restart tests; those do not close external acceptance. Unsupported integration remains explicitly unavailable and this inventory does not mark any live gate green.
+
+## Current evidence map
+
+| Surface                        | Current implementation and local evidence                                                                                                             | Remaining acceptance                                                                                                             |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Owner/session/setup            | `owner-auth.ts`, `runtime/bindings.ts`, self-hosted setup; owner/CSRF/origin/revocation/source-pin tests                                              | Real browser cookies and target-host TLS/proxy                                                                                   |
+| Chat/history/headless commands | `self-hosted-platform.ts`, conversation/command ledgers, actual production-entry stdio fixtures; committed history separate from journal invalidation | Final assembled checks, browser/live selected model, actual historical export                                                    |
+| Missions/reviews/delivery      | Exact `control-service.ts` / `delivery-service.ts`, original operation inspection and native approval waiter, real local controls/delivery tests      | Live effects/delivery and actual browser review journey                                                                          |
+| Spaces/pages/editor/artifacts  | Local owner metadata plus native immutable page effect/CAS/version authority; lost-response/restart/Unicode/digest tests                              | Actual editor/navigation/download/browser, complete host restore                                                                 |
+| Identities/memory/Learning     | Stable producer identities, isolated specialist builtin memory, reviewed finite workflow publication and next-session version pins                    | Real primary harness health; unsupported primary mutation remains unavailable; no teams/LAYA                                     |
+| Schedules/tasks                | Real producer ticker/lock/occurrence tests; trusted legacy SQL admission freeze; retained task reads                                                  | Real old/new process census, source migration and explicit cutover; no autoactivation                                            |
+| Computer/research              | Signed target protocol and deterministic-driver tests; public-reader/security code retained; canonical output via runtime result/artifact routes      | Real target supervisor/browser/shell/egress/files/takeover and web→research→page journey                                         |
+| Voice                          | Durable call/compute admission and actual canonical stdio with synthetic media; provider captions separate from verified output                       | Real microphone/playback/provider/cost/quota; finite local speech not realtime                                                   |
+| Slack                          | Signed inbox/thread/outbox, scoped standing authority; actual stdio/loopback response-loss recovery                                                   | Real workspace membership/scopes/provider/delivery; scheduled cross-channel output unavailable                                   |
+| Migration/operations           | Inert normalized archive + UI, offline paired snapshot/restore, supervised lifetime gate, diagnostics and production-only packaging                   | Actual export normalization/old URL mapping, encryption/key recovery, complete host/remote writer inventory, load/restore/cohort |
+
+The current producer is `98b9eeb7d2afc02d0e0393fea285f010000a0378`. Read exact full-schema hashes and generated method subsets from both producer provenance files. All local phase test counts overlap; never sum them as distinct release coverage. The historical frontend receipt has0 actual browser assertions and0 screenshots, with21 scenarios not run. CI exists but no exact-commit passing run/status has been observed. Accepted/unknown work keeps its original runtime owner and operation during rollback; it is never replayed through DotAgent.

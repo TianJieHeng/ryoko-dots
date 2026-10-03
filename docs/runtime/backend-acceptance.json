@@ -1,0 +1,2651 @@
+{
+  "schemaVersion": 2,
+  "status": "local_qualification_complete_external_acceptance_blocked",
+  "productionReady": false,
+  "consumerRepository": "TianJieHeng/ryoko-dots",
+  "producerRepository": "TianJieHeng/ryoko-agent",
+  "producerCommit": "98b9eeb7d2afc02d0e0393fea285f010000a0378",
+  "producerTree": "d471976038ff8e072d37d8540e2a2ef0e5847a32",
+  "producerTypeScriptSha256": "19fdf11f4aa587d7bcdd58927c0cdbbdec463cfdeaa90003e0ac6284266539d2",
+  "producerOpenRpcSha256": "fa7b08c3edd56190daadeef533928685113fd70a2ae8959b2fb7b61aee5051b2",
+  "verifiedConsumerPhaseCommits": {
+    "BE02": "201e029b95fbcdcde0fd01ede467bee66e3b32b0",
+    "BE03": "10588f1c1280ba918e4b6c5a9210791dd36ef023",
+    "BE04": "c5a86242708659baa20bbff2d9968fa6c38a6776",
+    "BE05": "ce681cc009ce2a39f4a5bf889f6e5b7703acc7f2",
+    "BE06": "a82096697d3e4d8ccf351c334a54d4daa2f59b5b",
+    "BE07": "f6c45374d1fc1eca023218f2fb7ce3d307ee2a56",
+    "BE08": "7a24b5d82eaef74faadafca102473285ef834c32",
+    "BE00": "a82b1583fbb8861a5f44e1a4cfdf01801a6f4c15",
+    "BE01": "c7a7e7d8b77c5af2ad603cd5583af50aacd8d15f",
+    "BE09": "ef7e679e00bf208dd17cb5eac20f997149e4d045",
+    "BE10": "bd8c7f4d354f36e267575bdeaa6dcad169156a83",
+    "BE11": "0cb5f0e5d76f8e429054f3d9eb721d04de84e45e"
+  },
+  "externalCi": {
+    "workflowPresent": true,
+    "exactCommitRunsObserved": 0,
+    "exactCommitStatusesObserved": 0,
+    "conclusion": "unverified, not passed"
+  },
+  "mandatoryOpenGates": [
+    {
+      "id": "browser",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "Supported browser QA remains blocked by documented Chromium socket and loopback browser restrictions; no bypass."
+    },
+    {
+      "id": "computer_host",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "Actual pinned supervisor/image, browser/shell sandbox and egress, durable volumes and hardware takeover are unqualified."
+    },
+    {
+      "id": "voice_live",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "Actual microphone/playback/provider/latency/cost/quotas are unqualified; no media credential activated."
+    },
+    {
+      "id": "slack_live",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "No real workspace installation, signing credentials or external message delivery activated."
+    },
+    {
+      "id": "migration_source",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "Actual authorized Intelligence export availability and conversion must be established; normalized supplied archives are distinct evidence."
+    },
+    {
+      "id": "host_backup_boundary",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "Full target-host writer census, remote executor volumes and real encrypted backup/restore remain to be established."
+    },
+    {
+      "id": "cutover",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "No declared owner/session cohort or deployment acceptance has been authorized; old/new live admissions not switched."
+    },
+    {
+      "id": "target_host",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "Real non-root native/Compose/TLS/proxy/secret mounts/schema/auth rotation and service manager are unqualified."
+    },
+    {
+      "id": "runtime_live_provider",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "Real selected model/service behaviour, cost, error and quota are unqualified; all model SDK proof is loopback synthetic."
+    },
+    {
+      "id": "primary_harness_live",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "No live personal-MCP/harness used. Unsupported primary mutation/export/delete/ingestion remain unavailable by contract, not passed or emulated."
+    },
+    {
+      "id": "encrypted_restore",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "Actual age executable/crypto round-trip and key recovery were not performed. Passthrough fixture proves parser mechanics only."
+    },
+    {
+      "id": "target_host_load",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "No representative target-host load, disk-pressure/large profile/stuck-provider performance or measured production RTO/RPO."
+    },
+    {
+      "id": "research_fallback",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "The end-to-end web→research→page journey remains unqualified. Public reader/security source is retained; canonical legacy capture is intentionally null and new output uses runtime result/artifact routes. Do not infer browser/provider research parity from retained unit tests."
+    },
+    {
+      "id": "external_ci",
+      "state": "not_qualified",
+      "ownerAcceptedExclusion": false,
+      "reason": "Workflow exists; zero exact-commit Actions runs/statuses observed. Not a pass. Final commit must be queried."
+    }
+  ],
+  "evidenceRules": [
+    "Source/unit, real local protocol, browser, native host and live-provider evidence must be labeled separately.",
+    "Synthetic receipt fingerprints never qualify production targets.",
+    "Unknown accepted work remains with its original owner and operation; rollback cannot replay it through a legacy engine.",
+    "Phase test counts overlap and are never summed as distinct coverage."
+  ],
+  "auditUtc": "2026-10-03T21:09:40.309924+00:00",
+  "publicationVerification": "BE00–BE11 published phase references were verified against remote refs, exact trees and root journal blobs. Final BE12 commit/ref/tree equality and exact-commit CI are checked after publication; this receipt does not embed its own commit hash.",
+  "deployed": false,
+  "cutoverPerformed": false,
+  "auditActions": [
+    "Source, tests and phase-evidence mapping",
+    "Final repository aggregate and actual local protocol qualification",
+    "One bounded controls-fixture correction and targeted rerun",
+    "Exact producer/schema/phase-publication verification",
+    "No deployment, live provider activation, real user migration or controlled cutover"
+  ],
+  "phaseEvidence": "Recorded phase tests plus final assembled repository checks; counts overlap and are not added as distinct coverage.",
+  "phases": {
+    "BE00": {
+      "sources": [
+        "src/server/runtime/rpc.ts",
+        "src/server/runtime/projection.ts",
+        "src/server/runtime/stdio.ts",
+        "src/server/runtime/source-pin.ts",
+        "src/shared/runtime/producer/provenance.json",
+        "scripts/pin-producer-contract.mjs"
+      ],
+      "tests": [
+        "tests/backend-runtime.test.ts",
+        "tests/runtime-contract.test.ts",
+        "tests/producer-source-pin.test.ts",
+        "tests/self-hosted-conversations.test.ts"
+      ],
+      "evidence": "BuildJournal.md#BE00; later BE02–10 actual production-entry stdio evidence supersedes BE00 fixture-only transport limitation",
+      "notes": "Initial bridge was synthetic dispatcher/pipe only; current owning transport is restricted server-owned stdio, not public WS delegation.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "All ingress disposition tracked; original inventory remains baseline, current per-control mapping is below. Legacy execution remains source/test only.",
+          "sources": [
+            "docs/runtime/parity-inventory.md",
+            "src/server/index.ts",
+            "src/server/self-hosted-app.ts"
+          ],
+          "tests": ["tests/frontend-package.test.js"],
+          "remainingGates": [],
+          "id": "BE00-R01",
+          "requirement": "Inventory every web/page/voice/Slack/headless/task ingress and existing test. Record current behavior and migration disposition, including learned skills and read-only browser fallback"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Generated transitive producer subsets, full SHA-256 provenance and exact clean source pin; no hand-authored producer compatibility types.",
+          "sources": [
+            "src/shared/runtime/producer/provenance.json",
+            "src/shared/runtime/be06-producer/provenance.json",
+            "src/server/runtime/source-pin.ts",
+            "scripts/pin-producer-contract.mjs",
+            "scripts/pin-be06-contract.mjs"
+          ],
+          "tests": [
+            "tests/producer-source-pin.test.ts",
+            "tests/backend-runtime.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE00-R02",
+          "requirement": "Import/generate only qualified schema types with provenance; never manually invent compatibility types. Record schema hashes and required operation capability matrix"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Bounded read-only RPC and transactional cursor/event projection; actual producer-entrypoint owner binding added by BE02.",
+          "sources": [
+            "src/server/runtime/rpc.ts",
+            "src/server/runtime/projection.ts",
+            "src/server/runtime/stdio.ts"
+          ],
+          "tests": [
+            "tests/backend-runtime.test.ts",
+            "tests/self-hosted-conversations.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE00-R03",
+          "requirement": "Create a read-only adapter against an isolated synthetic Ryoko home. Establish authenticated owner binding, capabilities, snapshot and ordered event replay; distinguish live transport ID from durable lineage"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Production-entrypoint restart/rebind and canonical operation inspection proven locally in later actual stdio fixtures. No public WS/server-to-human grant assumed.",
+          "sources": [
+            "src/server/runtime/stdio.ts",
+            "src/server/self-hosted-platform.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-conversations.test.ts",
+            "tests/self-hosted-commands.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE00-R04",
+          "requirement": "Prove restart/resubscribe behavior before selecting WS vs HTTP. If service-to-human binding is unsupported, coordinate the producer change; no shared master credential in a browser or client-chosen identity"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "valid/invalid schema; incompatible version; unavailable runtime; bounds/slow consumer; split/oversized/disconnected pipe",
+          "tests": [
+            "tests/backend-runtime.test.ts",
+            "tests/runtime-contract.test.ts",
+            "tests/conversation-rpc.test.ts"
+          ],
+          "evidenceKind": "synthetic_source_tests",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE00-C01"
+        },
+        {
+          "checks": "same-account other-session denial; A→B→A; cursor expiry/gap/duplicate/foreign generation; persistent generation/restart",
+          "tests": [
+            "tests/backend-runtime.test.ts",
+            "tests/runtime-bindings.test.ts",
+            "tests/runtime-connection.test.ts",
+            "tests/self-hosted-conversations.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE00-C02"
+        },
+        {
+          "checks": "exact consumer/producer pin; OD00 actual consumer proof",
+          "tests": [
+            "tests/producer-source-pin.test.ts",
+            "tests/self-hosted-conversations.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol",
+          "remainingGates": ["target_host"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE00-C03"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Pin contracts and prove read-only transport",
+      "planCheckExit": "valid/invalid schema, incompatible version, unavailable runtime, same-account other-session denial, A→B→A stale response, cursor expiry/gap/duplicate/foreign generation, slow consumer, connection loss. Record exact producer+consumer commits. OD00 is passed only by executed consumer proof, not by importing TypeScript.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE01": {
+      "sources": [
+        "src/server/owner-auth.ts",
+        "src/server/owner-auth-config.ts",
+        "src/server/runtime/bindings.ts",
+        "src/client/api.ts",
+        "SECURITY.md"
+      ],
+      "tests": [
+        "tests/owner-auth.test.ts",
+        "tests/runtime-bindings.test.ts",
+        "tests/client-auth.test.ts",
+        "tests/security.test.ts",
+        "tests/runtime-scope.test.ts"
+      ],
+      "evidence": "BuildJournal.md#BE01: 87 tests/11 files; actual binding covered subsequently",
+      "notes": "Single-owner only; browser cookie/CSRF tests are programmatic HTTP, not real browser/TLS host proof.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "SQLite-backed owner cookie/session lifecycle replaces bearer bypass; browser retains no broad service credential.",
+          "sources": ["src/server/owner-auth.ts", "src/client/api.ts"],
+          "tests": ["tests/owner-auth.test.ts", "tests/client-auth.test.ts"],
+          "remainingGates": [],
+          "id": "BE01-R01",
+          "requirement": "Retain single-owner boundary initially. Replace browser-held broad service credentials with a server-managed authenticated session design; recommended HttpOnly/Secure/SameSite cookies plus CSRF protection, with explicitly scoped API credentials for machine ingress"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Exact host/origin, CSRF, body/rate bounds, timing-safe token check, TLS/proxy constraints, expiry/logout/revocation. Selected stdio route has no browser WebSocket credential.",
+          "sources": [
+            "src/server/owner-auth.ts",
+            "src/server/owner-auth-config.ts",
+            "src/server/self-hosted-app.ts"
+          ],
+          "tests": ["tests/owner-auth.test.ts", "tests/security.test.ts"],
+          "remainingGates": [],
+          "id": "BE01-R02",
+          "requirement": "Keep loopback defaults, exact origin/host checks, body limits, timing-safe credential verification, TLS requirements and rate limits. Define logout/session expiry/revocation, proxy trust, WebSocket ticket origin validation and log redaction"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Owner/profile/agent/conversation mappings with CAS/tombstone/grant fences and immutable privilege class; manual owner Space access is single-owner metadata, not an agent grant.",
+          "sources": [
+            "src/server/runtime/bindings.ts",
+            "src/server/workspace.ts"
+          ],
+          "tests": [
+            "tests/runtime-bindings.test.ts",
+            "tests/runtime-identity-service.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE01-R03",
+          "requirement": "Persist unique owner/profile/agent/conversation/runtime mappings with revisions. Verify Dot/Space grants on all reads, writes, event subscriptions and downloads. Ensure renaming an agent never changes its privilege class"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Server-owned exact configuration and rotation fences. Real secret mount/TLS/proxy deployment remains a target-host check.",
+          "sources": [
+            "src/server/runtime/stdio.ts",
+            "src/server/owner-auth-config.ts",
+            ".env.example",
+            "SECURITY.md"
+          ],
+          "tests": [
+            "tests/owner-auth.test.ts",
+            "tests/runtime-provider-scope.test.ts"
+          ],
+          "remainingGates": ["target_host"],
+          "id": "BE01-R04",
+          "requirement": "Store secrets server-side in deployment secret facilities; define rotation and restart behavior. Credential creation/permission changes require their separate authorization"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "cross-origin/CSRF; exact Host/spoofed proxy; forged profile/agent; revoked/expired/logout/rotation auth; remote insecure bind",
+          "tests": ["tests/owner-auth.test.ts", "tests/client-auth.test.ts"],
+          "evidenceKind": "synthetic_source_tests",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE01-C01"
+        },
+        {
+          "checks": "unauthorized object IDs; cross-session/grant subscription/download denial; archive/delete; stale generation; post-read revocation",
+          "tests": [
+            "tests/runtime-bindings.test.ts",
+            "tests/runtime-scope.test.ts",
+            "tests/self-hosted-conversations.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE01-C02"
+        },
+        {
+          "checks": "real browser cookie behavior and target-host TLS/proxy",
+          "tests": ["tests/owner-auth.test.ts"],
+          "evidenceKind": "not_qualified",
+          "remainingGates": ["browser", "target_host"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE01-C03"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Self-hosted authentication and scoped bindings",
+      "planCheckExit": "cross-origin/CSRF, host spoofing, expired/revoked auth, unauthorized object IDs, forged profile/agent fields, subscription scope leakage, archive/delete access and remote bind without secure setup. Existing `security.test.ts` and `runtime-scope.test.ts` regressions remain covered.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE02": {
+      "sources": [
+        "src/server/self-hosted-platform.ts",
+        "src/server/runtime/conversation-ledger.ts",
+        "src/server/runtime/conversation-rpc.ts",
+        "src/server/self-hosted-app.ts",
+        "src/client/runtime/history-loader.ts"
+      ],
+      "tests": [
+        "tests/self-hosted-conversations.test.ts",
+        "tests/conversation-rpc.test.ts",
+        "tests/runtime-history-chunks.test.ts",
+        "tests/runtime-history-recovery.test.ts",
+        "tests/runtime-history-display.test.tsx"
+      ],
+      "evidence": "BuildJournal.md#BE02: actual stdio 4/4; aggregate 309 tests/59 files with opt-in stdio separately run",
+      "notes": "Safe text export is not a full backup/import. Search is title search. Committed canonical tail replaces unsafe token forwarding.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Canonical producer lifecycle; Dots only durable ingress/index/projection and surface mappings; stable IDs, title search, ordering, pagination, rename/archive.",
+          "sources": [
+            "src/server/self-hosted-platform.ts",
+            "src/server/runtime/conversation-ledger.ts",
+            "src/client/runtime/history-loader.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-conversations.test.ts",
+            "tests/runtime-history-chunks.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE02-R01",
+          "requirement": "Build Ryoko-owned conversation lifecycle with stable IDs, ordered canonical messages, source/channel provenance, pagination, search, rename/archive and retained history. Dots stores indexes/projections and surface links, not independent inference truth"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Canonical input IDs/run links and committed text reconcile after restart; pending drafts retain original immutable operation.",
+          "sources": [
+            "src/server/runtime/command-service.ts",
+            "src/client/runtime/use-live-history.ts",
+            "src/client/runtime/commands.ts"
+          ],
+          "tests": [
+            "tests/runtime-command-recovery.test.ts",
+            "tests/runtime-history-recovery.test.ts",
+            "tests/self-hosted-commands.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE02-R02",
+          "requirement": "Specify accepted input vs pending draft vs canonical committed message; reconcile user/assistant/tool messages after reconnect without duplication. Persist command-to-message/run/mission mappings and immutable message revisions where edits are supported"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Page+Dot reservations survive concurrent/unknown create; call event identity is BE09. Actual old voice anchors require source migration validation.",
+          "sources": [
+            "src/server/runtime/conversation-ledger.ts",
+            "src/server/runtime/voice-ledger.ts",
+            "src/server/runtime/voice-service.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-conversations.test.ts",
+            "tests/self-hosted-voice.test.ts"
+          ],
+          "remainingGates": ["migration_source"],
+          "id": "BE02-R03",
+          "requirement": "Preserve page-conversation reservation/recovery and one page-plus-specialist binding under concurrent creation, including unknown create outcomes. Preserve call anchor message IDs and hidden internal voice-receipt semantics in history migration"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Production starts self-hosted BFF without Intelligence; titles are canonical/deterministic and not generated by a hidden model.",
+          "sources": [
+            "src/server/index.ts",
+            "src/server/self-hosted-platform.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-conversations.test.ts",
+            "tests/frontend-package.test.js"
+          ],
+          "remainingGates": [],
+          "id": "BE02-R04",
+          "requirement": "Remove creation/history/readiness dependency on `INTELLIGENCE_API_KEY`; remove Intelligence-based generated thread names or replace through an explicitly supported Ryoko operation with deterministic fallback title"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Legacy Platform/headless execution retired. Canonical bounded safe-text export implemented; complete restore is BE11, actual legacy history is not synthesized.",
+          "sources": [
+            "src/server/index.ts",
+            "src/server/self-hosted-app.ts",
+            "src/server/runtime/conversation-ledger.ts"
+          ],
+          "tests": ["tests/self-hosted-conversations.test.ts"],
+          "remainingGates": ["migration_source", "host_backup_boundary"],
+          "id": "BE02-R05",
+          "requirement": "Replace `Platform.history`, `createConversation`, headless `IntelligenceAgent`, thread resume and page conversation creation. Provide export/restore and bounded history retention. Do not synthesize missing old history"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Browser no longer imports hosted CopilotKit providers; AG-UI text shapes only. Actual browser integration still blocked.",
+          "sources": [
+            "src/client/Chat.tsx",
+            "src/client/ChatTranscript.tsx",
+            "package.json"
+          ],
+          "tests": [
+            "tests/frontend-package.test.js",
+            "tests/transcript.test.tsx"
+          ],
+          "remainingGates": ["browser"],
+          "id": "BE02-R06",
+          "requirement": "Keep optional AG-UI/CopilotKit rendering only after proving it can operate without managed Intelligence; select a local provider/adapter otherwise"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "no Intelligence key/network requirement; create/send/reload/title-search/archive; duplicate title/compression lineage; pagination/order/400KB Unicode; duplicate chunks",
+          "tests": [
+            "tests/self-hosted-conversations.test.ts",
+            "tests/runtime-history-chunks.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE02-C01"
+        },
+        {
+          "checks": "interrupted stream/final reconciliation; command-message identity; runtime/store restart; page-context reservation and concurrent create",
+          "tests": [
+            "tests/self-hosted-commands.test.ts",
+            "tests/runtime-history-recovery.test.ts",
+            "tests/self-hosted-conversations.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE02-C02"
+        },
+        {
+          "checks": "Slack/voice receipt linking; late transcript/hidden internal provenance",
+          "tests": [
+            "tests/self-hosted-voice.test.ts",
+            "tests/voice-provenance.test.tsx",
+            "tests/self-hosted-slack-stdio.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": ["migration_source"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE02-C03"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Replace Intelligence conversation ownership",
+      "planCheckExit": "no Intelligence key/network required; create/send/reload/search/archive; pagination/order; duplicate ingestion; interrupted stream then final-message reconciliation; runtime/store restart; compression lineage; page-context and Slack/voice receipts remain correctly linked. Existing headless/page-service/workspace tests ported.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE03": {
+      "sources": [
+        "src/server/runtime/command-ledger.ts",
+        "src/server/runtime/command-service.ts",
+        "src/server/runtime/operation-registry.ts",
+        "src/server/index.ts"
+      ],
+      "tests": [
+        "tests/self-hosted-commands.test.ts",
+        "tests/runtime-command-recovery.test.ts",
+        "tests/runtime-commands.test.ts",
+        "tests/command-lifecycle-recovery.test.ts"
+      ],
+      "evidence": "BuildJournal.md#BE03: real stdio 8 tests/106.56s including 95-second held SDK request; 49 focused tests",
+      "notes": "Model calls in actual SDK fixtures go only to a synthetic loopback endpoint; no external provider qualification.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "One producer command authority; no production DotAgent/TanStack/local-memory loop or fallback.",
+          "sources": [
+            "src/server/index.ts",
+            "src/server/runtime/command-service.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-commands.test.ts",
+            "tests/frontend-package.test.js"
+          ],
+          "remainingGates": [],
+          "id": "BE03-R01",
+          "requirement": "Replace `BuiltInAgent`, TanStack `chat`, model adapter, local tool execution and global-memory prompt injection with an AG-UI-compatible projection adapter or documented equivalent"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "All canonical input, including channel/voice bridges, uses immutable ledger + global operation namespace and original receipt inspection.",
+          "sources": [
+            "src/server/runtime/command-ledger.ts",
+            "src/server/runtime/command-service.ts",
+            "src/server/runtime/voice-service.ts",
+            "src/server/runtime/slack-bridge.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-commands.test.ts",
+            "tests/self-hosted-voice-stdio.test.ts",
+            "tests/self-hosted-slack-stdio.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE03-R02",
+          "requirement": "Route every accepted web/page/headless/channel input through the same authenticated command admission. Persist operation ID+digest and recover receipt on unknown submission outcome"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Private producer notifications dropped; journal invalidations are separate from canonical bounded text history; no false token-stream claim.",
+          "sources": [
+            "src/server/runtime/conversation-rpc.ts",
+            "src/client/runtime/use-live-history.ts",
+            "src/client/runtime/history-loader.ts"
+          ],
+          "tests": [
+            "tests/conversation-rpc.test.ts",
+            "tests/runtime-result-notifications.test.ts",
+            "tests/runtime-history-recovery.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE03-R03",
+          "requirement": "Map safe text/tool state without forwarding private prompts, raw traces, memory contents or credentials. Keep transcript streaming separate from mission-event projection; finalized transcript is canonical"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Detach/abort/refresh do not cancel; explicit exact run cancellation preserves acceptance/ack/effect distinctions; >90-second local fixture exists.",
+          "sources": [
+            "src/server/runtime/command-service.ts",
+            "src/client/runtime/commands.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-commands.test.ts",
+            "tests/runtime-command-recovery.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE03-R04",
+          "requirement": "Retire inherited 90-second execution deadlines as mission lifetime. Request timeout/unsubscribe detaches; explicit cancel sends a durable command and awaits evidence. Never fall back to old DotAgent on provider failure"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Capability and bounded admission/queue controls; restart recovers original accepted work rather than re-submitting from browser.",
+          "sources": [
+            "src/server/runtime/command-service.ts",
+            "src/server/runtime/conversation-rpc.ts"
+          ],
+          "tests": [
+            "tests/command-lifecycle-recovery.test.ts",
+            "tests/runtime-commands.test.ts",
+            "tests/self-hosted-commands.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE03-R05",
+          "requirement": "Enforce capability gating and bounded queue/admission backpressure; reconnect does not resubmit input"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "one command under repeats/retries/admission crash; byte conflict; immutable source/context; no local-loop fallback",
+          "tests": [
+            "tests/self-hosted-commands.test.ts",
+            "tests/runtime-commands.test.ts",
+            "tests/runtime-command-recovery.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE03-C01"
+        },
+        {
+          "checks": "long job survives detached reader; cancel distinct from detach; restart/unknown inspection; unsupported requests fail closed; backpressure",
+          "tests": [
+            "tests/self-hosted-commands.test.ts",
+            "tests/command-lifecycle-recovery.test.ts",
+            "tests/conversation-rpc.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": ["runtime_live_provider", "browser"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE03-C02"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Single command adapter and lifecycle",
+      "planCheckExit": "one input → one canonical command under repeated clicks/retries/process crash; byte-conflict rejection; no local model/tool path in Ryoko mode; long job survives refresh; cancel distinct from detach; unsupported operations fail closed. Replace `tanstack-agent`, `dot-agent-channel`, headless-runtime tests with equivalent boundary tests.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE04": {
+      "sources": [
+        "src/server/runtime/control-service.ts",
+        "src/server/runtime/delivery-service.ts",
+        "src/client/runtime/MissionDetails.tsx",
+        "src/client/runtime/CommandResults.tsx"
+      ],
+      "tests": [
+        "tests/runtime-control-service.test.ts",
+        "tests/runtime-delivery-service.test.ts",
+        "tests/self-hosted-controls.test.ts",
+        "tests/self-hosted-delivery.test.ts"
+      ],
+      "evidence": "BuildJournal.md#BE04: scoped real stdio controls/delivery and focused regression evidence",
+      "notes": "Publication, artifact commit, delivery, reading, cancellation and compensation remain independent.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_source_after_bounded_repair",
+          "implementation": "Canonical mission/checkpoint/blocker/effect/output projections, no inferred completion from HTTP success. BE11 adds bounded read-only legacy task detail with explicit provenance and no action path.",
+          "sources": [
+            "src/server/runtime/control-service.ts",
+            "src/client/runtime/MissionDetails.tsx"
+          ],
+          "tests": [
+            "tests/runtime-control-service.test.ts",
+            "tests/runtime-results.test.tsx",
+            "tests/retained-local-surfaces.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE04-R01",
+          "requirement": "Expose mission state, checkpoints, next action, blockers, required outputs and unresolved effects from Ryoko snapshots. Keep accepted/executing/verified/artifact-committed/delivery-confirmed independent"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Exact presented bytes/target/recipient/versions/expiry/live authority fingerprint precedes runtime.approval.resolve; immutable producer revision uses documented zero sentinel.",
+          "sources": [
+            "src/server/runtime/control-service.ts",
+            "src/shared/runtime/reviews.ts"
+          ],
+          "tests": [
+            "tests/runtime-control-service.test.ts",
+            "tests/self-hosted-controls.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE04-R02",
+          "requirement": "Use exact approval detail and `runtime.approval.resolve` according to generated schema. Bind decision to actor, session/generation, approval ID/revision, digest, target/content/version, expiry and live grants. Generic runtime command `approval` is not a supported shortcut"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Native page review resolves original waiter and one producer effect; historical save receipt is not generic approval.",
+          "sources": [
+            "src/server/runtime/page-runtime-service.ts",
+            "src/server/runtime/page-effect-service.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-pages.test.ts",
+            "tests/runtime-page-runtime-service.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE04-R03",
+          "requirement": "Page review receipt remains a page-save receipt; it is not generic execution authority. Decisions must not perform a local write and then independently trigger a second Ryoko write"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Owner/profile pause inhibits new admissions/scheduled dispatch and next effect boundaries; accepted/dispatched work truth retained.",
+          "sources": [
+            "src/server/runtime/control-service.ts",
+            "src/server/runtime/command-service.ts"
+          ],
+          "tests": [
+            "tests/runtime-control-service.test.ts",
+            "tests/self-hosted-controls.test.ts",
+            "tests/self-hosted-voice-stdio.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE04-R04",
+          "requirement": "Define global Pause as a runtime-authorized control with explicit new-admission, scheduled-occurrence and in-flight-work behavior; show requested versus acknowledged state and never silently drop accepted work. Revocation fences the next effect even if the browser is offline"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Immutable verified chunk/result outbox and component ACK; response-loss inspection and delivery-only retry cannot replay inference.",
+          "sources": [
+            "src/server/runtime/delivery-service.ts",
+            "src/server/runtime/control-service.ts"
+          ],
+          "tests": [
+            "tests/runtime-delivery-service.test.ts",
+            "tests/self-hosted-delivery.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE04-R05",
+          "requirement": "Persist delivery intent/receipt correlation. Retry delivery of immutable output without rerunning inference/effects. Unknown remote outcomes stay inspectable and require reconciliation"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Run/mission cancel acceptance, external/provider outcome and unresolved effects remain distinct; no compensation.",
+          "sources": [
+            "src/server/runtime/control-service.ts",
+            "src/server/runtime/command-service.ts"
+          ],
+          "tests": [
+            "tests/runtime-control-service.test.ts",
+            "tests/self-hosted-commands.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE04-R06",
+          "requirement": "Cancellation records requested/local stop/provider acknowledgment/uncertain in-flight effects separately; never imply rollback or trigger compensation without authority"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "double decision; lost resolve response; deny/expiry/revocation; changed bytes/recipient/version; simultaneous tabs; stale generation",
+          "tests": [
+            "tests/runtime-control-service.test.ts",
+            "tests/self-hosted-controls.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE04-C01"
+        },
+        {
+          "checks": "effect timeout after dispatch; partial artifact; failed/unknown delivery; cancelled mission with unresolved effect; response-loss ACK",
+          "tests": [
+            "tests/runtime-control-service.test.ts",
+            "tests/runtime-delivery-service.test.ts",
+            "tests/self-hosted-delivery.test.ts",
+            "tests/runtime-page-effect-service.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE04-C02"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Missions, exact approvals, effects and delivery",
+      "planCheckExit": "double approval, response lost, deny/expiry/revocation, changed bytes/recipient/version, simultaneous tabs, stale generation, effect timeout after dispatch, partial artifact, failed/unknown delivery and cancelled mission with unresolved effect. Journal exact receipt evidence.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE05": {
+      "sources": [
+        "src/server/pages.ts",
+        "src/server/workspace.ts",
+        "src/server/runtime/page-effect-service.ts",
+        "src/server/runtime/page-runtime-service.ts",
+        "src/server/self-hosted-app.ts"
+      ],
+      "tests": [
+        "tests/self-hosted-pages.test.ts",
+        "tests/runtime-page-effect-service.test.ts",
+        "tests/runtime-page-runtime-service.test.ts",
+        "tests/autosave.test.ts",
+        "tests/page-archive.test.tsx",
+        "tests/page-review.test.tsx"
+      ],
+      "evidence": "BuildJournal.md#BE05: real native page/stdio + lost callback/restart/review/download; 88 focused tests",
+      "notes": "Pages are the native artifact authority. Arbitrary formats/generation are not claimed.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_source_after_bounded_repair",
+          "implementation": "Space/page list/editor/autosave/page reservation retained. BE11 repaired the missing bounded owner-only New Space POST; creation never infers Dot/project grants.",
+          "sources": [
+            "src/server/self-hosted-app.ts",
+            "src/server/pages.ts",
+            "src/client/WorkspaceDialog.tsx",
+            "src/client/App.tsx"
+          ],
+          "tests": [
+            "tests/pages.test.ts",
+            "tests/autosave.test.ts",
+            "tests/page-chat-request.test.ts",
+            "tests/retained-local-surfaces.test.ts"
+          ],
+          "remainingGates": ["browser"],
+          "id": "BE05-R01",
+          "requirement": "Keep Space list/default destination vs authorized Space grants distinct. Preserve page creation/edit/rename/archive, snapshots, page chat binding, autosave conflict handling and existing native editor semantics"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Atomic native immutable bytes/snapshot/head CAS/source lineage/effect receipt; committed bytes recover independently of later manual edits.",
+          "sources": [
+            "src/server/pages.ts",
+            "src/server/runtime/page-effect-service.ts"
+          ],
+          "tests": [
+            "tests/runtime-page-effect-service.test.ts",
+            "tests/self-hosted-pages.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE05-R02",
+          "requirement": "Register native page bytes as one declared artifact store. Retain immutable versions/digests and expected-revision compare-and-swap; map canonical head and source lineage. Define transaction/outbox recovery when Dots commits bytes but Ryoko receipt is delayed"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Only exact producer native callback can perform agent saves; authenticated owner manual edits use expected revision.",
+          "sources": [
+            "src/server/runtime/page-runtime-service.ts",
+            "src/server/runtime/page-effect-service.ts",
+            "src/server/self-hosted-app.ts"
+          ],
+          "tests": [
+            "tests/runtime-page-runtime-service.test.ts",
+            "tests/self-hosted-pages.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE05-R03",
+          "requirement": "Agent page mutations execute only under one validated Ryoko effect/approval identity; manual owner edits remain revision-checked operations. Do not expose unrestricted legacy page tools to an independent loop"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Digest-verified bounded authorized artifact bytes and safe native JSON/Markdown render; public reader security source retained, but canonical research/capture fallback parity is not demonstrated.",
+          "sources": [
+            "src/server/runtime/page-effect-service.ts",
+            "src/client/runtime/artifacts.ts",
+            "src/browser/security.ts",
+            "src/browser/transport.ts"
+          ],
+          "tests": [
+            "tests/runtime-artifacts.test.ts",
+            "tests/markdown.test.ts",
+            "tests/security.test.ts",
+            "tests/transport.test.ts"
+          ],
+          "remainingGates": ["research_fallback", "browser"],
+          "id": "BE05-R04",
+          "requirement": "Stream authorized downloads with MIME/size bounds, safe filenames and digest verification; sanitize rendered Markdown/HTML and block unsafe links/path traversal/SSRF. Preserve source captures/screenshots under scoped retention"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Historical thread/tool review identity reads native receipts, no second save; explicit version conflicts preserve drafts.",
+          "sources": [
+            "src/server/self-hosted-app.ts",
+            "src/server/runtime/page-effect-service.ts",
+            "src/client/PageReviewCard.tsx"
+          ],
+          "tests": [
+            "tests/runtime-page-effect-service.test.ts",
+            "tests/page-review.test.tsx",
+            "tests/autosave.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE05-R05",
+          "requirement": "Map page review recovery `(threadId, toolCallId)` to canonical operation IDs without losing old receipts. Version conflicts offer explicit recovery, never last-write-wins overwrite"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "concurrent autosave/review; double create; lost save receipt; owner/agent CAS and transaction rollback; stale page/parent/Space grant; cross-Space/cycle/archive denial",
+          "tests": [
+            "tests/runtime-page-effect-service.test.ts",
+            "tests/runtime-page-runtime-service.test.ts",
+            "tests/pages.test.ts",
+            "tests/autosave.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE05-C01"
+        },
+        {
+          "checks": "interrupted/corrupt artifact; digest mismatch; malicious rendered content; immutable lineage/old review links",
+          "tests": [
+            "tests/runtime-artifacts.test.ts",
+            "tests/runtime-delivery-service.test.ts",
+            "tests/markdown.test.ts",
+            "tests/self-hosted-pages.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE05-C02"
+        },
+        {
+          "checks": "actual backup restore/old provider links; browser dirty-navigation/rich editor/download interaction",
+          "tests": [
+            "tests/page-archive.test.tsx",
+            "scripts/qa-runtime-browser.mjs"
+          ],
+          "evidenceKind": "not_qualified",
+          "remainingGates": [
+            "host_backup_boundary",
+            "migration_source",
+            "browser"
+          ],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE05-C03"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Spaces, pages and artifact store adapter",
+      "planCheckExit": "concurrent autosave/review, new page double-submit, saved receipt lost, parent/Space grant revoked, stale page context, interrupted artifact download, digest mismatch, malicious page text, cross-Space access, backup restore and old links. Port pages/page-routes/page-service/library/page-context tests.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE06": {
+      "sources": [
+        "src/server/runtime/identity-runtime-service.ts",
+        "src/server/runtime/be06-service.ts",
+        "src/server/runtime/be06-migration.ts",
+        "src/shared/runtime/identity.ts",
+        "src/shared/runtime/be06-producer/provenance.json"
+      ],
+      "tests": [
+        "tests/self-hosted-identities.test.ts",
+        "tests/runtime-identity-service.test.ts",
+        "tests/identity-learning-client.test.ts",
+        "tests/identity-learning-ui.test.tsx"
+      ],
+      "evidence": "BuildJournal.md#BE06: actual supported Python3.14.7 stdio workflow/specialist proof 36.09s; 30 actual/service and 60 UI/service tests separately attributed",
+      "notes": "Primary personal-MCP ingestion/mutation/supersession/delete/export unsupported; specialists isolated builtin. No personal harness fallback, broad teams, multi-child synthesis or LAYA activation.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Stable primary/specialist roles, frozen session enrollment, verified project intersection; explicit named task/project context only.",
+          "sources": [
+            "src/server/runtime/identity-runtime-service.ts",
+            "src/server/runtime/be06-service.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-identities.test.ts",
+            "tests/runtime-identity-service.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE06-R01",
+          "requirement": "Map configurable Dot display identities to stable Ryoko primary/specialist IDs; validate role/profile binding on server. Persistent specialists use isolated built-in namespaces; delegation passes explicit authorized task/project context only"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Legacy global memory is read-only owner inventory, no bodies copied or injected; frozen source/enrollment preserved.",
+          "sources": [
+            "src/server/runtime/be06-migration.ts",
+            "src/server/runtime/identity-runtime-service.ts"
+          ],
+          "tests": [
+            "tests/runtime-identity-service.test.ts",
+            "tests/self-hosted-identities.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE06-R02",
+          "requirement": "Disable legacy global preference injection. Inventory old memories and route only through an explicitly reviewed supported destination; never fan them out to all agents or silently fall back from personal harness to local memory"
+        },
+        {
+          "disposition": "explicitly_unsupported_primary_operations",
+          "implementation": "Primary harness operations unsupported stay unavailable; actual primary backend health literal; specialist CAS/tombstone/export does not certify primary/backup erasure.",
+          "sources": [
+            "src/server/runtime/be06-service.ts",
+            "src/shared/runtime/identity.ts",
+            "docs/runtime/identity-skill-adapter.md"
+          ],
+          "tests": ["tests/runtime-identity-service.test.ts"],
+          "remainingGates": ["primary_harness_live"],
+          "id": "BE06-R03",
+          "requirement": "Show primary harness as unconfigured/unavailable when actual contract is missing. Implement mutation/export/delete only where real harness capability and authorization exist; built-in controls do not certify personal-harness erasure"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Reviewed evidence, immutable workflow/style drafts/evaluation/accept-decline/publication/version delivery/rollback through real producer; no automatic enrollment.",
+          "sources": [
+            "src/server/runtime/be06-service.ts",
+            "src/server/runtime/identity-runtime-service.ts",
+            "src/client/runtime/ReviewedLearning.tsx"
+          ],
+          "tests": [
+            "tests/self-hosted-identities.test.ts",
+            "tests/runtime-identity-service.test.ts",
+            "tests/identity-learning-client.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE06-R04",
+          "requirement": "Replace Intelligence learning containers with a self-hosted scoped evidence and reviewed skill/workflow lifecycle. Implement evidence selection/provenance, immutable draft versions, deterministic evaluation receipts, explicit accept/decline, publication, version-pinned skill delivery and rollback through actual Ryoko contracts; coordinate missing producer operations before claiming parity. Preserve frozen conversation enrollment and opt-in state as migration evidence; no automatic enrollment of personal memory or private transcripts. Merely hiding Learning is acceptable during staged rollout, not full-scope completion"
+        },
+        {
+          "disposition": "explicitly_bounded_specialist_scope",
+          "implementation": "Named specialist handoff/status only; broader teams/budgets/synthesis unavailable until producer support.",
+          "sources": [
+            "src/server/runtime/identity-runtime-service.ts",
+            "src/server/runtime/be06-service.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-identities.test.ts",
+            "tests/runtime-identity-service.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE06-R05",
+          "requirement": "Named specialist handoff/status is included. Broader teams/budgets/synthesis remain unavailable until producer contract and qualification exist"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "primary→specialist and specialist↔specialist isolation; copy/rename privilege; project shared without memory; revoked scope; harness outage",
+          "tests": [
+            "tests/runtime-identity-service.test.ts",
+            "tests/self-hosted-identities.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE06-C01"
+        },
+        {
+          "checks": "supported specialist correction/tombstone/export; frozen enrollment; exact-byte approval/decline/publication; upgrade/version rollback",
+          "tests": [
+            "tests/runtime-identity-service.test.ts",
+            "tests/self-hosted-identities.test.ts",
+            "tests/identity-learning-client.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE06-C02"
+        },
+        {
+          "checks": "real primary personal-harness status; unsupported primary mutations must remain unavailable; third-party physical erasure never inferred",
+          "tests": ["tests/runtime-identity-service.test.ts"],
+          "evidenceKind": "not_qualified",
+          "remainingGates": ["primary_harness_live"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE06-C03"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Agent identities, memory boundaries and skills",
+      "planCheckExit": "primary→specialist and specialist↔specialist leakage, rename/copy privilege escalation, project sharing without memory sharing, revoked scope, harness outage, supported correction/delete receipts, frozen enrollment and skill version rollback. Port learning tests rather than silently deleting coverage.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE07": {
+      "sources": [
+        "src/server/runtime/schedule-service.ts",
+        "src/server/runtime/legacy-schedule-migration.ts",
+        "src/server/store.ts",
+        "src/client/runtime/SchedulesPanel.tsx"
+      ],
+      "tests": [
+        "tests/self-hosted-schedules.test.ts",
+        "tests/runtime-schedule-service.test.ts",
+        "tests/legacy-schedule-migration.test.ts",
+        "tests/runtime-schedule-actions.test.ts",
+        "tests/runtime-schedules.test.ts"
+      ],
+      "evidence": "BuildJournal.md#BE07: actual periodic ticker/lock/queue/loopback 2 occurrences + restart 71.43s; 51+51 overlapping focused groups",
+      "notes": "Browser import/cutover unavailable; reviewed trusted preparation only. Schedule activation requires observed canonical scheduler proof, not config.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Production has no Dots runner timer; permanent SQL freeze/retirement prevents old schedule claims or mutation.",
+          "sources": [
+            "src/server/index.ts",
+            "src/server/store.ts",
+            "src/server/runtime/legacy-schedule-migration.ts"
+          ],
+          "tests": [
+            "tests/legacy-schedule-migration.test.ts",
+            "tests/runner.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE07-R01",
+          "requirement": "Retire Dots' local execution timer/leases for migrated jobs; exactly one Ryoko scheduler owns each imported schedule and occurrence"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Paused create/immutable edit; real one-time, interval, calendar/timezone/DST, budget, overlap/missed-run controls and raw histories.",
+          "sources": [
+            "src/server/runtime/schedule-service.ts",
+            "src/client/runtime/SchedulesPanel.tsx"
+          ],
+          "tests": [
+            "tests/runtime-schedule-service.test.ts",
+            "tests/runtime-schedule-actions.test.ts",
+            "tests/self-hosted-schedules.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE07-R02",
+          "requirement": "Map prompt, timezone, recurrence, pause/cancel/run-now, bounded standing authorization, overlap/missed-run policy and next eligible run to real runtime contracts. One-time jobs and task history remain inspectable"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Stable source/occurrence IDs and retirement receipt; source changed/unresolved work prevents cutover. No actual schedules migrated.",
+          "sources": [
+            "src/server/runtime/legacy-schedule-migration.ts",
+            "src/server/store.ts"
+          ],
+          "tests": ["tests/legacy-schedule-migration.test.ts"],
+          "remainingGates": ["migration_source", "cutover"],
+          "id": "BE07-R03",
+          "requirement": "Import with stable legacy schedule+occurrence IDs and durable receipts. Stop legacy new admissions, reconcile active claims, then switch ownership without overlapping execution"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Future pause/cancel distinct from running mission; restart uses producer stored missed-run policy and observed ticker owner.",
+          "sources": ["src/server/runtime/schedule-service.ts"],
+          "tests": [
+            "tests/runtime-schedule-service.test.ts",
+            "tests/self-hosted-schedules.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE07-R04",
+          "requirement": "Separate schedule pause from running mission cancellation; server restart/offline intervals cannot manufacture catch-up actions beyond configured policy"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "DST/timezone fold/gap; one-time/interval/calendar; next run; missed/overlap policy",
+          "tests": [
+            "tests/runtime-schedule-service.test.ts",
+            "tests/runtime-schedule-actions.test.ts",
+            "tests/runtime-schedules.test.ts"
+          ],
+          "evidenceKind": "synthetic_source_tests",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE07-C01"
+        },
+        {
+          "checks": "duplicate import; old/new runner SQL freeze; active/interrupted claim; restart occurrence admission; exact original history; run-now dedupe; pause vs cancel; failed delivery no occurrence replay",
+          "tests": [
+            "tests/legacy-schedule-migration.test.ts",
+            "tests/runtime-schedule-service.test.ts",
+            "tests/self-hosted-schedules.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": ["cutover"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE07-C02"
+        },
+        {
+          "checks": "actual old/new host scheduler census and cohort retirement",
+          "tests": ["tests/legacy-schedule-migration.test.ts"],
+          "evidenceKind": "not_qualified",
+          "remainingGates": ["host_backup_boundary", "cutover"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE07-C03"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Schedules, monitors and background tasks",
+      "planCheckExit": "DST/timezone boundaries, duplicate import, simultaneous old/new runner, restart during occurrence admission, missed run, pause vs cancel, run-now deduplication and output delivery failure. Replace runner/store task tests with projection+migration+scheduler contract tests.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE08": {
+      "sources": [
+        "src/computer/index.ts",
+        "src/computer/target-driver.ts",
+        "src/server/runtime/computer-effect-service.ts",
+        "src/server/runtime/computer-http-edge.ts",
+        "src/server/runtime/computer-runtime-service.ts",
+        "src/browser/security.ts",
+        "src/browser/transport.ts"
+      ],
+      "tests": [
+        "tests/self-hosted-computers.test.ts",
+        "tests/computer-edge-protocol.test.ts",
+        "tests/computer-target-driver.test.ts",
+        "tests/computer-public-transport.test.ts",
+        "tests/computer-governed.test.ts",
+        "tests/computer-deployment.test.js"
+      ],
+      "evidence": "BuildJournal.md#BE08: actual Python→signed loopback target 11.28s; native page/computer 2 tests/17.48s; deterministic target driver",
+      "notes": "No actual Chromium, shell, Docker supervisor, host sandbox, volume persistence or physical takeover was qualified. Synthetic target evidence cannot qualify production.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Per-Dot credentials/target identity, permissions, independent human holder and fresh snapshot fence in source; deployment isolation unqualified.",
+          "sources": [
+            "src/server/computer-service.ts",
+            "src/server/runtime/computer-http-edge.ts",
+            "src/computer/index.ts"
+          ],
+          "tests": [
+            "tests/computer-governed.test.ts",
+            "tests/computer-edge-protocol.test.ts"
+          ],
+          "remainingGates": ["computer_host"],
+          "id": "BE08-R01",
+          "requirement": "Preserve per-Dot container/credential isolation, enabled/browser/files/shell permissions, human takeover and fresh snapshot requirement before resumed control"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "One real protocol execution edge behind producer broker; owner actions distinct; primitive-boundary guard; no legacy direct route bypass.",
+          "sources": [
+            "src/server/runtime/computer-effect-service.ts",
+            "src/server/runtime/computer-runtime-service.ts",
+            "src/computer/target-driver.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-computers.test.ts",
+            "tests/computer-target-driver.test.ts",
+            "tests/computer-edge-protocol.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE08-R02",
+          "requirement": "Register one actual computer executor behind Ryoko policy/effect dispatch. Agent-origin actions must not bypass broker through old routes. Owner direct actions are explicitly authenticated, recorded and scoped"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Immutable operation/effect audit/reservations; uncertain admission blocks new writes and survives restart; original inspection only.",
+          "sources": [
+            "src/server/computer-store.ts",
+            "src/server/runtime/computer-effect-service.ts",
+            "src/computer/index.ts"
+          ],
+          "tests": [
+            "tests/computer-edge-protocol.test.ts",
+            "tests/self-hosted-computers.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE08-R03",
+          "requirement": "Add unknown/reconciliation-required outcome to audit model where transport failure may follow execution; attach effect/operation/agent/session IDs and redacted evidence. Retry shell/browser writes only after idempotency/reconciliation proof"
+        },
+        {
+          "disposition": "implemented_with_unqualified_behavior",
+          "implementation": "Public reader/DNS/address/redirect/response protections retained and reused by target; production no-computer research fallback/capture path not established.",
+          "sources": [
+            "src/browser/security.ts",
+            "src/browser/transport.ts",
+            "src/computer/target-driver.ts",
+            "docs/runtime/computer-target-edge.md"
+          ],
+          "tests": [
+            "tests/security.test.ts",
+            "tests/transport.test.ts",
+            "tests/research.test.ts",
+            "tests/computer-public-transport.test.ts"
+          ],
+          "remainingGates": ["research_fallback"],
+          "id": "BE08-R04",
+          "requirement": "Keep canonical-public-page reader restrictions, redirect/private network protections and optional fallback capability when computers are not configured. Enforce isolation against SSRF/DNS rebinding/container escape and redact reflected secrets"
+        },
+        {
+          "disposition": "not_host_qualified",
+          "implementation": "Fingerprint-bound operator host receipt required; synthetic denied in production. Host browser/files/shell unavailable without actual qualification.",
+          "sources": [
+            "src/server/runtime/computer-http-edge.ts",
+            "src/computer/index.ts",
+            "deployment/computers/edge.Dockerfile"
+          ],
+          "tests": [
+            "tests/runtime-computer-runtime-service.test.ts",
+            "tests/computer-deployment.test.js"
+          ],
+          "remainingGates": ["computer_host"],
+          "id": "BE08-R05",
+          "requirement": "Qualify advertised browser/files/shell capabilities against real supervisor and target host. Missing executor is unavailable, never a simulated success"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "takeover/handback; revoke mid-action; stale snapshot; wrong container/bot; bound response and escaped-secret reflection",
+          "tests": [
+            "tests/computer-edge-protocol.test.ts",
+            "tests/computer-target-driver.test.ts",
+            "tests/runtime-computer-runtime-service.test.ts"
+          ],
+          "evidenceKind": "synthetic_source_tests",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE08-C01"
+        },
+        {
+          "checks": "lost write response; target/BFF/Python restart; exact receipt/one dispatch; durable unknown write fence",
+          "tests": [
+            "tests/self-hosted-computers.test.ts",
+            "tests/computer-edge-protocol.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol",
+          "remainingGates": ["computer_host"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE08-C02"
+        },
+        {
+          "checks": "real supervisor/browser/shell; filesystem persistence; kernel/container isolation; SSRF/egress; hardware takeover",
+          "tests": [
+            "tests/computer-deployment.test.js",
+            "tests/computer-public-transport.test.ts"
+          ],
+          "evidenceKind": "not_qualified",
+          "remainingGates": [
+            "computer_host",
+            "browser",
+            "host_backup_boundary"
+          ],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE08-C03"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Computer and browser executor integration",
+      "planCheckExit": "takeover races, permissions revoked mid-action, stale snapshot, wrong container/bot, secret reflection, bounded response, lost write response, restart/persistent files, sandbox and network controls. Port computer, deployment, transport and research security tests; real executor smoke remains a separate required gate.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE09": {
+      "sources": [
+        "src/server/runtime/voice-ledger.ts",
+        "src/server/runtime/voice-service.ts",
+        "src/server/runtime/voice-media.ts",
+        "src/server/runtime/voice-routes.ts",
+        "src/server/runtime/voice-config.ts",
+        "src/client/useVoice.ts"
+      ],
+      "tests": [
+        "tests/self-hosted-voice.test.ts",
+        "tests/self-hosted-voice-http.test.ts",
+        "tests/self-hosted-voice-stdio.test.ts",
+        "tests/voice-media-adapter.test.ts",
+        "tests/voice-provenance.test.tsx"
+      ],
+      "evidence": "BuildJournal.md#BE09: actual canonical compute stdio13.55s; 98 tests/9 files",
+      "notes": "Realtime media optional/off. Finite producer STT/TTS is not used by realtime UI; no model downloads/live media. Media transcript cannot approve an effect.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Durable calls/transcript/receipts; optional official realtime media shell, one ask_compute bridge; no Intelligence/Platform.turn or summary loop.",
+          "sources": [
+            "src/server/runtime/voice-service.ts",
+            "src/server/runtime/voice-media.ts",
+            "src/server/runtime/voice-ledger.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-voice.test.ts",
+            "tests/voice-media-adapter.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE09-R01",
+          "requirement": "Own call records/transcripts/receipts locally; remove Intelligence sync and `Platform.turn` dependency. Choose qualified local STT/TTS or explicit optional provider adapter without changing control-plane authority"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Stable owner/call/speaker/session/tool UUID/canonical command mapping persists before admission with global namespace/digest fences.",
+          "sources": [
+            "src/server/runtime/voice-ledger.ts",
+            "src/server/runtime/voice-service.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-voice.test.ts",
+            "tests/self-hosted-voice-stdio.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE09-R02",
+          "requirement": "Persist compute tool-call/operation deduplication across restart; bind call/speaker/session and permitted delegation scope. Untrusted transcript never becomes approval authority"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Capture/playback/discard/hangup/detach/cancel distinct; canonical pause hangs up media but accepted compute continues; physical behavior untested.",
+          "sources": [
+            "src/server/runtime/voice-service.ts",
+            "src/client/useVoice.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-voice-http.test.ts",
+            "tests/self-hosted-voice-stdio.test.ts"
+          ],
+          "remainingGates": ["voice_live", "browser"],
+          "id": "BE09-R03",
+          "requirement": "Keep microphone capture, speech playback stop, discard audio, hangup, compute detach and mission cancellation separate. Clearly mark call-scoped work; durable accepted missions continue unless explicitly cancelled"
+        },
+        {
+          "disposition": "explicitly_unqualified_media",
+          "implementation": "Server-held fixed official media endpoint and scoped SDP; duration/concurrency/request accounting, not guaranteed currency cap; enabled+qualified required. Finite local speech unavailable in this realtime UI.",
+          "sources": [
+            "src/server/runtime/voice-config.ts",
+            "src/server/runtime/voice-media.ts",
+            "docs/runtime/voice-lifecycle.md"
+          ],
+          "tests": [
+            "tests/voice-media-adapter.test.ts",
+            "tests/runtime-voice-client.test.ts"
+          ],
+          "remainingGates": ["voice_live"],
+          "id": "BE09-R04",
+          "requirement": "Use short-lived scoped media credentials where supported, bounded duration/cost/concurrency and explicit provider error states; never silently route to another provider. Do not activate or download models as a side effect of setup"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Late/out-of-order local call transcript receipts dedupe; canonical compute result digest separately verified; no automatic hangup summary command.",
+          "sources": [
+            "src/server/runtime/voice-ledger.ts",
+            "src/server/runtime/voice-service.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-voice.test.ts",
+            "tests/voice-provenance.test.tsx"
+          ],
+          "remainingGates": [],
+          "id": "BE09-R05",
+          "requirement": "Replace call-summary sync with canonical call receipt and separately admitted summary where required. Handle late transcript and out-of-order events without duplicate messages"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "duplicate compute; restart; hangup/detach during long canonical work; late transcript; pending/unknown receipt; budget refusal; foreign scope; paused call",
+          "tests": [
+            "tests/self-hosted-voice.test.ts",
+            "tests/self-hosted-voice-http.test.ts",
+            "tests/self-hosted-voice-stdio.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE09-C01"
+        },
+        {
+          "checks": "missing/unqualified provider or local model; bounded SDP/provider rejection; unknown synthesis/media debt never replayed; legacy voice coverage retained",
+          "tests": [
+            "tests/voice-media-adapter.test.ts",
+            "tests/runtime-voice-client.test.ts",
+            "tests/voice.test.ts"
+          ],
+          "evidenceKind": "synthetic_source_tests",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE09-C02"
+        },
+        {
+          "checks": "microphone denied/capture; speaker playback; real dropped call; actual provider signalling/media/hangup; latency/cost/quota",
+          "tests": ["scripts/qa-runtime-browser.mjs"],
+          "evidenceKind": "not_qualified",
+          "remainingGates": ["voice_live", "browser"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE09-C03"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Voice and call-to-compute lifecycle",
+      "planCheckExit": "microphone denied, missing local model/provider, dropped call, duplicate compute call, restart, hangup during long mission, transcript arrives late, pending receipt, budget exhaustion and unknown synthesis outcome. Port `voice.test.ts`; qualify actual browser microphone/playback and selected provider. Nonstreaming producer speech is not streaming speech support.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE10": {
+      "sources": [
+        "src/server/runtime/slack-service.ts",
+        "src/server/runtime/slack-ledger.ts",
+        "src/server/runtime/slack-api.ts",
+        "src/server/runtime/slack-bridge.ts",
+        "src/server/runtime/slack-routes.ts",
+        "src/server/runtime/slack-config.ts"
+      ],
+      "tests": [
+        "tests/self-hosted-slack.test.ts",
+        "tests/slack-consumer-http.test.ts",
+        "tests/self-hosted-slack-stdio.test.ts",
+        "tests/slack-bridge.test.ts",
+        "tests/slack-delivery-client.test.tsx"
+      ],
+      "evidence": "BuildJournal.md#BE10: actual Node→Python→loopback model→loopback Slack12.49s; 57 tests/5 files",
+      "notes": "One signed-events sender; default-off; no real credentials/app membership or external messages. Scheduled cross-channel delivery/arbitrary web-output sharing is explicitly unavailable.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Thin signed-events ingress replaces managed Channels; competing legacy/socket/producer sender config rejected.",
+          "sources": [
+            "src/server/runtime/slack-runtime.ts",
+            "src/server/runtime/slack-config.ts",
+            "src/server/index.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-slack.test.ts",
+            "tests/slack-consumer-http.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE10-R01",
+          "requirement": "Replace Intelligence-managed Slack dependency using an actual supported Ryoko Slack adapter or a thin self-hosted signed-events/Socket Mode adapter; choose one authoritative ingress and sender per installation, never run both in parallel"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Exact raw HMAC/timestamp bounded parse + pair allowlists + expiring scoped actor/channel standing authority, not signature alone; bots/edits/reactions ignored.",
+          "sources": [
+            "src/server/runtime/slack-service.ts",
+            "src/server/runtime/slack-config.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-slack.test.ts",
+            "tests/slack-consumer-http.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE10-R02",
+          "requirement": "Validate Slack event signature/timestamp/replay or authenticated Socket Mode envelope; verify workspace/channel/user/thread mappings and allowlists. Bot events, edits and unsupported event families get explicit handling rules"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Durable event/thread/canonical operation mapping before dispatch; one shared command service and original provenance; no second loop.",
+          "sources": [
+            "src/server/runtime/slack-ledger.ts",
+            "src/server/runtime/slack-bridge.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-slack-stdio.test.ts",
+            "tests/slack-consumer-http.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE10-R03",
+          "requirement": "Deduplicate provider event IDs before command admission; map Slack threads to canonical conversations and preserve message provenance/order. Apply shared per-session ownership across web/voice/Slack, not merely per-channel serial execution"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Immutable original-destination outbox; paced explicit429 retry only; response loss reconciles exact unedited bot/block/timestamp; no match is not resend permission. Scheduled cross-channel output is not exposed.",
+          "sources": [
+            "src/server/runtime/slack-service.ts",
+            "src/server/runtime/slack-api.ts",
+            "docs/runtime/self-hosted-slack.md"
+          ],
+          "tests": [
+            "tests/self-hosted-slack.test.ts",
+            "tests/self-hosted-slack-stdio.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE10-R04",
+          "requirement": "Deliver from durable immutable outbox records with rate-limit/backoff, actual provider receipt and unknown-outcome recovery. Channel reply scope never grants unrelated sharing"
+        },
+        {
+          "disposition": "implemented_bounded_source",
+          "implementation": "Exact authenticated web review/result links; no free-text/reaction approval and no public artifact upload.",
+          "sources": [
+            "src/server/runtime/slack-bridge.ts",
+            "src/server/runtime/slack-api.ts"
+          ],
+          "tests": [
+            "tests/self-hosted-slack.test.ts",
+            "tests/slack-consumer-http.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE10-R05",
+          "requirement": "Link unsupported approvals to the authenticated exact-action review surface; reactions/free text are not generic approval tokens. Preserve links/citations and safe artifact authorization"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "wrong team/user/pair; spoof/replay timestamp; duplicate event; bot loop; thread/unthreaded mappings; concurrent shared admission",
+          "tests": [
+            "tests/self-hosted-slack.test.ts",
+            "tests/slack-consumer-http.test.ts",
+            "tests/self-hosted-slack-stdio.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE10-C01"
+        },
+        {
+          "checks": "revoked channel/project authority; throttling; send accepted/response lost; restart; exact bot-marker inspection; private link; disconnected adapter",
+          "tests": [
+            "tests/self-hosted-slack.test.ts",
+            "tests/slack-consumer-http.test.ts",
+            "tests/self-hosted-slack-stdio.test.ts"
+          ],
+          "evidenceKind": "actual_local_protocol_and_synthetic",
+          "remainingGates": [],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE10-C02"
+        },
+        {
+          "checks": "actual workspace installation/membership/scopes/signatures/provider behaviour/rate limits/external delivery",
+          "tests": ["tests/self-hosted-slack-stdio.test.ts"],
+          "evidenceKind": "not_qualified",
+          "remainingGates": ["slack_live"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE10-C03"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Self-hosted Slack ingress and delivery",
+      "planCheckExit": "wrong team/user, spoofed/replayed events, duplicate retry, bot loop, concurrent surfaces, unthreaded/threaded reply mapping, revoked channel access, throttling, send accepted/response lost, private artifact link access and disconnected adapter. Port Slack wiring/channel tests; connected workspace end-to-end verification is mandatory before enabling.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE11": {
+      "sources": [
+        "src/server/operations/history-archive.ts",
+        "src/server/operations/runtime-operations.ts",
+        "src/server/operations/state-gate.ts",
+        "scripts/operations/legacy_inventory.py",
+        "scripts/operations/history_import.py",
+        "scripts/operations/safe_state.py",
+        "scripts/operations/lifetime_gate.py",
+        "scripts/check-production-boundary.mjs",
+        "scripts/test-production-boot.mjs",
+        "scripts/start-self-hosted.mjs"
+      ],
+      "tests": [
+        "tests/history-archive.test.ts",
+        "tests/operations-routes.test.ts",
+        "tests/runtime-operations.test.ts",
+        "tests/state-gate.test.ts",
+        "tests/test_history_import.py",
+        "tests/test_operations.py",
+        "tests/imported-history-ui.test.tsx",
+        "tests/retained-local-surfaces.test.ts"
+      ],
+      "evidence": "BuildJournal.md#BE11 integration entry and current source; final operational evidence recorded by parent. Four retained-route tests reported passing by BE11 focused evidence.",
+      "notes": "BE11 files are now applied in the real checkout, with final aggregate/publication pending. Actual age crypto remains unqualified; synthetic passthrough is parser-only evidence.",
+      "requirementMappings": [
+        {
+          "disposition": "implemented_with_local_checks_passed",
+          "implementation": "Read-only offline SQLite inventory includes mappings/preferences/enrollment/pages/computers; source WAL refusal; original authorized cloud export must be supplied.",
+          "sources": [
+            "scripts/operations/legacy_inventory.py",
+            "docs/BE11-operations.md"
+          ],
+          "tests": ["tests/test_operations.py"],
+          "remainingGates": ["migration_source"],
+          "id": "BE11-R01",
+          "requirement": "Produce dry-run inventory of SQLite, Intelligence history/export access, page versions, thread/task/call mappings, global preferences, learning settings and computer identities. Export historical Intelligence records only with available authorized access; record missing/partial exports, never claim SQLite backup contains old conversations"
+        },
+        {
+          "disposition": "implemented_with_local_checks_passed",
+          "implementation": "Resumable inert archives stable IDs/digests/batches/quarantine/tombstones + owner-auth imported-history reads; no producer canonical import operation claimed, no historical tool replay.",
+          "sources": [
+            "scripts/operations/history_import.py",
+            "src/server/operations/history-archive.ts",
+            "src/client/runtime/ImportedHistory.tsx",
+            "docs/history-export-contract.md"
+          ],
+          "tests": [
+            "tests/test_history_import.py",
+            "tests/history-archive.test.ts",
+            "tests/imported-history-ui.test.tsx"
+          ],
+          "remainingGates": ["migration_source", "browser"],
+          "id": "BE11-R02",
+          "requirement": "Import into self-hosted canonical/projection stores with stable IDs, provenance, counts/digests, recoverable batches and quarantine conflicts. Never replay historic tool calls/approvals/effects. Keep legacy archives readable and rollback-safe"
+        },
+        {
+          "disposition": "implemented_with_local_checks_passed",
+          "implementation": "Production AST boundary, build/dev-only legacy packages, clean production-only no-Intelligence boot and independent readiness.",
+          "sources": [
+            "scripts/check-production-boundary.mjs",
+            "scripts/test-production-boot.mjs",
+            "package.json",
+            "src/server/index.ts"
+          ],
+          "tests": [
+            "tests/frontend-package.test.js",
+            "tests/operations-routes.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE11-R03",
+          "requirement": "Remove runtime reliance on Intelligence keys/URLs/SDK methods/managed Channels and unneeded packages after parity tests. Retain appropriate OSS notices and optional provider settings. Add startup capability/schema diagnostics and readiness independent per surface"
+        },
+        {
+          "disposition": "implemented_with_local_checks_passed",
+          "implementation": "Offline paired DB/artifact snapshot under same gate, manifest/no-replace restore, explicit state census, protected mode, tombstone/privacy limits. Real encryption/complete host restore unqualified.",
+          "sources": [
+            "scripts/operations/safe_state.py",
+            "scripts/operations/lifetime_gate.py",
+            "deployment/state-plan.example.json",
+            "docs/BE11-operations.md"
+          ],
+          "tests": ["tests/test_operations.py"],
+          "remainingGates": ["host_backup_boundary", "encrypted_restore"],
+          "id": "BE11-R04",
+          "requirement": "Back up and restore Ryoko state, Dots metadata, page/artifact bytes and mapping/outbox records at a documented consistent boundary. Encrypt/protect backups; specify retention, export/delete propagation, tombstones and limits of third-party erasure"
+        },
+        {
+          "disposition": "implemented_with_local_checks_passed",
+          "implementation": "Redacted numeric allowlist diagnostics/readiness/admission and local unknown/queue/storage gauges; unavailable global producer latency/stuck counters not fabricated.",
+          "sources": [
+            "src/server/operations/runtime-operations.ts",
+            "src/server/operations/state-metrics.ts",
+            "src/server/operations/readiness-evidence.ts"
+          ],
+          "tests": [
+            "tests/runtime-operations.test.ts",
+            "tests/operations-routes.test.ts"
+          ],
+          "remainingGates": ["target_host_load"],
+          "id": "BE11-R05",
+          "requirement": "Add structured redacted logs/metrics for command admission, adapter lag, replay gaps, stuck approval/effect/delivery, channel health, storage pressure and queue saturation. IDs are correlation, not secrets. No raw personal memory or audio in routine telemetry"
+        },
+        {
+          "disposition": "implemented_with_local_checks_passed",
+          "implementation": "Admission drain/process-tree gate and forced-exit store safety; non-root native/Compose specimens, secret mounts/TLS/resource limits. Real host install/build/census remains unqualified.",
+          "sources": [
+            "src/server/index.ts",
+            "src/server/operations/state-gate.ts",
+            "scripts/operations/lifetime_gate.py",
+            "deployment/Dockerfile.self-hosted",
+            "deployment/compose.self-hosted.yml",
+            "deployment/dots-native.service.example"
+          ],
+          "tests": [
+            "tests/state-gate.test.ts",
+            "tests/test_operations.py",
+            "tests/runtime-operations.test.ts"
+          ],
+          "remainingGates": ["target_host", "host_backup_boundary"],
+          "id": "BE11-R06",
+          "requirement": "Harden non-root images/private ports, secret mounts, resource limits, TLS/proxy configuration, migrations, health/readiness, graceful stop/drain and restart. Fresh install must work without an Intelligence account"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "partial import resume; missing/partial source; changed content quarantine; tombstones; stable old-ID link; no replay",
+          "tests": [
+            "tests/test_history_import.py",
+            "tests/test_operations.py",
+            "tests/history-archive.test.ts",
+            "tests/imported-history-ui.test.tsx"
+          ],
+          "evidenceKind": "synthetic_local",
+          "remainingGates": ["migration_source", "browser"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE11-C01"
+        },
+        {
+          "checks": "paired restore; held gate; process/wrapper/Node kill; owned Python survivor; pending WAL; ENOSPC/corruption/tamper; no-replace; path safety; computer journal/workspace inclusion",
+          "tests": ["tests/test_operations.py", "tests/state-gate.test.ts"],
+          "evidenceKind": "synthetic_local",
+          "remainingGates": ["host_backup_boundary", "encrypted_restore"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE11-C02"
+        },
+        {
+          "checks": "fresh compiled production-only boot; unconfigured runtime; auth rotation/revocation; unavailable/slow probe; redaction; graceful drain deadline",
+          "tests": [
+            "scripts/test-production-boot.mjs",
+            "tests/runtime-operations.test.ts",
+            "tests/operations-routes.test.ts",
+            "tests/owner-auth.test.ts"
+          ],
+          "evidenceKind": "synthetic_local",
+          "remainingGates": ["target_host", "target_host_load"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE11-C03"
+        },
+        {
+          "checks": "real export normalization; true target-host full-writer census; real crypto restore; large data/load; cross-version rollback/RTO/RPO",
+          "tests": ["docs/BE11-operations.md"],
+          "evidenceKind": "not_qualified",
+          "remainingGates": [
+            "migration_source",
+            "host_backup_boundary",
+            "encrypted_restore",
+            "target_host_load",
+            "cutover"
+          ],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE11-C04"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Migration, deployment, privacy and operations",
+      "planCheckExit": "restore rehearsal, partial import resume, source history unavailable, old links, task overlap guard, auth rotation/revocation, disk full/corrupt projection, runtime unavailable, process kill, slow provider and redaction. Document exact host/provider qualification and recovery time/data-loss targets measured by test, not invented guarantees.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    },
+    "BE12": {
+      "sources": [
+        "BackEnd_BuildPlan.md",
+        "BuildJournal.md",
+        ".github/workflows/ci.yml",
+        "scripts/test-runtime-stdio.mjs",
+        "scripts/qa-runtime-browser.mjs"
+      ],
+      "tests": [
+        "package.json",
+        "tests/fixtures/runtime/frontend-release-evidence.json"
+      ],
+      "evidence": "This audit maps prior evidence; final aggregate and publication evidence is recorded in this receipt and BuildJournal.md",
+      "notes": "No deployment/migration/cutover/provider activation authorized. Source publication is separate from release acceptance.",
+      "requirementMappings": [
+        {
+          "disposition": "local_qualification_passed_external_journeys_open",
+          "implementation": "Final aggregate and all 16 stdio cases exercised successfully on final production source; one retired-API fixture correction passed targeted rerun. Exact pins and evidence recorded in finalLocalValidation.",
+          "sources": [
+            "package.json",
+            "scripts/test-runtime-stdio.mjs",
+            "src/shared/runtime/producer/provenance.json"
+          ],
+          "tests": [
+            "tests/self-hosted-conversations.test.ts",
+            "tests/self-hosted-commands.test.ts",
+            "tests/self-hosted-controls.test.ts",
+            "tests/self-hosted-delivery.test.ts",
+            "tests/self-hosted-pages.test.ts",
+            "tests/self-hosted-identities.test.ts",
+            "tests/self-hosted-schedules.test.ts",
+            "tests/self-hosted-computers.test.ts",
+            "tests/self-hosted-voice-stdio.test.ts",
+            "tests/self-hosted-slack-stdio.test.ts"
+          ],
+          "remainingGates": [],
+          "id": "BE12-R01",
+          "requirement": "Run focused phase tests again against final assembled commits, then repository aggregate format/lint/typecheck/test/build and complete cross-service journeys. Pin exact producer+consumer/schema/config versions"
+        },
+        {
+          "disposition": "source_disposition_complete_external_acceptance_open",
+          "implementation": "All39 baseline controls mapped. Three retained routes repaired and included in passing aggregate. Unsupported primary harness operations/finite realtime speech/teams/LAYA remain explicit; actual browser/provider research acceptance remains open.",
+          "sources": [
+            "docs/runtime/parity-inventory.md",
+            "docs/runtime/identity-skill-adapter.md",
+            "docs/runtime/voice-lifecycle.md"
+          ],
+          "tests": ["scripts/qa-runtime-browser.mjs"],
+          "remainingGates": ["research_fallback"],
+          "id": "BE12-R02",
+          "requirement": "Compare pre-migration capability inventory to final disposition; no unexplained missing chat/history/Space/review/task/voice/Slack/computer/learning behavior. Unsupported/deferred breadth is visibly disabled with an honest reason"
+        },
+        {
+          "disposition": "not_qualified",
+          "implementation": "Synthetic/local protocol/browser/native host/live provider evidence separated. Mock/loopback does not certify external services or containment.",
+          "sources": [
+            "docs/runtime/frontend-release.md",
+            "docs/runtime/computer-target-edge.md",
+            "docs/runtime/voice-lifecycle.md",
+            "docs/runtime/self-hosted-slack.md",
+            "docs/BE11-operations.md"
+          ],
+          "tests": ["scripts/qa-runtime-browser.mjs"],
+          "remainingGates": [
+            "browser",
+            "computer_host",
+            "voice_live",
+            "slack_live",
+            "runtime_live_provider",
+            "host_backup_boundary",
+            "encrypted_restore",
+            "target_host_load"
+          ],
+          "id": "BE12-R03",
+          "requirement": "Complete fault/security/load/restore/privacy and real supported surface tests below. Label synthetic, browser, native/host and live-provider evidence separately. A mock cannot certify actual voice, Slack, computer or public deployment"
+        },
+        {
+          "disposition": "not_qualified",
+          "implementation": "One explicit owner/session cohort, frozen old admissions and verified single owner/scheduler required before authorized cutover. No cohort or live routing switch performed.",
+          "sources": [
+            "src/server/runtime/legacy-schedule-migration.ts",
+            "docs/BE11-operations.md"
+          ],
+          "tests": ["tests/legacy-schedule-migration.test.ts"],
+          "remainingGates": ["cutover"],
+          "id": "BE12-R04",
+          "requirement": "Cut over one declared owner/session cohort with old admissions frozen and a verified single runtime/scheduler. Observe command, artifact, delivery and resource evidence; expand only after explicit acceptance"
+        },
+        {
+          "disposition": "not_qualified",
+          "implementation": "Rollback freezes new admissions, preserves original accepted work/owner/operation/unknowns/artifacts/journals and never replays via DotAgent. Compatible restore path needs actual host rehearsal.",
+          "sources": [
+            "docs/BE11-operations.md",
+            "src/server/runtime/legacy-schedule-migration.ts",
+            "scripts/operations/safe_state.py"
+          ],
+          "tests": [
+            "tests/legacy-schedule-migration.test.ts",
+            "tests/test_operations.py"
+          ],
+          "remainingGates": ["host_backup_boundary", "cutover"],
+          "id": "BE12-R05",
+          "requirement": "Rollback freezes new admissions and restores client routing/config safely. Already accepted Ryoko work retains ownership until resolved. Do not rerun it through old DotAgent; retain mappings/journals/artifacts/unknown outcomes and backward-readable schema or documented restore path"
+        }
+      ],
+      "checkGroups": [
+        {
+          "checks": "format/lint/typecheck/test/build; full stdio suite; production boundary/boot; Python operations; exact remote consumer/producer/schema pins and exact-commit CI",
+          "tests": [
+            "package.json",
+            "scripts/test-runtime-stdio.mjs",
+            "scripts/check-production-boundary.mjs",
+            "scripts/test-production-boot.mjs",
+            ".github/workflows/ci.yml"
+          ],
+          "evidenceKind": "local_evidence_recorded",
+          "remainingGates": ["external_ci"],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE12-C01"
+        },
+        {
+          "checks": "web→research→page review/edit; specialist isolation; schedule→restart→notice; computer takeover/effect recovery; voice→compute→hangup; Slack→web review→delivery repair; migration→rollback",
+          "tests": [
+            "scripts/test-runtime-stdio.mjs",
+            "scripts/qa-runtime-browser.mjs"
+          ],
+          "evidenceKind": "local_paths_exist_external_journeys_not_qualified",
+          "remainingGates": [
+            "browser",
+            "research_fallback",
+            "computer_host",
+            "voice_live",
+            "slack_live",
+            "migration_source",
+            "host_backup_boundary",
+            "cutover"
+          ],
+          "finalAssembledOutcome": "see_finalLocalValidation_and_remaining_external_gates",
+          "id": "BE12-C02"
+        }
+      ],
+      "remainingGates": [],
+      "title": "Consolidated qualification and controlled cutover",
+      "planCheckExit": "exact receipts, all required checks passed or explicit owner-accepted scope exclusions; no unresolved critical authority/data-loss defects. Production readiness remains false if mandatory producer, external-service, backup/restore or target-host gates are missing. Plan completion is not deployment authorization.",
+      "finalAssembledOutcome": "local_checks_passed_external_gates_open"
+    }
+  },
+  "parityControls": [
+    {
+      "id": "PARITY-01",
+      "control": "Owner unlock, refresh, settings / App, api",
+      "requiredRead": "Server session and verified binding",
+      "requiredCommandReceipt": "Unlock/logout; acknowledged authenticated session",
+      "baselineUnavailableRetainedRule": "Clear protected projections on expiry/change; BE01",
+      "phases": ["BE01"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE01"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-02",
+      "control": "Setup guide/status / WorkspaceDialog",
+      "requiredRead": "Independent control-plane, ownership, compatibility/provider status",
+      "requiredCommandReceipt": "No browser credential provisioning",
+      "baselineUnavailableRetainedRule": "Distinct loading/disconnected/degraded/unsupported/denied; BE00–01",
+      "phases": ["BE00", "BE01"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE00", "BE01"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-03",
+      "control": "Create/select recent chat / App, ThreadList",
+      "requiredRead": "Canonical conversation list and scope",
+      "requiredCommandReceipt": "Stable create operation; accepted conversation ID",
+      "baselineUnavailableRetainedRule": "Preserve unsent input; BE02",
+      "phases": ["BE02"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE02"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-04",
+      "control": "Names, specialist attribution, load more / ThreadList",
+      "requiredRead": "Authoritative title/revision and cursor-paginated rows",
+      "requiredCommandReceipt": "Rename/archive only if declared",
+      "baselineUnavailableRetainedRule": "No local-row pseudo-pagination; BE02",
+      "phases": ["BE02"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE02"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-05",
+      "control": "Message composer, initial prompt, source URL / Chat",
+      "requiredRead": "Context readiness, current bindings",
+      "requiredCommandReceipt": "Submit exact intent with persisted operation ID/digest",
+      "baselineUnavailableRetainedRule": "Preserve draft on rejected/unknown admission; BE03",
+      "phases": ["BE03"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE03"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-06",
+      "control": "Live text, progress, tool cards, reconnect / Chat",
+      "requiredRead": "Canonical history plus separate safe live adapter",
+      "requiredCommandReceipt": "Receipt lookup, never replay history as commands",
+      "baselineUnavailableRetainedRule": "Show interruption, snapshot replacement and gaps; BE02–03",
+      "phases": ["BE02", "BE03"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE02", "BE03"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-07",
+      "control": "Stop response / Chat",
+      "requiredRead": "Cancellation evidence and unresolved effects",
+      "requiredCommandReceipt": "Explicit cancel operation and recovered receipt",
+      "baselineUnavailableRetainedRule": "Requested is not acknowledged; detach never cancels; BE03–04",
+      "phases": ["BE03", "BE04"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE03", "BE04"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-08",
+      "control": "Markdown, page links, call placement / ChatTranscript",
+      "requiredRead": "Stable messages and anchored call receipts",
+      "requiredCommandReceipt": "Read-only rendering",
+      "baselineUnavailableRetainedRule": "Hide internal markers; disclose history truncation; BE02/09",
+      "phases": ["BE02"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE02"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-09",
+      "control": "Save conversation as page / Chat",
+      "requiredRead": "Persisted eligible transcript, destination grant",
+      "requiredCommandReceipt": "One revision/effect-bound save receipt",
+      "baselineUnavailableRetainedRule": "No browser-authored transcript authority; BE05",
+      "phases": ["BE05"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE05"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-10",
+      "control": "Task search/list/details/events/saved runs / App, TaskPresentation",
+      "requiredRead": "Mission/checkpoint/effect/output/delivery projections",
+      "requiredCommandReceipt": "None for read-only inspection",
+      "baselineUnavailableRetainedRule": "Legacy history clearly labelled; BE04",
+      "phases": ["BE04"],
+      "currentDisposition": "retained_source_repaired_local_aggregate_passed",
+      "openGates": [],
+      "evidenceRefs": ["BE04"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-11",
+      "control": "Retry/resume/run again/pause/cancel / TaskActions",
+      "requiredRead": "Allowed operation and current revision",
+      "requiredCommandReceipt": "Distinct commands and exact receipts",
+      "baselineUnavailableRetainedRule": "No blind replay of external work; BE04",
+      "phases": ["BE04"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE04"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-12",
+      "control": "Global Pause / App",
+      "requiredRead": "Runtime admission/schedule/in-flight acknowledgment",
+      "requiredCommandReceipt": "Explicit pause command; requested vs acknowledged",
+      "baselineUnavailableRetainedRule": "Explain accepted work that continues; BE04",
+      "phases": ["BE04"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE04"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-13",
+      "control": "Page review approve/decline / PageReviewCard",
+      "requiredRead": "Exact action, target/content/revision digest, expiry, scope",
+      "requiredCommandReceipt": "Canonical approval resolve; inspect lost receipt first",
+      "baselineUnavailableRetainedRule": "Historical page receipt cannot grant new permission; BE04–05",
+      "phases": ["BE04", "BE05"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE04", "BE05"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-14",
+      "control": "Space creation/navigation/tree / SpaceNav, SpaceWorkspace",
+      "requiredRead": "Dots metadata plus verified Space grants",
+      "requiredCommandReceipt": "Metadata edits with revisions",
+      "baselineUnavailableRetainedRule": "Native metadata retained; no inferred agent ownership; BE05–06",
+      "phases": ["BE05", "BE06"],
+      "currentDisposition": "retained_source_repaired_local_aggregate_passed",
+      "openGates": [],
+      "evidenceRefs": ["BE05", "BE06"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-15",
+      "control": "Library search/sort/grid/list / SpaceLibrary",
+      "requiredRead": "Authorized canonical page metadata",
+      "requiredCommandReceipt": "Read-only list/filter",
+      "baselineUnavailableRetainedRule": "Preserve existing UX; BE05",
+      "phases": ["BE05"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE05"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-16",
+      "control": "Title, rich/source mode, formatting/slash commands / PageDocument, editor",
+      "requiredRead": "Canonical native page bytes/version",
+      "requiredCommandReceipt": "Expected-revision manual save",
+      "baselineUnavailableRetainedRule": "Keep unsupported Markdown source fallback; BE05",
+      "phases": ["BE05"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE05"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-17",
+      "control": "Autosave, save status, keyboard Save / autosave",
+      "requiredRead": "Committed revision and original save receipt",
+      "requiredCommandReceipt": "Stable revision-bound write; recover unknown response",
+      "baselineUnavailableRetainedRule": "Retain dirty draft on conflict/error; BE05",
+      "phases": ["BE05"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE05"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-18",
+      "control": "Move/New subpage/outline / DocumentMenu, PageOutline",
+      "requiredRead": "Hierarchy and destination permissions",
+      "requiredCommandReceipt": "Revision-bound move/create receipt",
+      "baselineUnavailableRetainedRule": "Never overwrite concurrent tree changes; BE05",
+      "phases": ["BE05"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE05"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-19",
+      "control": "Download Markdown/draft, Load latest, source conversation",
+      "requiredRead": "Authorized bytes and immutable version, source lineage",
+      "requiredCommandReceipt": "Explicit read/recovery; no approval implied",
+      "baselineUnavailableRetainedRule": "Draft export remains local; load latest must protect edits; BE05",
+      "phases": ["BE05"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE05"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-20",
+      "control": "Page-specific chat and specialist picker / PageConversation",
+      "requiredRead": "Concurrent-safe page/specialist binding and context",
+      "requiredCommandReceipt": "One create/resolve receipt",
+      "baselineUnavailableRetainedRule": "Stale page/generation cannot submit; BE02/05",
+      "phases": ["BE02"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE02"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-21",
+      "control": "Back/Forward, close/cancel, dirty navigation",
+      "requiredRead": "Local draft and authorized destination state",
+      "requiredCommandReceipt": "No mission command on teardown",
+      "baselineUnavailableRetainedRule": "Preserve navigation protection; FE05/12",
+      "phases": ["BE05"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE05"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-22",
+      "control": "Artifact preview/download / ResultPane",
+      "requiredRead": "Authorized full bytes, digest, MIME, size, validation",
+      "requiredCommandReceipt": "Retrieval receipt; publication separately authorized",
+      "baselineUnavailableRetainedRule": "Never label inaccessible/partial bytes ready; BE05",
+      "phases": ["BE05"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE05"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-23",
+      "control": "Specialist create/edit name/instructions/research/memory",
+      "requiredRead": "Stable agent ID, effective capabilities, backend type",
+      "requiredCommandReceipt": "Exact configuration revision and accepted record",
+      "baselineUnavailableRetainedRule": "Copies/renames cannot inherit primary privileges; BE06",
+      "phases": ["BE06"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE06"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-24",
+      "control": "Allowed Spaces/default destination / WorkspaceDialog",
+      "requiredRead": "Server verified project grants",
+      "requiredCommandReceipt": "Grant/configuration revision",
+      "baselineUnavailableRetainedRule": "Default save destination is not ownership; BE06",
+      "phases": ["BE06"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE06"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-25",
+      "control": "Memory list/add/edit/delete/export / App, WorkspaceDialog",
+      "requiredRead": "Owner/agent/backend-specific supported view",
+      "requiredCommandReceipt": "Only backend-supported mutation and exact receipt",
+      "baselineUnavailableRetainedRule": "Primary external harness only; specialists isolated built-in; no outage fallback; BE06",
+      "phases": ["BE06"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE06"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-26",
+      "control": "Automatic Learning enrollment/delivery / WorkspaceDialog",
+      "requiredRead": "Evidence, immutable skill draft, evaluation/review/publication/delivery/rollback lifecycle",
+      "requiredCommandReceipt": "Explicit reviewed lifecycle operations",
+      "baselineUnavailableRetainedRule": "Legacy enrollment frozen pending reconciliation; BE06",
+      "phases": ["BE06"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE06"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-27",
+      "control": "Schedule creation/edit/interval/run now/pause/resume/cancel",
+      "requiredRead": "Timezone, next occurrence, missed/overlap policy, bounded authority, revision",
+      "requiredCommandReceipt": "Schedule-specific operation; occurrence IDs and receipts",
+      "baselineUnavailableRetainedRule": "Imported schedules paused; activation is not output approval; BE07",
+      "phases": ["BE07"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE07"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-28",
+      "control": "Occurrence history and notifications",
+      "requiredRead": "Independent mission/output/delivery state",
+      "requiredCommandReceipt": "Delivery-only repair of retained output",
+      "baselineUnavailableRetainedRule": "Held/queued/delivered/failed/unknown distinct; receipt is not human read; BE07",
+      "phases": ["BE07"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE07"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-29",
+      "control": "Computer start/stop and per-Dot permissions / ComputerPanel",
+      "requiredRead": "Actual executor identity/freshness/capabilities",
+      "requiredCommandReceipt": "Broker control and effect-correlated receipt",
+      "baselineUnavailableRetainedRule": "No endpoint-configured claim of live qualification; BE08",
+      "phases": ["BE08"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE08"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-30",
+      "control": "Take/release/emergency stop",
+      "requiredRead": "Human-control state and fresh snapshot",
+      "requiredCommandReceipt": "Independent takeover/stop acknowledgment",
+      "baselineUnavailableRetainedRule": "Stalled agent cannot block human stop; fresh state before resume; BE08",
+      "phases": ["BE08"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE08"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-31",
+      "control": "Browser/screenshots/inline cards / ComputerPanel, ComputerToolCard",
+      "requiredRead": "Authorized fresh screenshot/tool summaries",
+      "requiredCommandReceipt": "Bound action/effect ID and prepared/dispatched/unknown/reconciled state",
+      "baselineUnavailableRetainedRule": "Preserve hidden-tab/Dot lifecycle guards; BE08",
+      "phases": ["BE08"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE08"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-32",
+      "control": "Files/Terminal/Activity tabs",
+      "requiredRead": "Scoped file/terminal/audit projections",
+      "requiredCommandReceipt": "Approved broker action and exact receipt",
+      "baselineUnavailableRetainedRule": "Transport error cannot prove non-execution; BE08",
+      "phases": ["BE08"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE08"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-33",
+      "control": "Research source URLs/excerpts/screenshots / ResultPane, Chat",
+      "requiredRead": "Grounded source records, sample/live labels",
+      "requiredCommandReceipt": "Approved research command",
+      "baselineUnavailableRetainedRule": "Single-URL read is not general web search; retain DNS/redirect/size defenses; BE08",
+      "phases": ["BE08"],
+      "currentDisposition": "retained_source_repaired_local_aggregate_passed",
+      "openGates": ["research_fallback"],
+      "evidenceRefs": ["BE08"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-34",
+      "control": "Start/end call, connecting/active/ending / useVoice, CallView",
+      "requiredRead": "Disclosed configured realtime media capability",
+      "requiredCommandReceipt": "Durable media operation/call receipts",
+      "baselineUnavailableRetainedRule": "Finite Whisper/Piper is labelled alternate mode, not realtime parity; BE09",
+      "phases": ["BE09"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE09"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-35",
+      "control": "Microphone/speaker mute, captions, phase/duration/minimize",
+      "requiredRead": "Actual browser media state and bounded provider events",
+      "requiredCommandReceipt": "Local media controls; hangup distinct from mission cancellation",
+      "baselineUnavailableRetainedRule": "Denied mic/device errors clean up streams; BE09",
+      "phases": ["BE09"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE09"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-36",
+      "control": "Voice compute and receipt sync/reconnect",
+      "requiredRead": "Durable compute operation and canonical anchored receipt",
+      "requiredCommandReceipt": "Stable dedup ID; late work remains inspectable",
+      "baselineUnavailableRetainedRule": "Unknown media debt inspect-only, no automatic replay; BE09",
+      "phases": ["BE09"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE09"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-37",
+      "control": "Slack setup, origin, cross-surface review links",
+      "requiredRead": "Verified team/human allowlist, thread/event identity and delivery status",
+      "requiredCommandReceipt": "Self-hosted ingress/egress receipt; delivery-only repair",
+      "baselineUnavailableRetainedRule": "No managed Channels fallback; foreign/bot events rejected; BE10",
+      "phases": ["BE10"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE10"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-38",
+      "control": "Migration, legacy history, rollback notices",
+      "requiredRead": "Sticky runtime owner, object disposition and recoverable migration receipts",
+      "requiredCommandReceipt": "Only separately authorized migration/control",
+      "baselineUnavailableRetainedRule": "No new grants from old approvals, no uncertain schedule backfill; BE11",
+      "phases": ["BE11"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE11"],
+      "browserAcceptance": "not_qualified"
+    },
+    {
+      "id": "PARITY-39",
+      "control": "Self-hosted startup/backup/restore/package",
+      "requiredRead": "Exact server/producer versions and no-hosted-network proof",
+      "requiredCommandReceipt": "No frontend deployment action",
+      "baselineUnavailableRetainedRule": "Legacy server package remains until BE11; FE12 cutover blocked",
+      "phases": ["BE11"],
+      "currentDisposition": "implemented_or_explicitly_bounded_by_linked_phase",
+      "openGates": [],
+      "evidenceRefs": ["BE11"],
+      "browserAcceptance": "not_qualified"
+    }
+  ],
+  "openBehaviorGaps": [],
+  "consolidatedChecks": [
+    {
+      "area": "Contract/identity",
+      "minimumEvidence": "Exact schema pins; incompatible version; forged actor; wrong session/profile/agent; stale transport generation; revoked grants",
+      "outcome": "local_evidence_passed_external_acceptance_still_required"
+    },
+    {
+      "area": "Conversation/replay",
+      "minimumEvidence": "Create/send/reload/search/archive; message order; stream interruption; crash recovery; history pagination; compression lineage; cursor expiry/gap/duplicate",
+      "outcome": "local_evidence_passed_external_acceptance_still_required"
+    },
+    {
+      "area": "Commands/effects",
+      "minimumEvidence": "Stable ID retries; conflicting intent; crash at before/after admission/dispatch/receipt boundaries; no second loop; unresolved remote write preserved",
+      "outcome": "local_evidence_passed_external_acceptance_still_required"
+    },
+    {
+      "area": "Approval/cancel/delivery",
+      "minimumEvidence": "Exact bytes/version/target; expiry/revocation; duplicate decision; hangup/unsubscribe not cancel; cancellation not rollback; delivery retry not mission retry",
+      "outcome": "local_evidence_passed_external_acceptance_still_required"
+    },
+    {
+      "area": "Artifact/page",
+      "minimumEvidence": "Autosave conflict; review recovery; canonical head/digest; partial bytes; cross-Space denial; malicious rendered content; restore",
+      "outcome": "local_evidence_passed_external_acceptance_still_required"
+    },
+    {
+      "area": "Isolation",
+      "minimumEvidence": "Primary harness inaccessible to specialists; specialists isolated; project sharing bounded; learning evidence not personal memory; secrets redacted",
+      "outcome": "local_evidence_passed_external_acceptance_still_required"
+    },
+    {
+      "area": "Background/channels",
+      "minimumEvidence": "One scheduler; DST/missed-run/overlap; voice compute idempotency; Slack verified mapping+dedupe; computer takeover+unknown outcome",
+      "outcome": "local_evidence_passed_external_acceptance_still_required"
+    },
+    {
+      "area": "Self-hosting/ops",
+      "minimumEvidence": "Fresh boot with no Intelligence credentials/egress; full backup+restore; migration dry run+resume; graceful drain; dependency outage; load/backpressure; target-host TLS/auth",
+      "outcome": "local_evidence_passed_external_acceptance_still_required"
+    }
+  ],
+  "ownerAcceptedScopeExclusions": [],
+  "acceptanceCondition": "All required checks passed on final pins, or genuinely explicit owner-accepted scope exclusions, with no unresolved critical authority/data-loss defect. Mandatory host/export/backup/cutover gates are not owner exclusions.",
+  "resolvedBehaviorGaps": [
+    {
+      "id": "gap_space_create",
+      "severity": "functional_parity_blocker",
+      "state": "resolved_and_covered_by_final_aggregate",
+      "requirement": "BE05 retained Space creation",
+      "evidence": [
+        "src/client/WorkspaceDialog.tsx:160–162",
+        "src/client/App.tsx:456",
+        "src/server/self-hosted-app.ts:1004–1012",
+        "src/server/workspace-routes.ts:33–52"
+      ],
+      "finding": "Initial audit finding, since repaired: Visible New Space action forwards POST /api/spaces. Current self-hosted app has no handler and returns generic 501. Only retired route implements it. BE11 staging likewise lacked the route at audit time.",
+      "suggestedAcceptance": "Authenticated bounded metadata-only route with no implicit producer project/grant; repeated intent/durability semantics as appropriate; rejected malformed/foreign/CSRF requests.",
+      "resolution": "Bounded owner-authenticated retained route implemented without starting legacy execution. Four focused retained-route regressions and the final aggregate passed.",
+      "resolutionTests": ["tests/retained-local-surfaces.test.ts"]
+    },
+    {
+      "id": "gap_capture_poll",
+      "severity": "functional_parity_and_noisy_errors",
+      "state": "resolved_and_covered_by_final_aggregate",
+      "requirement": "BE02/BE08 retained capture/read fallback disposition",
+      "evidence": [
+        "src/client/App.tsx:335–353",
+        "src/server/self-hosted-app.ts:1004–1012"
+      ],
+      "finding": "Initial audit finding, since repaired: Every selected thread polls retired GET /api/conversations/:id/capture each 3 seconds and surfaces 501. Current self-hosted app has no handler.",
+      "suggestedAcceptance": "Provide scoped read-only retained capture projection or explicit UI disabled/no-poll disposition; never restart legacy research execution.",
+      "resolution": "Bounded owner-authenticated retained route implemented without starting legacy execution. Four focused retained-route regressions and the final aggregate passed.",
+      "resolutionTests": ["tests/retained-local-surfaces.test.ts"]
+    },
+    {
+      "id": "gap_legacy_task_detail",
+      "severity": "functional_parity_blocker",
+      "state": "resolved_and_covered_by_final_aggregate",
+      "requirement": "BE04/BE07 retained read-only legacy task/run/event history",
+      "evidence": [
+        "src/server/self-hosted-app.ts:797–805",
+        "src/client/App.tsx:1025",
+        "src/server/self-hosted-app.ts:1004–1012"
+      ],
+      "finding": "Initial audit finding, since repaired: State exposes stored legacy tasks; selecting one requests GET /api/tasks/:id, absent in self-hosted app. The list cannot open its retained details.",
+      "suggestedAcceptance": "Authenticated bounded read-only original task/events/runs, clear legacy provenance, no mutation/scheduler/execute path.",
+      "resolution": "Bounded owner-authenticated retained route implemented without starting legacy execution. Four focused retained-route regressions and the final aggregate passed.",
+      "resolutionTests": ["tests/retained-local-surfaces.test.ts"]
+    }
+  ],
+  "BE11SourceStatus": "published_and_locally_qualified",
+  "retainedCaptureDisposition": "Owned legacy capture returns original local Result; verified canonical capture returns null because new output belongs to immutable runtime result/artifact routes. No legacy research is restarted.",
+  "finalProducerInterfaceEvidence": {
+    "status": "passed",
+    "evidenceKind": "actual_local_producer_interface_regression",
+    "producerCommit": "98b9eeb7d2afc02d0e0393fea285f010000a0378",
+    "python": "3.14.7",
+    "command": "scripts/run_tests.sh -j4 with the 22 selected tui_gateway test files recorded in the log",
+    "files": 22,
+    "testsPassed": 175,
+    "testsFailed": 0,
+    "elapsedSeconds": 166,
+    "sourceClean": true,
+    "typescriptSha256": "19fdf11f4aa587d7bcdd58927c0cdbbdec463cfdeaa90003e0ac6284266539d2",
+    "openrpcSha256": "fa7b08c3edd56190daadeef533928685113fd70a2ae8959b2fb7b61aee5051b2",
+    "logPath": "producer-regression.log (retained validation log)",
+    "logSha256": "497a23bea5bb6941adf1862c4177c23b4d5cd1b5ed7f4a982cfe14d50f44d01d",
+    "reportedBy": "final qualification",
+    "independentlyCheckedByThisAudit": "Log file exists and SHA-256 matches the reported receipt; no rerun performed",
+    "limits": [
+      "Targeted interface regression, not the full upstream suite",
+      "No native host/browser/live provider/production acceptance"
+    ],
+    "selectedFiles": [
+      "tests/tui_gateway/test_agent_configuration_revocation.py",
+      "tests/tui_gateway/test_agent_configuration_rpc.py",
+      "tests/tui_gateway/test_command_schedule_execution.py",
+      "tests/tui_gateway/test_command_schedules_rpc.py",
+      "tests/tui_gateway/test_dots_effect_rpc.py",
+      "tests/tui_gateway/test_dots_model_turn.py",
+      "tests/tui_gateway/test_managed_schedule_bindings.py",
+      "tests/tui_gateway/test_managed_schedule_execution.py",
+      "tests/tui_gateway/test_memory_rpc.py",
+      "tests/tui_gateway/test_runtime_approval_detail_rpc.py",
+      "tests/tui_gateway/test_runtime_conversation_agents.py",
+      "tests/tui_gateway/test_runtime_conversation_command_receipt.py",
+      "tests/tui_gateway/test_runtime_conversation_execution.py",
+      "tests/tui_gateway/test_runtime_conversation_linkage.py",
+      "tests/tui_gateway/test_runtime_conversation_titles.py",
+      "tests/tui_gateway/test_runtime_conversations_rpc.py",
+      "tests/tui_gateway/test_runtime_conversations_stdio.py",
+      "tests/tui_gateway/test_scheduled_workflows_rpc.py",
+      "tests/tui_gateway/test_schedules_rpc.py",
+      "tests/tui_gateway/test_stdio_schedule_lifecycle.py",
+      "tests/tui_gateway/test_workflow_delivery_rpc.py",
+      "tests/tui_gateway/test_workflows_rpc.py"
+    ]
+  },
+  "testedConsumerBaseCommit": "0cb5f0e5d76f8e429054f3d9eb721d04de84e45e",
+  "testedConsumerBaseTree": "bb0cee9e6cfce665aa0d67e099ccd20b0a400dd6",
+  "productionSourceChangedAfterBase": false,
+  "postBaseChanges": "Release/acceptance documentation, CI validation steps for runtime contract/production boundary/Python operations, and a controls fixture correction to the managed Dot projection API; production behavior unchanged.",
+  "finalLocalValidation": {
+    "date": "2026-10-03",
+    "environment": {
+      "os": "Linux x64",
+      "node": "24.19.0",
+      "python": "3.14.7",
+      "providers": "loopback synthetic only"
+    },
+    "repositoryAggregate": {
+      "format": "passed",
+      "lint": "passed",
+      "typecheck": "passed",
+      "testsPassed": 767,
+      "testsSkipped": 11,
+      "testsFailed": 0,
+      "testSeconds": 19.27,
+      "build": "passed",
+      "runtimeContract": "passed",
+      "productionBoundary": "passed",
+      "productionBoundaryModules": 67,
+      "ciCoverageAdded": [
+        "check:runtime-contract",
+        "check:production-boundary",
+        "test:operations"
+      ]
+    },
+    "actualStdio": {
+      "files": 10,
+      "totalCases": 16,
+      "initialPassed": 15,
+      "initialFailed": 1,
+      "initialSeconds": 75.95,
+      "targetedRerunPassed": 1,
+      "targetedRerunFailed": 0,
+      "targetedRerunSeconds": 13.5,
+      "finalOutcome": "all 16 exercised successfully across consolidation and corrected-case rerun",
+      "correction": "Old control rename fixture used retired local editor on intentionally project-less managed Dot. Updated to actual mirrorRuntimeDot projection; Space validation unchanged.",
+      "longHeldRequest": "BE03 separate 95-second hold passed; not repeated in final quick consolidation."
+    },
+    "operations": {
+      "pythonPassed": 33,
+      "focusedTypeScriptPassed": 27,
+      "scope": "isolated synthetic state; no real migration or restore"
+    },
+    "productionInstall": {
+      "packages": 159,
+      "flags": "npm ci --omit=dev --ignore-scripts --no-audit --no-fund",
+      "registry": "official npm registry",
+      "boot": "compiled frontend/server, gated startup, synthetic owner, no managed/provider credentials, clean SIGTERM",
+      "limits": "not an image, lifecycle-script, TLS or host qualification"
+    },
+    "unqualifiedBrowserAssertions": 0,
+    "deployed": false,
+    "cutoverPerformed": false,
+    "logs": {
+      "format": {
+        "sha256": "5a017d7308a6f4b58278e4c77b5be23787ef97e3a27984aeb85048f63fdd41e1",
+        "retainedFile": "format.log"
+      },
+      "lint": {
+        "sha256": "79f91fa23a25724968c6ba051b205c0a45627ce0b3257603b29d05b770ed46a8",
+        "retainedFile": "lint.log"
+      },
+      "typecheck": {
+        "sha256": "64383315dd5f7e617550d038e0579ce58df87c173fd101a38965cd4064a443a2",
+        "retainedFile": "typecheck.log"
+      },
+      "tests": {
+        "sha256": "ebba1dd6be916bfab3732f33f2e4243fbaedd18da06cb4b409034756c7fe70b3",
+        "retainedFile": "tests.log"
+      },
+      "build": {
+        "sha256": "8c681c4b4df3d03c27f2d0f2961ffc965d9ad11d8e9f18085541ef67e8097d6f",
+        "retainedFile": "build.log"
+      },
+      "runtime-contract": {
+        "sha256": "1d6f54572252b24600b9dd21b7292ef54f655812bd63e42244d73f87245bce5f",
+        "retainedFile": "runtime-contract.log"
+      },
+      "production-boundary": {
+        "sha256": "da9b43fb3eed11958b6b38aae3c3943d8a90ed249476291814dad2b3eb8bce81",
+        "retainedFile": "production-boundary.log"
+      },
+      "runtime-stdio": {
+        "sha256": "07b2cfe5cfcabcce8f16e5f7f2e845433c1ae422bfe518566ef2bd5abaa06e14",
+        "retainedFile": "runtime-stdio.log"
+      },
+      "runtime-controls-rerun": {
+        "sha256": "57cb3b3cef850751c43e061a9a28740a592d6c3ae08b2b3fe71c1425d0d89930",
+        "retainedFile": "runtime-controls-rerun.log"
+      },
+      "producer-regression": {
+        "sha256": "497a23bea5bb6941adf1862c4177c23b4d5cd1b5ed7f4a982cfe14d50f44d01d",
+        "retainedFile": "producer-regression.log"
+      }
+    }
+  },
+  "initialMappingConsumerCommit": "df160c543022ce88eaf552bd6231acd0bca54d3f",
+  "initialMappingConsumerTree": "7c80608e195cbca9a9a9d8fc4a166b233d6915a3"
+}

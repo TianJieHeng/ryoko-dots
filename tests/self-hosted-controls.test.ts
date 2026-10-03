@@ -346,9 +346,18 @@ test.runIf(
       const beforeRename =
         workspace.runtimeBindings.resolveConversation(conversationId);
       const configuredDot = workspace.dot(beforeRename.dotId)!;
-      workspace.updateDot(configuredDot.id, {
-        ...configuredDot,
+      // Managed identities can intentionally have no granted Space. Their
+      // verified projection path preserves that state; the retired local Dot
+      // editor correctly still requires its own legacy default destination.
+      workspace.mirrorRuntimeDot(configuredDot.id, {
         name: 'Renamed display only',
+        instructions: configuredDot.instructions,
+        researchAllowed: configuredDot.researchAllowed,
+        memoryAllowed: configuredDot.memoryAllowed,
+        spaceIds: configuredDot.spaceIds,
+        defaultSpaceId: configuredDot.spaceIds.includes(configuredDot.spaceId)
+          ? configuredDot.spaceId
+          : null,
       });
       expect(
         workspace.runtimeBindings.resolveConversation(conversationId)
