@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /** FE00 local-source pin check. This never contacts a gateway or a remote repository. */
 import assert from 'node:assert/strict';
+import process from 'node:process';
+import console from 'node:console';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, isAbsolute, resolve } from 'node:path';

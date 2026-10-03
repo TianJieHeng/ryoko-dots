@@ -1,3 +1,13 @@
+# Ryoko Dots integration status
+
+The self-hosted frontend consumer is being implemented phase by phase. The runtime/backend migration is not complete: live features remain capability-gated and full-parity cutover is blocked. See [frontend-only setup](docs/runtime/frontend-setup.md), [BuildJournal.md](BuildJournal.md), [frontend plan](FrontEnd_BuildPlan.md) and [backend plan](BackEnd_BuildPlan.md).
+
+For safe local UI inspection use Node 24, `npm ci`, `npm run build:frontend`, then `npm run preview:frontend`. This starts static assets only; API calls truthfully report the absent qualified backend. It does not start Intelligence, providers, channels, schedulers or migration.
+
+The retained template documentation below describes the legacy application. Its credential/startup instructions are not the migrated runtime setup and do not establish current integration readiness.
+
+---
+
 <div align="center">
 
 # OpenDots

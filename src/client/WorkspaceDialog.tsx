@@ -1,3 +1,4 @@
+import { MigrationStatus } from './runtime/MigrationStatus';
 import { ChannelsPanel } from './runtime/ChannelsPanel';
 import { ScheduleForm } from './runtime/SchedulesPanel';
 import type { RuntimeSpecialist } from '../shared/runtime/agents';
@@ -314,6 +315,7 @@ export function WorkspaceDialog({
               <>
                 <RuntimeStatus connection={runtime} />
                 <ChannelsPanel connection={runtime} />
+                <MigrationStatus connection={runtime} />
               </>
             )}
             {dialog.type === 'memory' && (

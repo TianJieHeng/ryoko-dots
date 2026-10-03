@@ -566,7 +566,7 @@ export function App() {
           </button>
           <a
             className="nav-item"
-            href="https://github.com/CopilotKit/OpenDots"
+            href="https://github.com/TianJieHeng/ryoko-dots"
             target="_blank"
             rel="noreferrer"
           >

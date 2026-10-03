@@ -186,3 +186,21 @@ Checks:
 Limits: legacy server Slack/Channels internals are not replaced by frontend components; no external Slack qualification or service activation is claimed. Backend must bind verified provider ingress IDs, authenticate cross-agent links and persist an outbox/receipt path shared with web/voice. Private specialist memory is never part of these DTOs. Next FE11 adds migration/read-only ownership and frontend-only packaging while keeping backend cutover blocked.
 
 Publication: FE10 source and journal are one main checkpoint. No Slack message, live channel binding, migration or deployment performed.
+
+## FE11 — Read-only migration gates and frontend-only packaging — 2026-10-03
+
+Status: frontend migration/packaging slice implemented; **BE11 full self-hosted server startup, import/restore/rollback gates blocked**. FE10 remote `1054a1756576f93dba5152db0dbec3dd1ec0cc8c` verified with exact tree/journal.
+
+Changes: settings now exposes read-only sticky runtime owner and migration inventory for conversations/page links/reviews/calls/specialists/memory/Learning/schedules/artifacts/effects. Duplicate categories, unsafe old approval grants and uncertain schedule backfill are rejected; incomplete inventory or unpreserved accepted Ryoko work blocks cutover eligibility. No UI migration/deployment action is provided. Documentation and env template explicitly separate this frontend from the retained legacy server.
+
+Added `dev:frontend`, `build:frontend`, `preview:frontend` and contract-check scripts. Standalone Node24 preview binds loopback, serves compiled assets with strict same-origin CSP, and returns explicit503 for every API without starting a database, planner, scheduler, channel, model or proxy. Legacy server browser CSP no longer imports a hosted Intelligence WebSocket origin. Its server-only execution dependencies remain pending backend retirement. Import plus npm transitive review found `@copilotkit/react-core` entirely unused; removing it removed308 packages and updated the lockfile. Other CopilotKit/Channels/TanStack packages remain because legacy server code still imports them. Script files are now included in formatting/lint workflows.
+
+Checks:
+- Focused frontend-package/migration/setup/security suites: PASS, 4 files / 29 tests, re-run after dependency removal.
+- `npx --no-install tsc --noEmit`: PASS after removal.
+- Targeted ESLint (including scripts), Node syntax check, formatting and `git diff --check`: PASS.
+- Frontend packaging test served isolated loopback HTML, returned truthful API503, denied writes/missing files, and verified no hosted CSP origin. Compiled-bundle/full-install/build and browser checks remain FE12.
+
+Limits: this is explicitly frontend-only packaging, not a functioning full self-hosted deployment. Existing `npm start`/combined `npm run dev` still start the legacy backend and are not the migration path. BE11 must replace/retire that owner, qualify no-hosted-network startup, imported IDs, backup/restore and rollback with accepted work. No provider credentials configured, migration performed or deployment started. Next FE12 runs the consolidated workflow, browser/fault checks and exact-source readiness report.
+
+Publication: FE11 source, dependency changes and journal share one main checkpoint. Full-parity cutover remains blocked and requires separate approval after backend qualification.

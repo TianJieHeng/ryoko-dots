@@ -1,3 +1,9 @@
+## Self-hosted frontend integration boundary
+
+The new browser runtime adapters fail closed without a qualified same-origin gateway. They are not proof of secure runtime authentication, memory tenancy, effect policy or provider isolation. The legacy Node backend, broad owner token in tab storage and old execution/channel dependencies remain pending BE01–BE12 replacement; do not deploy this frontend checkpoint as a completed migration.
+
+The standalone frontend preview is loopback-only, serves no private data, performs no runtime proxying and returns503 for APIs. Runtime/provider service secrets must remain server-side. Keep the same-origin CSP and whole-route checks; do not restore a hosted WebSocket origin to work around unavailable setup. Backend migration/restore/rollback, persistent credential creation, provider/channel activation and deployment each require their own authorization and qualification.
+
 # Security
 
 OpenDots is an application template under development, not a hosted service. The local prototype is single-owner; Space membership, Slack identity mapping, and voice delegation require additional enforcement before connected multi-user use. It is not a security-audited autonomous agent.
