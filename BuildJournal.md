@@ -153,3 +153,18 @@ Checks:
 Limits: frontend endpoint/control declarations do not prove an isolated live executor, stalled-agent out-of-band takeover, restart fencing or effect recovery. Live browser/shell acceptance remains blocked. Single-URL research is not general web search. Next FE09 preserves media UX behind explicit adapter qualification and durable call/compute identities.
 
 Publication: FE08 source and this journal share the checkpoint, with the two failed focused cases disclosed. No live executor actions, deployment or activation performed.
+
+## FE09 — Explicit realtime media and durable voice compute — 2026-10-03
+
+Status: frontend media/call slice implemented; **BE09 real adapter/hardware/call persistence gates blocked**. FE08 remote `9c437d37f511783f68edc24623dff699b8a5ba7c` verified with matching tree/journal; its two transport fixture failures remain open for FE12.
+
+Changes: retained call connecting/active/ending, caption/phase/duration, microphone/speaker mute and minimized CallView. Start is available only for a scope-matching qualified realtime_webrtc adapter with the declared supported signaling protocol; provider/mode are disclosed and finite local speech is clearly not realtime parity. Browser microphone consent remains explicit. Media admission and provider compute IDs persist before server submission; unknown admission blocks new calls and offers inspection/recovered media-only hangup. Repeated compute IDs inspect the same operation; changed request bytes conflict. Accepted compute is not spoken as completed output. Hangup/local device cleanup never cancels accepted missions; teardown detaches media and leaves server-owned lease/receipt recovery. Canonical call receipts preserve anchors and explicit unknown status. Media events/captions are bounded and scope change stops local capture.
+
+Checks:
+- `npx --no-install vitest run tests/runtime-voice.test.ts tests/runtime-voice-client.test.ts tests/voice.test.ts tests/transcript.test.tsx tests/headless-runtime.test.ts`: PASS, 5 files / 26 tests. New cases cover finite/unqualified/wrong-scope adapter denial, safe output status, unknown media inspection and compute dedup/conflicting bytes.
+- `npx --no-install tsc --noEmit`: PASS; targeted ESLint/formatting/`git diff --check`: PASS.
+- Frontend legacy `/voice` routes: no remaining matches; all new media control is under runtime adapters.
+
+Limits: actual microphone/device/browser/provider behavior and disconnect/restart/hangup receipts are not live-qualified. The backend must implement media leases, durable provider event ownership, exact mission independence and canonical transcript/call persistence. No provider activated or hardware accessed. Device switching is explicitly end-and-restart until qualified. Next FE10 adds verified Slack provenance and cross-surface delivery repair.
+
+Publication: FE09 implementation and journal share one main checkpoint. No live call, credential or deployment action performed.

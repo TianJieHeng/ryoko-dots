@@ -1,3 +1,11 @@
+import { useVoice } from './useVoice';
+import { CallView } from './CallView';
+import { useResource } from './runtime/use-resource';
+import {
+  canStartRealtime,
+  voiceProfileSchema,
+  voiceCallsSchema,
+} from '../shared/runtime/voice';
 import { runtimeAction } from './runtime/actions';
 import {
   prepareCommand,
@@ -50,6 +58,29 @@ export function Chat({
 }) {
   const runtime = useRuntime(dot.id);
   const history = useHistory(thread.id, runtime);
+  const callHistory = useResource(
+    `/runtime/conversations/${encodeURIComponent(thread.id)}/calls`,
+    voiceCallsSchema,
+    runtime,
+    'conversations',
+  );
+  const media = useResource(
+    '/runtime/voice',
+    voiceProfileSchema,
+    runtime,
+    'voice',
+  );
+  const voice = useVoice(
+    thread.id,
+    onSaved,
+    history.history?.messages.at(-1)?.id,
+    media.data,
+    runtime.setup?.scope ?? undefined,
+  );
+  const realtimeReady =
+    runtime.available('voice') &&
+    !!runtime.setup?.scope &&
+    canStartRealtime(media.data, runtime.setup.scope);
   const [draft, setDraft] = useState(initialPrompt ?? '');
   const [source, setSource] = useState('');
   const [sourceOpen, setSourceOpen] = useState(false);
@@ -279,9 +310,21 @@ export function Chat({
           </button>
           <button
             className="icon-button"
-            aria-label="Start voice call"
-            disabled
-            title="Media adapter qualification required"
+            aria-label={
+              voice.status === 'idle' ? 'Start voice call' : 'End voice call'
+            }
+            disabled={
+              voice.status === 'idle' &&
+              (!realtimeReady || paused || !contextReady)
+            }
+            title={
+              media.data
+                ? `${media.data.provider} · ${media.data.mode}`
+                : 'Media adapter qualification required'
+            }
+            onClick={() =>
+              voice.status === 'idle' ? void voice.start() : void voice.end()
+            }
           >
             <Phone size={18} />
           </button>
@@ -322,7 +365,10 @@ export function Chat({
         )}
         <ChatTranscript
           messages={messages}
-          calls={calls}
+          calls={
+            callHistory.data?.calls ??
+            calls.filter((call) => call.endedAt !== null)
+          }
           renderTools={(message) => (
             <>
               {history.history?.messages
@@ -361,6 +407,34 @@ export function Chat({
         />
         <div ref={bottom} />
       </div>
+      {media.data && (
+        <p className="chat-compose-note">
+          Media provider: {media.data.provider} · {media.data.mode}
+          {media.data.mode === 'finite_local'
+            ? ' (finite nonstreaming speech; realtime calls unavailable)'
+            : ''}
+          . Microphone access is requested only when you start a qualified call.
+          Device switching requires ending this call first.
+        </p>
+      )}
+      {voice.error && (
+        <p role="alert" className="chat-error">
+          {voice.error}
+          <button onClick={() => void voice.inspect()}>
+            Inspect media request
+          </button>
+          {voice.recoveryCall && (
+            <button onClick={() => void voice.endRecovered()}>
+              End recovered media only
+            </button>
+          )}
+        </p>
+      )}
+      <CallView
+        key={voice.status === 'idle' ? 'idle' : 'call'}
+        dot={dot}
+        voice={voice}
+      />
       {(error || liveError) && (
         <div className="chat-error" role="alert">
           {error || liveError}

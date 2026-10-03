@@ -97,7 +97,7 @@ export interface CallReceipt {
   threadId: string;
   startedAt: number;
   endedAt: number | null;
-  status: 'connecting' | 'active' | 'ended' | 'failed';
+  status: 'connecting' | 'active' | 'ended' | 'failed' | 'unknown';
   transcript: string;
   error: string | null;
 }

@@ -22,11 +22,13 @@ function Receipt({ call }: { call: CallReceipt }) {
     <div className="call-receipt">
       <PhoneOff size={13} />
       <span>
-        {call.status === 'failed'
-          ? 'Call failed'
-          : call.endedAt
-            ? `${Math.round((call.endedAt - call.startedAt) / 1000)}s · Call ended`
-            : 'Call in progress'}
+        {call.status === 'unknown'
+          ? 'Call outcome unknown'
+          : call.status === 'failed'
+            ? 'Call failed'
+            : call.endedAt
+              ? `${Math.round((call.endedAt - call.startedAt) / 1000)}s · Call ended`
+              : 'Call in progress'}
       </span>
       {call.error && <small>{call.error}</small>}
     </div>

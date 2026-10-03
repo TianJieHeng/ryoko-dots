@@ -1,14 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, authHeaders } from './api';
+import { api } from './api';
+import { sameScope, type RuntimeScope } from '../shared/runtime/contracts';
+import {
+  canStartRealtime,
+  voiceCallSchema,
+  type RuntimeVoiceProfile,
+} from '../shared/runtime/voice';
+import {
+  admitVoice,
+  voiceCompute,
+  pendingVoiceAdmission,
+  inspectVoiceAdmission,
+  clearVoiceAdmission,
+} from './runtime/voice-client';
+import { runtimeAction } from './runtime/actions';
 export function useVoice(
   threadId: string,
   onSaved: () => void,
   anchorMessageId?: string,
+  profile?: RuntimeVoiceProfile,
+  scope?: RuntimeScope,
 ) {
   const [status, setStatus] = useState<
     'idle' | 'connecting' | 'active' | 'ending'
   >('idle');
   const generation = useRef(0);
+  const [recoveryCall, setRecoveryCall] = useState<string>();
+  const context = useRef({ profile, scope });
+  context.current = { profile, scope };
   const connecting = useRef(false);
   const ending = useRef(false);
   const [error, setError] = useState('');
@@ -26,6 +45,7 @@ export function useVoice(
         stream: MediaStream;
         audio: HTMLAudioElement;
         id?: string;
+        scope: RuntimeScope;
         channel: RTCDataChannel;
         transcript: string[];
         timer?: ReturnType<typeof setTimeout>;
@@ -55,28 +75,36 @@ export function useVoice(
       setStatus('idle');
       return;
     }
-    // Silence the call immediately, while keeping the peer alive until the
-    // provider confirms hangup through the server.
+    // Stop local capture immediately. Remote hangup and mission lifetime are independent.
     current.cancelled = true;
     current.stream.getTracks().forEach((track) => {
       track.enabled = false;
     });
     current.audio.pause();
     clearTimeout(current.timer);
+    closeMedia();
     ending.current = true;
     setStatus('ending');
     try {
       if (current.id)
-        await api(`/voice/calls/${current.id}/end`, 'POST', {
-          transcript: current.transcript.join('\n').slice(0, 20000),
-          anchorMessageId: anchor.current,
-        });
+        await runtimeAction(
+          current.scope,
+          `/runtime/voice/calls/${encodeURIComponent(current.id)}/control`,
+          'end_media',
+          {
+            transcript: current.transcript.join('\n').slice(0, 20000),
+            anchorMessageId: anchor.current ?? null,
+            cancelMission: false,
+          },
+          0,
+        );
       onSaved();
     } catch (e) {
+      if (current.id) setRecoveryCall(current.id);
       setError(
         e instanceof Error
           ? e.message
-          : 'Call ended, but its receipt could not be saved.',
+          : 'Local audio stopped; server hangup is unconfirmed. Accepted work continues.',
       );
     } finally {
       closeMedia();
@@ -90,16 +118,18 @@ export function useVoice(
       generation.current++;
       const current = session.current;
       closeMedia();
-      if (current?.id && !ending.current)
-        void fetch(`/api/voice/calls/${current.id}/end`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({
-            transcript: current.transcript.join('\n').slice(0, 20000),
-            anchorMessageId: anchor.current,
-          }),
-          keepalive: true,
-        }).catch(() => {});
+      // Teardown releases local microphone/audio only. It never cancels work or
+      // blindly posts a second hangup. The backend expires detached media leases.
+      if (current?.id) {
+        try {
+          sessionStorage.setItem(
+            `ryoko-detached-call:${current.id}`,
+            JSON.stringify({ id: current.id, scope: current.scope }),
+          );
+        } catch {
+          /* Server-owned lease/receipt remains the recovery authority. */
+        }
+      }
     },
     [closeMedia],
   );
@@ -109,20 +139,45 @@ export function useVoice(
       const current = session.current;
       const id = current?.id;
       if (id)
-        void api<{ endedAt: number | null }>(`/voice/calls/${id}`)
-          .then((call) => {
-            if (session.current === current && call.endedAt) void end();
+        void api<unknown>(`/runtime/voice/calls/${encodeURIComponent(id)}`)
+          .then((raw) => {
+            const call = voiceCallSchema.parse(raw);
+            if (!sameScope(call.scope, current.scope) || call.id !== id)
+              throw new Error('Call receipt scope changed.');
+            if (session.current === current && call.endedAt) {
+              closeMedia();
+              session.current = undefined;
+              setStatus('idle');
+              onSaved();
+            }
           })
           .catch(() => {
             if (session.current !== current) return;
-            setError('Call control connection was lost.');
-            void end();
+            setError(
+              'Call control connection was lost. Microphone and audio are stopped; accepted work continues.',
+            );
+            closeMedia();
+            setRecoveryCall(id);
+            session.current = undefined;
+            setStatus('idle');
           });
     }, 2000);
     return () => clearInterval(timer);
   }, [status, closeMedia, onSaved, end]);
   const start = async () => {
     if (session.current || connecting.current || ending.current) return;
+    if (!profile || !scope || !canStartRealtime(profile, scope)) {
+      setError(
+        'A qualified realtime media adapter is required. Finite local speech is a different interaction mode.',
+      );
+      return;
+    }
+    if (pendingVoiceAdmission(scope, threadId)) {
+      setError(
+        'A previous media request has an unknown outcome. Inspect it before starting another call.',
+      );
+      return;
+    }
     connecting.current = true;
     const attempt = ++generation.current;
     setStatus('connecting');
@@ -146,6 +201,7 @@ export function useVoice(
       const channel = pc.createDataChannel('oai-events');
       const current = {
         pc,
+        scope,
         audio,
         stream,
         channel,
@@ -172,11 +228,15 @@ export function useVoice(
           setStatus('active');
           setStartedAt((value) => value ?? Date.now());
           if (current.id)
-            void api(`/voice/calls/${current.id}/active`, 'POST', {}).catch(
-              (e) => {
-                if (!current.cancelled) setError(e.message);
-              },
-            );
+            void runtimeAction(
+              current.scope,
+              `/runtime/voice/calls/${encodeURIComponent(current.id)}/control`,
+              'media_connected',
+              {},
+              0,
+            ).catch((e) => {
+              if (!current.cancelled) setError(e.message);
+            });
         }
         if (['failed', 'disconnected'].includes(pc.connectionState)) {
           setError('The voice connection dropped.');
@@ -187,7 +247,10 @@ export function useVoice(
         if (current.cancelled) return;
         let data: Record<string, unknown>;
         try {
-          const parsed: unknown = JSON.parse(String(event.data));
+          const raw = String(event.data);
+          if (raw.length > 256000)
+            throw new Error('Media event exceeds safe size.');
+          const parsed: unknown = JSON.parse(raw);
           if (!parsed || typeof parsed !== 'object') return;
           data = parsed as Record<string, unknown>;
         } catch {
@@ -202,7 +265,7 @@ export function useVoice(
           typeof data.delta === 'string'
         ) {
           setPhase('speaking');
-          setCaption((text) => text + data.delta);
+          setCaption((text) => (text + data.delta).slice(-20000));
         }
         if (data.type === 'output_audio_buffer.stopped') setPhase('listening');
         if (data.type === 'response.created') {
@@ -210,12 +273,15 @@ export function useVoice(
           setPhase('thinking');
         }
         if (typeof data.transcript === 'string') {
+          if (current.transcript.length >= 1000)
+            current.transcript.splice(0, 100);
+          data.transcript = data.transcript.slice(-20000);
           if (
             data.type ===
             'conversation.item.input_audio_transcription.completed'
           ) {
             current.transcript.push(`You: ${data.transcript}`);
-            setUserCaption(data.transcript);
+            setUserCaption(data.transcript.slice(-20000));
           }
           if (data.type === 'response.output_audio_transcript.done')
             current.transcript.push(`Dot: ${data.transcript}`);
@@ -242,18 +308,22 @@ export function useVoice(
             typeof args.request !== 'string'
           )
             throw new Error('Invalid compute request.');
-          const result = await api<{ text: string }>(
-            `/voice/calls/${current.id}/compute`,
-            'POST',
-            {
-              toolCallId: data.call_id,
-              request: args.request,
-              transcript: current.transcript.join('\n').slice(-12000),
-            },
+          if (!context.current.profile?.computeAllowed)
+            throw new Error('Voice compute is not available for this adapter.');
+          const result = await voiceCompute(
+            current.scope,
+            current.id,
+            data.call_id,
+            args.request,
           );
-          output = result.text;
+          output =
+            result.status === 'completed' && result.text !== null
+              ? result.text
+              : result.status === 'accepted'
+                ? 'The work was durably accepted. Inspect its mission for the final result.'
+                : 'The compute outcome is not confirmed. Inspect the original request; do not repeat it.';
         } catch (e) {
-          output = `Compute failed: ${e instanceof Error ? e.message : 'Unknown error'}`;
+          output = `Compute outcome unknown: ${e instanceof Error ? e.message : 'Inspect the original request'}`;
         }
         if (!current.cancelled && channel.readyState === 'open') {
           channel.send(
@@ -271,21 +341,35 @@ export function useVoice(
       };
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      const response = await api<{ id: string; sdp: string }>(
-        '/voice/calls',
-        'POST',
-        { threadId, sdp: offer.sdp },
+      const response = await admitVoice(
+        scope,
+        threadId,
+        offer.sdp ?? '',
+        anchor.current,
       );
-      current.id = response.id;
+      current.id = response.callId;
       if (current.cancelled) {
-        await api(`/voice/calls/${response.id}/end`, 'POST', {
-          transcript: '',
-        });
+        await runtimeAction(
+          current.scope,
+          `/runtime/voice/calls/${encodeURIComponent(response.callId)}/control`,
+          'end_media',
+          { cancelMission: false, discardedCapture: true },
+          0,
+        );
         return;
       }
-      await pc.setRemoteDescription({ type: 'answer', sdp: response.sdp });
+      await pc.setRemoteDescription({ type: 'answer', sdp: response.sdp! });
       if (current.cancelled) return;
-      current.timer = setTimeout(() => void end(), 15 * 60_000);
+      current.timer = setTimeout(
+        () => void end(),
+        Math.max(
+          0,
+          Math.min(
+            profile.maxCallSeconds * 1000,
+            response.expiresAt - Date.now(),
+          ),
+        ),
+      );
     } catch (e) {
       if (attempt !== generation.current) {
         stream?.getTracks().forEach((track) => track.stop());
@@ -294,10 +378,13 @@ export function useVoice(
       const current = session.current;
       const id = current?.id;
       if (id)
-        void api(`/voice/calls/${id}/end`, 'POST', {
-          transcript: '',
-          anchorMessageId: anchor.current,
-        }).catch(() => {});
+        void runtimeAction(
+          current!.scope,
+          `/runtime/voice/calls/${encodeURIComponent(id)}/control`,
+          'end_media',
+          { cancelMission: false, discardedCapture: true },
+          0,
+        ).catch(() => setRecoveryCall(id));
       stream?.getTracks().forEach((track) => track.stop());
       closeMedia();
       session.current = undefined;
@@ -305,6 +392,52 @@ export function useVoice(
       setError(e instanceof Error ? e.message : 'Could not connect the call.');
     } finally {
       if (attempt === generation.current) connecting.current = false;
+    }
+  };
+  useEffect(() => {
+    const current = session.current;
+    if (current && !sameScope(current.scope, scope ?? null)) {
+      generation.current++;
+      closeMedia();
+      session.current = undefined;
+      setStatus('idle');
+    }
+  }, [JSON.stringify(scope), closeMedia]);
+  const inspect = async () => {
+    if (!scope) return;
+    try {
+      const receipt = await inspectVoiceAdmission(scope, threadId);
+      if (receipt?.status === 'admitted') setRecoveryCall(receipt.callId);
+      setError(
+        receipt
+          ? `Media request ${receipt.status}; accepted work is independent.`
+          : 'No pending media admission.',
+      );
+    } catch {
+      setError('Media admission remains unknown. No new call was started.');
+    }
+  };
+  const endRecovered = async () => {
+    if (!scope || !recoveryCall) return;
+    try {
+      await runtimeAction(
+        scope,
+        `/runtime/voice/calls/${encodeURIComponent(recoveryCall)}/control`,
+        'end_media',
+        { cancelMission: false, discardedCapture: true },
+        0,
+      );
+      const call = voiceCallSchema.parse(
+        await api(`/runtime/voice/calls/${encodeURIComponent(recoveryCall)}`),
+      );
+      if (!sameScope(scope, call.scope) || !call.endedAt) throw new Error();
+      clearVoiceAdmission(scope, threadId);
+      setRecoveryCall(undefined);
+      setError('Recovered media hangup confirmed. Accepted missions continue.');
+    } catch {
+      setError(
+        'Hangup is not confirmed yet. Inspect again; no new media session was started.',
+      );
     }
   };
   const toggleMute = () => {
@@ -322,6 +455,9 @@ export function useVoice(
   return {
     status,
     error,
+    inspect,
+    endRecovered,
+    recoveryCall,
     start,
     end,
     muted,
