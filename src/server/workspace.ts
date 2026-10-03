@@ -1,3 +1,4 @@
+import { RuntimeBindings } from './runtime/bindings.js';
 import { ComputerStore } from './computer-store.js';
 import { Pages } from './pages.js';
 import { DatabaseSync } from 'node:sqlite';
@@ -9,6 +10,7 @@ import type { CallReceipt, Conversation, Dot, Space } from '../shared/types.js';
 export class WorkspaceStore {
   private db: DatabaseSync;
   readonly pages: Pages;
+  readonly runtimeBindings: RuntimeBindings;
   readonly computers: ComputerStore;
   constructor(
     path: string,
@@ -23,6 +25,31 @@ export class WorkspaceStore {
       CREATE TABLE IF NOT EXISTS task_threads(taskId TEXT PRIMARY KEY, threadId TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS calls(id TEXT PRIMARY KEY, threadId TEXT NOT NULL, startedAt INTEGER NOT NULL, endedAt INTEGER, status TEXT NOT NULL, transcript TEXT NOT NULL, error TEXT);
       CREATE TABLE IF NOT EXISTS captures(threadId TEXT PRIMARY KEY, value TEXT NOT NULL);`);
+    // Pin the entire single-owner workspace, including Spaces/pages, not only threads.
+    this.db.exec(
+      'CREATE TABLE IF NOT EXISTS workspace_owner(singleton INTEGER PRIMARY KEY CHECK(singleton=1), ownerId TEXT NOT NULL)',
+    );
+    const pinnedOwner = this.db
+      .prepare('SELECT ownerId FROM workspace_owner WHERE singleton=1')
+      .get();
+    const legacyOwners = this.db
+      .prepare('SELECT DISTINCT ownerId FROM thread_bindings')
+      .all();
+    if (
+      (pinnedOwner && pinnedOwner.ownerId !== ownerId) ||
+      legacyOwners.some((row) => row.ownerId !== ownerId)
+    ) {
+      this.db.close();
+      throw new Error('This workspace database belongs to a different owner.');
+    }
+    this.db
+      .prepare('INSERT OR IGNORE INTO workspace_owner VALUES (1, ?)')
+      .run(ownerId);
+    this.runtimeBindings = new RuntimeBindings(this.db, ownerId, {
+      dotExists: (id) => !!this.dot(id),
+      spaceExists: (id) => this.spaces().some((space) => space.id === id),
+      canAccessSpace: (dotId, spaceId) => this.canAccessSpace(dotId, spaceId),
+    });
     for (const [table, column, definition] of [
       ['dots', 'learningContainerId', 'TEXT'],
       ['dots', 'skillDeliveryEnabled', 'INTEGER NOT NULL DEFAULT 0'],
@@ -155,6 +182,9 @@ export class WorkspaceStore {
           learningContainerId,
           +skillDeliveryEnabled,
         );
+      this.db
+        .prepare('INSERT INTO dot_access_revisions VALUES (?, 1)')
+        .run(dot.id);
       for (const id of dot.spaceIds)
         this.db.prepare('INSERT INTO dot_spaces VALUES (?, ?)').run(dot.id, id);
       this.db.exec('COMMIT');
@@ -218,6 +248,11 @@ export class WorkspaceStore {
       this.db
         .prepare('UPDATE dots SET spaceId=? WHERE id=?')
         .run(defaultSpace, id);
+      this.db
+        .prepare(
+          'UPDATE dot_access_revisions SET revision=revision+1 WHERE dotId=?',
+        )
+        .run(id);
       this.db.prepare('DELETE FROM dot_spaces WHERE dotId=?').run(id);
       for (const space of new Set(spaceIds))
         this.db.prepare('INSERT INTO dot_spaces VALUES (?, ?)').run(id, space);

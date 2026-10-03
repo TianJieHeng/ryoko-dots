@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { bootstrapSession } from '../src/client/api';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   inspectCommand,
   prepareCommand,
@@ -47,6 +48,19 @@ function receipt(pending: PendingCommand) {
     reason: '',
   };
 }
+beforeEach(async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      Response.json({
+        authenticated: true,
+        csrfToken: 'command-session-csrf',
+        expiresAt: Date.now() + 60_000,
+      }),
+    ),
+  );
+  await bootstrapSession();
+});
 afterEach(() => vi.unstubAllGlobals());
 
 describe('durable command admission', () => {
@@ -152,6 +166,10 @@ describe('durable command admission', () => {
       expect.objectContaining({
         method: 'POST',
         credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': 'command-session-csrf',
+        },
         body: JSON.stringify({
           operationId: pending.operationId,
           intentDigest: pending.intentDigest,

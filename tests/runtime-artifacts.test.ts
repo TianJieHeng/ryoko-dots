@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 const auth = vi.hoisted(() => ({ generation: 0 }));
 vi.mock('../src/client/api', () => ({
   getAuthenticationGeneration: () => auth.generation,
-  authHeaders: () => ({ Authorization: 'Bearer fixture' }),
+  authHeaders: () => ({}),
 }));
 import {
   fetchArtifact,
@@ -120,7 +120,7 @@ it('uses an authenticated immutable same-origin path and rejects revoked or abor
     expect.objectContaining({
       credentials: 'same-origin',
       redirect: 'error',
-      headers: { Authorization: 'Bearer fixture' },
+      headers: {},
     }),
   );
   fetcher.mockImplementation(async () => {

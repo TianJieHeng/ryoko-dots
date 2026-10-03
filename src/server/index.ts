@@ -1,3 +1,7 @@
+import { ownerAuthConfig } from './owner-auth-config.js';
+import { readFileSync } from 'node:fs';
+import { createServer } from 'node:https';
+import { OwnerAuth } from './owner-auth.js';
 import { createShutdown } from './shutdown.js';
 import { reportChannelFailure, safeFailure } from './slack-channel.js';
 import { serve } from '@hono/node-server';
@@ -8,22 +12,12 @@ import { createApp } from './app.js';
 import { WorkspaceStore } from './workspace.js';
 import { Platform } from './platform.js';
 import type { PlatformConfig } from './platform-config.js';
-const host = process.env.HOST ?? '127.0.0.1';
-const port = Number(process.env.PORT ?? 4310);
-const ownerToken = process.env.OWNER_TOKEN;
-if (
-  !['127.0.0.1', '::1', 'localhost'].includes(host) &&
-  (!ownerToken || ownerToken.length < 24)
-)
-  throw new Error(
-    'External binding requires an OWNER_TOKEN of at least 24 characters.',
-  );
+const authConfig = ownerAuthConfig(process.env);
+const { host, port, ownerToken } = authConfig;
 const database = process.env.DATABASE_PATH ?? 'data/opendots.sqlite';
+const workspace = new WorkspaceStore(database, authConfig.ownerId);
+const auth = new OwnerAuth(database, authConfig);
 const store = new Store(database);
-const workspace = new WorkspaceStore(
-  database,
-  process.env.OWNER_ID ?? 'opendots-owner',
-);
 const config: PlatformConfig = {
   intelligenceKey: process.env.INTELLIGENCE_API_KEY,
   intelligenceApiUrl: process.env.INTELLIGENCE_API_URL || undefined,
@@ -77,12 +71,7 @@ const app = createApp({
   store,
   runner,
   config: researchConfig,
-  ownerToken,
-  origin:
-    process.env.APP_ORIGIN ??
-    (process.env.NODE_ENV === 'development'
-      ? 'http://127.0.0.1:5173'
-      : undefined),
+  auth,
   platform,
 });
 app.use('*', async (c, next) => {
@@ -97,18 +86,36 @@ app.use('*', async (c, next) => {
 app.get('/api/*', (c) => c.json({ error: 'Not found.' }, 404));
 app.use('/*', serveStatic({ root: './dist/client' }));
 app.get('*', serveStatic({ path: './dist/client/index.html' }));
-const server = serve({ fetch: app.fetch, hostname: host, port }, (info) => {
-  console.log(`OpenDots template listening on http://${host}:${info.port}`);
-  runner.start();
-  void platform
-    .start()
-    .catch((error) =>
-      reportChannelFailure(
-        'Slack Channels activation failed; check setup status',
-        [safeFailure(error)],
-      ),
+const server = serve(
+  {
+    fetch: app.fetch,
+    hostname: host,
+    port,
+    ...(process.env.TLS_CERT_PATH
+      ? {
+          createServer,
+          serverOptions: {
+            cert: readFileSync(process.env.TLS_CERT_PATH),
+            key: readFileSync(process.env.TLS_KEY_PATH!),
+          },
+        }
+      : {}),
+  },
+  (info) => {
+    console.log(
+      `OpenDots template listening on ${process.env.TLS_CERT_PATH ? 'https' : 'http'}://${host}:${info.port}`,
     );
-});
+    runner.start();
+    void platform
+      .start()
+      .catch((error) =>
+        reportChannelFailure(
+          'Slack Channels activation failed; check setup status',
+          [safeFailure(error)],
+        ),
+      );
+  },
+);
 const shutdown = createShutdown({
   stopRunner: () => runner.stop(),
   stopPlatform: () => platform.stop(),
@@ -116,7 +123,12 @@ const shutdown = createShutdown({
     new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),
     ),
-  exit: (code) => process.exit(code),
+  exit: (code) => {
+    auth.close();
+    workspace.close();
+    store.close();
+    process.exit(code);
+  },
   report: (operation, error) =>
     reportChannelFailure(operation, [safeFailure(error)]),
 });

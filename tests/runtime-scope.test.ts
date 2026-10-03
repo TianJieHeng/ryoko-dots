@@ -86,3 +86,30 @@ it('rejects stop scope bypasses and misleading prefixes while allowing canonical
   ).not.toThrow();
   store.close();
 });
+it('rejects browser-selected producer authority even on an owned legacy route', () => {
+  const store = new WorkspaceStore(':memory:', 'owner');
+  const dot = store.dots()[0];
+  store.bindThread('bound', dot.id, 'Bound');
+  try {
+    for (const key of [
+      'ownerId',
+      'principalId',
+      'profileId',
+      'grants',
+      'liveSessionId',
+      'durableSessionId',
+      'generation',
+    ])
+      expect(() =>
+        validateRuntimeScope(
+          new Request(`http://localhost/api/copilotkit/agent/${dot.id}/run`, {
+            method: 'POST',
+          }),
+          store,
+          { threadId: 'bound', [key]: 'forged' },
+        ),
+      ).toThrow();
+  } finally {
+    store.close();
+  }
+});

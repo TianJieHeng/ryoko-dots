@@ -1,18 +1,32 @@
+import { OwnerAuth } from '../src/server/owner-auth.js';
+import {
+  authenticatedRequests,
+  loginHeaders,
+  testOwnerToken,
+} from './helpers/owner-auth.js';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createApp } from '../src/server/app.js';
 import { Store } from '../src/server/store.js';
 import { Runner } from '../src/server/runner.js';
 import type { Config } from '../src/server/research.js';
-const stores: Store[] = [];
+const stores: { close(): void }[] = [];
 const config: Config = { mode: 'sample', baseUrl: 'https://api.openai.com/v1' };
 function fixture(token?: string) {
   const store = new Store(':memory:');
   stores.push(store);
   const runner = new Runner(store, config);
+  const auth = new OwnerAuth(':memory:', {
+    ownerId: 'owner',
+    ownerToken: token ?? testOwnerToken,
+    origin: 'http://localhost',
+  });
+  stores.push(auth);
+  const raw = createApp({ store, runner, config, auth });
   return {
     store,
     runner,
-    app: createApp({ store, runner, config, ownerToken: token }),
+    raw,
+    app: token ? raw : authenticatedRequests(raw),
   };
 }
 const json = (body: unknown) => ({
@@ -23,12 +37,12 @@ const json = (body: unknown) => ({
 afterEach(() => stores.splice(0).forEach((store) => store.close()));
 describe('API boundaries', () => {
   it('requires owner token for state and mutations when configured', async () => {
-    const { app } = fixture('private-token');
+    const { app, raw } = fixture('private-owner-token-for-test-only');
     expect((await app.request('/api/state')).status).toBe(401);
     expect(
       (
         await app.request('/api/state', {
-          headers: { Authorization: 'Bearer private-token' },
+          headers: await loginHeaders(raw, 'private-owner-token-for-test-only'),
         })
       ).status,
     ).toBe(200);
@@ -117,15 +131,15 @@ it('rejects DNS-rebinding Host even with a matching hostile Origin', async () =>
 });
 
 it('exposes honest runtime setup only through the existing authenticated boundary', async () => {
-  const { app } = fixture('owner-runtime-test');
+  const { app, raw } = fixture('owner-runtime-token-for-tests');
   expect((await app.request('/api/runtime/setup')).status).toBe(401);
   const response = await app.request('/api/runtime/setup', {
-    headers: { Authorization: 'Bearer owner-runtime-test' },
+    headers: await loginHeaders(raw, 'owner-runtime-token-for-tests'),
   });
   expect(response.status).toBe(200);
   const setup = await response.json();
   expect(setup.version).toBe('ryoko-dots/1');
   expect(setup.qualified).toBe(false);
   expect(setup.scope).toBeNull();
-  expect(JSON.stringify(setup)).not.toContain('owner-runtime-test');
+  expect(JSON.stringify(setup)).not.toContain('owner-runtime-token-for-tests');
 });

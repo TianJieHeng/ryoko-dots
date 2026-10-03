@@ -250,3 +250,26 @@ Checks:
 - Production stdio/WS binding, full process restart/resubscribe, live provider, browser and target-host gates: NOT RUN / UNQUALIFIED. Full consolidated suite is reserved for BE12.
 
 Blocker/next: inspected producer generic session attachment warns but does not enforce foreign login ownership; create idempotency is process-memory/300-second only; no read-only command receipt lookup exists, and command replay can queue historical unclaimed work. Owner confirmation is pending for narrowly scoped producer conversation/receipt fixes. Continue independent BE01 Dots session/auth storage work with blocked integrated status; do not enable dependent writes until authority and durable canonical history are proven. Remote commit/tree/journal and exact-commit CI are checked after publication; no pending/absent CI is called a pass.
+
+## BE01 — Single-owner sessions and scoped binding registry — 2026-10-03
+
+Status: Dots authentication and registry implementation checkpoint complete; **producer binding and end-to-end integration remain unqualified** until the BE00/BE02 producer adapter proves them. Previous published checkpoint `a82b1583fbb8861a5f44e1a4cfdf01801a6f4c15` (BE00 foundation), remote tree/journal verified. Owner separately approved the bounded producer conversation/receipt and seven full-plan integration prerequisite areas; this entry publishes only the independent Dots authentication slice.
+
+Changes:
+- Production `createApp` requires SQLite-backed `OwnerAuth`, with no unauthenticated mode or bearer bypass. Existing bootstrap owner token is exchanged for HttpOnly/SameSite cookies (Secure and `__Host-` over HTTPS), in-memory CSRF, absolute/idle expiry, logout/all-session revocation and restart-safe rotation fencing. No deployment credential was generated.
+- Enforced exact configured Host/port/origin, JSON and body limits, persisted rate limits, no trusted forwarded headers, native TLS for external listeners or explicit loopback-only TLS proxy mode. Missing owner configuration fails closed. Added authenticated request fence for streamed chunks/effects and post-read revocation validation.
+- Replaced browser token storage with serialized cookie bootstrap/login/logout, immediate protected-state clearing, generation-fenced requests and removal of old sessionStorage owner tokens. Owner secrets are never retained in browser storage; CSRF remains in memory. Updated the synthetic browser harness for this real protocol.
+- Added server-only owner/principal/profile/agent/project/conversation registry, uniqueness/CAS revisions, immutable privilege classes, grant/revoke/archive checks and independent live transport versus stable authority revisions. Dot renaming cannot select privilege. Registry mutations are not browser APIs, and no mapping is installed merely from configuration.
+- Ported existing app/page/runtime boundary tests to real cookie login; added auth, delayed-revocation, rotation/restart, mapping and client race regressions. Documented limits and TLS/session setup in `SECURITY.md` and `.env.example`.
+
+Environment: same Linux x64 / Node v24.19.0 / npm 11.9.0. All session/database/credential values in tests are synthetic temporary fixtures. No deployment, real credential, provider, external channel or live computer was activated.
+
+Checks:
+- `npx --no-install vitest run tests/owner-auth.test.ts tests/runtime-bindings.test.ts tests/app.test.ts tests/page-routes.test.ts tests/workspace.test.ts tests/runtime-scope.test.ts tests/security.test.ts tests/client-auth.test.ts tests/runtime-connection.test.ts tests/runtime-commands.test.ts tests/runtime-artifacts.test.ts`: PASS, 11 files / 87 tests.
+- `npx --no-install tsc --noEmit`: PASS.
+- Targeted ESLint/Prettier for changed server/client/tests/browser harness and `git diff --check`: PASS.
+- `npm run build`: PASS; existing nonfatal main bundle size warning remains approximately 1.077 MB minified. Full aggregate test suite remains scheduled for BE12.
+- One regression initially exposed a real delayed-read revocation defect: Hono finalized responses required replacement of `c.res`. Fixed the response and removed sensitive content headers, then reran the focused gate successfully.
+- Actual Chromium/browser gate: BLOCKED by the already recorded sandbox startup restriction; 0 UI assertions passed. Harness updates are test code, not a browser visual/accessibility pass. Target-host TLS and real proxy qualification: NOT RUN.
+
+Remaining/next: `/api/runtime/setup` remains false/null until the verified producer adapter exists. The old SDK scope checker is temporarily retained only as migration code; legacy headless bearer self-calls are no longer accepted, and later phases must retire execution paths rather than restoring a bypass. Next publish the approved producer canonical conversation/read-only receipt prerequisites and implement BE02 self-hosted history/create/reload adapter, then BE03 single command ownership. Remote SHA/tree/journal and exact-commit CI checked after publication; absent CI is not a pass.

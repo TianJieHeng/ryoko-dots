@@ -1,4 +1,4 @@
-/* global setTimeout, structuredClone, document, history, window */
+/* global setTimeout, structuredClone, document, history, window, sessionStorage */
 /** Deterministic synthetic browser QA. Never attaches a backend or a provider.
  * Run after npm run build:frontend: node scripts/qa-runtime-browser.mjs
  * Evidence and screenshots go to ignored artifacts/runtime-browser/.
@@ -47,6 +47,12 @@ if (process.argv.includes('--serve-fixtures')) {
   let mode = 'qualified',
     scopeLetter = 'a';
   const commands = [];
+  let authenticated = true;
+  const fixtureSession = {
+    authenticated: true,
+    csrfToken: 'synthetic-runtime-qa-csrf',
+    expiresAt: Date.now() + 60 * 60 * 1000,
+  };
   server.on('request', async (request, response) => {
     const url = new URL(request.url, origin),
       path = url.pathname;
@@ -60,7 +66,7 @@ if (process.argv.includes('--serve-fixtures')) {
     evidence.requests.push({
       method: request.method,
       path: path + url.search,
-      body,
+      body: path === '/api/auth/login' ? { ownerToken: '[redacted]' } : body,
     });
     await writeFile(
       resolve(out, 'cua-requests.json'),
@@ -78,6 +84,20 @@ if (process.argv.includes('--serve-fixtures')) {
       scope: fixture.scopes[letter],
       ...value,
     });
+    // Synthetic transport fixture only; real cookie security has server tests.
+    if (path === '/api/auth/session')
+      return authenticated
+        ? reply(fixtureSession)
+        : reply({ error: 'Owner session required.' }, 401);
+    if (path === '/api/auth/login') {
+      authenticated = true;
+      return reply(fixtureSession);
+    }
+    if (path === '/api/auth/logout') {
+      authenticated = false;
+      return reply({ authenticated: false });
+    }
+    if (!authenticated) return reply({ error: 'Owner session required.' }, 401);
     if (path === '/api/state') return reply(fixture.state);
     if (path === '/api/workspace') return reply(fixture.workspace);
     if (path === '/api/runtime/setup') {
@@ -237,6 +257,8 @@ try {
 } catch (error) {
   evidence.blocker = { stage: 'browser_launch', message: error.message };
   evidence.checks = [
+    'owner bootstrap gates protected requests and clears legacy credentials',
+    'owner unlock and sign-out lifecycle',
     'unavailable setup fails closed',
     'unqualified setup fails closed',
     'malformed setup fails closed',
@@ -305,6 +327,7 @@ const createScenario = async (
     serviceWorkers: 'block',
   });
   const state = {
+    authenticated: mode !== 'auth',
     scope: 'a',
     posts: [],
     inspections: [],
@@ -348,7 +371,7 @@ const createScenario = async (
       mode,
       method,
       path: url.pathname + url.search,
-      body,
+      body: path === '/auth/login' ? { ownerToken: '[redacted]' } : body,
     });
     const send = (value, status = 200) =>
       route.fulfill({
@@ -364,6 +387,44 @@ const createScenario = async (
       scope: fixture.scopes[x],
       ...data,
     });
+    if (path === '/auth/session')
+      return state.authenticated
+        ? send({
+            authenticated: true,
+            csrfToken: 'synthetic-runtime-qa-csrf',
+            expiresAt: Date.now() + 60 * 60 * 1000,
+          })
+        : send({ error: 'Owner session required.' }, 401);
+    if (path === '/auth/login') {
+      if (
+        mode === 'auth' &&
+        body?.ownerToken !== 'synthetic-owner-access-token'
+      )
+        return send({ error: 'Synthetic owner token was not accepted.' }, 401);
+      state.authenticated = true;
+      return send({
+        authenticated: true,
+        csrfToken: 'synthetic-runtime-qa-csrf',
+        expiresAt: Date.now() + 60 * 60 * 1000,
+      });
+    }
+    if (path === '/auth/logout') {
+      assert.equal(
+        request.headers()['x-csrf-token'],
+        'synthetic-runtime-qa-csrf',
+      );
+      assert.deepEqual(body, {});
+      state.authenticated = false;
+      return send({ authenticated: false });
+    }
+    if (!state.authenticated)
+      return send({ error: 'Owner session required.' }, 401);
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(method))
+      assert.equal(
+        request.headers()['x-csrf-token'],
+        'synthetic-runtime-qa-csrf',
+      );
+    assert.equal(request.headers().authorization, undefined);
     if (path === '/state') return send(fixture.state);
     if (path === '/workspace') return send(fixture.workspace);
     if (path === '/runtime/setup') {
@@ -622,11 +683,88 @@ const createScenario = async (
       501,
     );
   });
+  if (mode === 'auth')
+    await context.addInitScript(() => {
+      sessionStorage.setItem('opendots-token', 'obsolete-synthetic-secret');
+    });
   await page.goto(origin);
-  await page.getByRole('navigation', { name: 'Dots', exact: true }).waitFor();
+  if (mode === 'auth') await page.getByLabel('Owner access token').waitFor();
+  else
+    await page.getByRole('navigation', { name: 'Dots', exact: true }).waitFor();
   return { context, page, state };
 };
 try {
+  const auth = await createScenario('auth');
+  await check(
+    'owner: bootstrap gates protected requests and clears legacy credentials',
+    async () => {
+      assert(
+        evidence.requests
+          .filter((request) => request.mode === 'auth')
+          .every((request) => request.path === '/api/auth/session'),
+      );
+      assert.equal(
+        await auth.page.evaluate(() =>
+          sessionStorage.getItem('opendots-token'),
+        ),
+        null,
+      );
+      await auth.page
+        .getByLabel('Owner access token')
+        .fill('wrong-synthetic-token');
+      await auth.page
+        .getByRole('button', { name: 'Unlock OpenDots', exact: true })
+        .click();
+      await auth.page
+        .getByRole('alert')
+        .filter({ hasText: 'Synthetic owner token was not accepted.' })
+        .waitFor();
+      assert.equal(
+        await auth.page.getByLabel('Owner access token').inputValue(),
+        '',
+      );
+      assert(
+        evidence.requests
+          .filter((request) => request.mode === 'auth')
+          .every((request) => request.path.startsWith('/api/auth/')),
+      );
+    },
+  );
+  await shot(auth.page, 'desktop-owner-unlock');
+  await check('owner: unlock and sign-out lifecycle', async () => {
+    await auth.page
+      .getByLabel('Owner access token')
+      .fill('synthetic-owner-access-token');
+    await auth.page
+      .getByRole('button', { name: 'Unlock OpenDots', exact: true })
+      .click();
+    await auth.page
+      .getByRole('navigation', { name: 'Dots', exact: true })
+      .waitFor();
+    assert.equal(
+      await auth.page.evaluate(() => sessionStorage.getItem('opendots-token')),
+      null,
+    );
+    await auth.page
+      .getByRole('button', { name: 'Sign out', exact: true })
+      .click();
+    await auth.page.getByLabel('Owner access token').waitFor();
+    await auth.page
+      .getByRole('button', { name: 'Unlock OpenDots', exact: true })
+      .waitFor();
+    assert.equal(
+      await auth.page.getByLabel('Owner access token').inputValue(),
+      '',
+    );
+    assert.equal(auth.state.authenticated, false);
+    assert.equal(
+      await auth.page
+        .getByRole('navigation', { name: 'Dots', exact: true })
+        .count(),
+      0,
+    );
+  });
+  await auth.context.close();
   for (const mode of ['unavailable', 'unqualified', 'malformed']) {
     const s = await createScenario(mode);
     await check(`${mode}: runtime chat fails closed`, async () => {

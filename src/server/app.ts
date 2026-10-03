@@ -2,7 +2,7 @@ import { runtimeSetup } from './runtime/setup.js';
 import { computerRoutes } from './computer-routes.js';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { timingSafeEqual } from 'node:crypto';
+import { OwnerAuth } from './owner-auth.js';
 import { z } from 'zod';
 import { Store } from './store.js';
 import { Runner } from './runner.js';
@@ -15,16 +15,14 @@ export interface AppOptions {
   store: Store;
   runner: Runner;
   config: Config;
-  ownerToken?: string;
-  origin?: string;
+  auth: OwnerAuth;
   platform?: Platform;
 }
 export function createApp({
   store,
   runner,
   config,
-  ownerToken,
-  origin,
+  auth,
   platform,
 }: AppOptions) {
   const app = new Hono();
@@ -35,45 +33,7 @@ export function createApp({
       onError: (c) => c.json({ error: 'Request is too large.' }, 413),
     }),
   );
-  app.use('/api/*', async (c, next) => {
-    c.header('Cache-Control', 'no-store');
-    c.header('X-Content-Type-Options', 'nosniff');
-    const requestUrl = new URL(c.req.url);
-    const allowedHosts = new Set([
-      'localhost',
-      '127.0.0.1',
-      '[::1]',
-      ...(origin ? [new URL(origin).hostname] : []),
-    ]);
-    if (!ownerToken && !allowedHosts.has(requestUrl.hostname))
-      return c.json({ error: 'Unrecognized host.' }, 403);
-    const requestOrigin = c.req.header('origin');
-    const expectedOrigin = origin ?? new URL(c.req.url).origin;
-    if (requestOrigin && requestOrigin !== expectedOrigin)
-      return c.json({ error: 'Cross-origin requests are not allowed.' }, 403);
-    if (c.req.header('sec-fetch-site') === 'cross-site')
-      return c.json({ error: 'Cross-site requests are not allowed.' }, 403);
-    if (ownerToken) {
-      const expected = Buffer.from(ownerToken);
-      const supplied = Buffer.from(
-        c.req.header('authorization')?.replace(/^Bearer /, '') ?? '',
-      );
-      if (
-        expected.length !== supplied.length ||
-        !timingSafeEqual(expected, supplied)
-      )
-        return c.json(
-          { error: 'Enter your owner access token to unlock OpenDots.' },
-          401,
-        );
-    }
-    if (
-      !['GET', 'HEAD'].includes(c.req.method) &&
-      !c.req.header('content-type')?.includes('application/json')
-    )
-      return c.json({ error: 'Use application/json.' }, 415);
-    await next();
-  });
+  app.use('/api/*', auth.middleware());
   app.get('/api/runtime/setup', (c) => c.json(runtimeSetup()));
   if (platform) app.route('/api', computerRoutes(platform.computers));
   const voice = platform ? new VoiceService(platform) : undefined;

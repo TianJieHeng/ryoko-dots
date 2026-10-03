@@ -1,3 +1,9 @@
+import { OwnerAuth } from '../src/server/owner-auth.js';
+import {
+  authenticatedRequests,
+  loginHeaders,
+  testOwnerToken,
+} from './helpers/owner-auth.js';
 import { afterEach, expect, it } from 'vitest';
 import { Store } from '../src/server/store.js';
 import { WorkspaceStore } from '../src/server/workspace.js';
@@ -20,20 +26,24 @@ function fixture(ownerToken?: string) {
     slackUsers: [],
     runtimeUrl: '',
   });
-  return {
-    ws,
-    app: createApp({
-      store,
-      runner: new Runner(store, config),
-      config,
-      platform,
-      ownerToken,
-    }),
-  };
+  const auth = new OwnerAuth(':memory:', {
+    ownerId: 'owner',
+    ownerToken: ownerToken ?? testOwnerToken,
+    origin: 'http://localhost',
+  });
+  cleanup.push(() => auth.close());
+  const raw = createApp({
+    store,
+    runner: new Runner(store, config),
+    config,
+    platform,
+    auth,
+  });
+  return { ws, raw, app: ownerToken ? raw : authenticatedRequests(raw) };
 }
 const request = (body: unknown, method = 'POST') => ({
   method,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json', Origin: 'http://localhost' },
   body: JSON.stringify(body),
 });
 
@@ -80,7 +90,7 @@ it('saves Learning settings through the owner API and rejects malformed containe
     learningContainerId: 'research',
     skillDeliveryEnabled: true,
   });
-  const privateApp = fixture('owner-secret');
+  const privateApp = fixture('owner-secret-synthetic-test-token');
   expect(
     (
       await privateApp.app.request(
@@ -90,7 +100,7 @@ it('saves Learning settings through the owner API and rejects malformed containe
     ).status,
   ).toBe(401);
 });
-it('supports manual pages without credentials and returns validation, scope and conflict statuses', async () => {
+it('supports manual pages without provider credentials and returns validation, scope and conflict statuses', async () => {
   const { ws, app } = fixture();
   const space = ws.spaces()[0].id;
   const path = `/api/spaces/${space}/pages`;
@@ -128,20 +138,23 @@ it('supports manual pages without credentials and returns validation, scope and 
     (
       await app.request(path, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'http://localhost',
+        },
         body: '{',
       })
     ).status,
   ).toBe(400);
 });
 it('keeps page routes behind owner authentication and browser origin checks', async () => {
-  const { ws, app } = fixture('owner-secret');
+  const { ws, app, raw } = fixture('owner-secret-synthetic-test-token');
   const path = `/api/spaces/${ws.spaces()[0].id}/pages`;
   expect((await app.request(path)).status).toBe(401);
   expect(
     (
       await app.request(path, {
-        headers: { Authorization: 'Bearer owner-secret' },
+        headers: await loginHeaders(raw, 'owner-secret-synthetic-test-token'),
       })
     ).status,
   ).toBe(200);
@@ -183,11 +196,11 @@ it('saves reviewed drafts once and rechecks the Dot’s Space access', async () 
 });
 
 it('restores review receipts through the owner API with current thread and Space authorization', async () => {
-  const { ws, app } = fixture('owner-secret');
+  const { ws, app, raw } = fixture('owner-secret-synthetic-test-token');
   const dot = ws.dots()[0];
   ws.bindThread('review-restore', dot.id, 'Review');
   const base = '/api/conversations/review-restore/reviewed-page';
-  const headers = { Authorization: 'Bearer owner-secret' };
+  const headers = await loginHeaders(raw, 'owner-secret-synthetic-test-token');
   expect((await app.request(`${base}/call`)).status).toBe(401);
   expect(
     await (await app.request(`${base}/call`, { headers })).json(),

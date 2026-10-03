@@ -8,7 +8,6 @@ import { useConversations } from './runtime/use-conversations';
 import { createConversation } from './runtime/conversations';
 import { useRuntime } from './runtime/use-runtime';
 import { RuntimeStatus } from './runtime/RuntimeStatus';
-import { subscribeAuthentication } from './api';
 import { openPageLink } from './page-navigation';
 import { SpaceNav } from './SpaceNav';
 import { SpaceWorkspace } from './SpaceWorkspace';
@@ -22,6 +21,7 @@ import {
   Folder,
   Menu,
   MessageCircle,
+  LogOut,
   Monitor,
   MoreHorizontal,
   Pause,
@@ -39,7 +39,16 @@ import type {
   State,
   WorkspaceState,
 } from '../shared/types';
-import { api, ApiError, setToken } from './api';
+import {
+  api,
+  ApiError,
+  bootstrapSession,
+  getAuthenticationGeneration,
+  isAuthenticated,
+  logoutSession,
+  subscribeAuthentication,
+  unlockSession,
+} from './api';
 import { Mascot } from './Mascot';
 import { Chat } from './Chat';
 import { ThreadList } from './ThreadList';
@@ -48,6 +57,146 @@ import { TaskRow } from './TaskPresentation';
 import { WorkspaceDialog, type Dialog } from './WorkspaceDialog';
 
 export function App() {
+  const [authentication, setAuthentication] = useState({
+    authenticated: false,
+    generation: getAuthenticationGeneration(),
+  });
+  const [initializing, setInitializing] = useState(true);
+  const [auth, setAuth] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [logoutFailed, setLogoutFailed] = useState(false);
+  const pending = useRef(false);
+  useEffect(() => {
+    let active = true;
+    const unsubscribe = subscribeAuthentication(() => {
+      if (active)
+        setAuthentication({
+          authenticated: isAuthenticated(),
+          generation: getAuthenticationGeneration(),
+        });
+    });
+    void bootstrapSession()
+      .catch((cause) => {
+        if (active)
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : 'Could not check your owner session.',
+          );
+      })
+      .finally(() => {
+        if (active) setInitializing(false);
+      });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+  const signOut = async () => {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setError('');
+    setLogoutFailed(false);
+    try {
+      await logoutSession();
+    } catch (cause) {
+      setLogoutFailed(true);
+      setError(
+        `Your workspace is locked, but server sign-out could not be confirmed. ${cause instanceof Error ? cause.message : 'Check your connection and try again.'}`,
+      );
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  };
+  if (initializing)
+    return (
+      <main className="unlock">
+        <Mascot state="working" />
+        <h1>Checking your session…</h1>
+      </main>
+    );
+  if (!authentication.authenticated)
+    return (
+      <main className="unlock">
+        <Mascot />
+        <h1>Your own little corner.</h1>
+        <p>
+          Enter the owner access token configured on this template’s server.
+        </p>
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (pending.current) return;
+            const ownerToken = auth;
+            setAuth('');
+            setError('');
+            setLogoutFailed(false);
+            pending.current = true;
+            setBusy(true);
+            try {
+              await unlockSession(ownerToken);
+            } catch (cause) {
+              setError(
+                cause instanceof Error
+                  ? cause.message
+                  : 'Access token was not accepted.',
+              );
+            } finally {
+              pending.current = false;
+              setBusy(false);
+            }
+          }}
+        >
+          <input
+            type="password"
+            aria-label="Owner access token"
+            autoComplete="off"
+            value={auth}
+            disabled={busy}
+            onChange={(event) => setAuth(event.target.value)}
+            required
+          />
+          <button className="primary" disabled={busy}>
+            {busy ? 'Please wait…' : 'Unlock OpenDots'}
+          </button>
+        </form>
+        {error && (
+          <>
+            <p className="chat-error" role="alert">
+              {error}
+            </p>
+            {logoutFailed && (
+              <button disabled={busy} onClick={() => void signOut()}>
+                Retry sign out
+              </button>
+            )}
+          </>
+        )}
+        <p className="muted">
+          The server keeps your session in an HttpOnly cookie. OpenDots does not
+          save your access token in browser storage.
+        </p>
+      </main>
+    );
+  return (
+    <WorkspaceApp
+      key={authentication.generation}
+      onSignOut={signOut}
+      signingOut={busy}
+    />
+  );
+}
+
+function WorkspaceApp({
+  onSignOut,
+  signingOut,
+}: {
+  onSignOut: () => Promise<void>;
+  signingOut: boolean;
+}) {
   const [state, setState] = useState<State>();
   const [workspace, setWorkspace] = useState<WorkspaceState>();
   const [selectedDot, setSelectedDot] = useState('');
@@ -147,8 +296,6 @@ export function App() {
   };
 
   const [error, setError] = useState('');
-  const [auth, setAuth] = useState('');
-  const [needsAuth, setNeedsAuth] = useState(false);
   const [dialog, setDialog] = useState<Dialog>();
   const [mobile, setMobile] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -159,20 +306,6 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState('');
   const [taskDetail, setTaskDetail] = useState<Detail>();
-  useEffect(
-    () =>
-      subscribeAuthentication(() => {
-        setState(undefined);
-        setWorkspace(undefined);
-        setSelectedThread(undefined);
-        setCapture(undefined);
-        setTaskDetail(undefined);
-        setPendingPrompt(undefined);
-        setDialog(undefined);
-        setNeedsAuth(true);
-      }),
-    [],
-  );
   const refresh = useCallback(async () => {
     try {
       const [s, w] = await Promise.all([
@@ -181,7 +314,6 @@ export function App() {
       ]);
       setState(s);
       setWorkspace(w);
-      setNeedsAuth(false);
       setSelectedDot((previous) => previous || w.dots[0]?.id || '');
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
@@ -190,7 +322,6 @@ export function App() {
         setCapture(undefined);
         setTaskDetail(undefined);
         setSelectedThread(undefined);
-        setNeedsAuth(true);
       } else
         setError(
           e instanceof Error ? e.message : 'Could not connect to the server.',
@@ -306,50 +437,6 @@ export function App() {
       setBusy(false);
     }
   };
-  if (needsAuth)
-    return (
-      <main className="unlock">
-        <Mascot />
-        <h1>Your own little corner.</h1>
-        <p>
-          Enter the owner access token configured on this template’s server.
-        </p>
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setToken(auth);
-            setAuth('');
-            try {
-              await api('/state');
-              setError('');
-              await refresh();
-            } catch (err) {
-              setError(
-                err instanceof Error
-                  ? err.message
-                  : 'Access token was not accepted.',
-              );
-            }
-          }}
-        >
-          <input
-            type="password"
-            aria-label="Owner access token"
-            autoComplete="current-password"
-            value={auth}
-            onChange={(e) => setAuth(e.target.value)}
-            required
-          />
-          <button className="primary">Unlock OpenDots</button>
-        </form>
-        {error && (
-          <p className="chat-error" role="alert">
-            {error}
-          </p>
-        )}
-        <p className="muted">The token stays in this tab’s session storage.</p>
-      </main>
-    );
   if (!state || !workspace || !dot)
     return (
       <main className="unlock">
@@ -564,6 +651,21 @@ export function App() {
           >
             <Settings2 size={17} />
             <span>Settings & setup</span>
+          </button>
+          <button
+            className="nav-item"
+            disabled={signingOut}
+            onClick={() => {
+              if (
+                dirtyPage.current &&
+                !window.confirm('Sign out and discard your unsaved page draft?')
+              )
+                return;
+              void onSignOut();
+            }}
+          >
+            <LogOut size={17} />
+            <span>Sign out</span>
           </button>
           <a
             className="nav-item"

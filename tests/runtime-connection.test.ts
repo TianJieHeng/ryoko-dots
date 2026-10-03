@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, afterEach } from 'vitest';
+import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import {
   connectionState,
   RequestGeneration,
@@ -26,6 +26,7 @@ const setup = () =>
     compatibility: ready,
     features: Object.fromEntries(featureNames.map((name) => [name, ready])),
   });
+beforeEach(() => vi.resetModules());
 afterEach(() => vi.unstubAllGlobals());
 describe('connection and authentication fencing', () => {
   it('invalidates A→B→A and reconnect responses', () => {
@@ -62,24 +63,32 @@ describe('connection and authentication fencing', () => {
     let resolve!: (value: Response) => void;
     vi.stubGlobal(
       'fetch',
-      vi.fn(
-        () =>
-          new Promise<Response>((done) => {
-            resolve = done;
-          }),
+      vi.fn((path: string) =>
+        path === '/api/auth/login'
+          ? Promise.resolve(
+              Response.json({
+                authenticated: true,
+                csrfToken: 'new-session-csrf',
+                expiresAt: Date.now() + 60_000,
+              }),
+            )
+          : new Promise<Response>((done) => {
+              resolve = done;
+            }),
       ),
     );
-    const { api, setToken, subscribeAuthentication } =
+    const { api, unlockSession, subscribeAuthentication } =
       await import('../src/client/api');
     const listener = vi.fn();
     const unsubscribe = subscribeAuthentication(listener);
     const request = api('/state');
-    setToken('new-owner');
+    const unlock = unlockSession('new-owner');
     resolve(
       new Response(JSON.stringify({ private: 'old-owner' }), { status: 200 }),
     );
     await expect(request).rejects.toThrow('Authentication changed');
-    expect(listener).toHaveBeenCalledOnce();
+    await unlock;
+    expect(listener).toHaveBeenCalledTimes(2);
     unsubscribe();
   });
 });
@@ -91,14 +100,19 @@ it('expires protected authentication once without an unauthorized-response loop'
   });
   vi.stubGlobal(
     'fetch',
-    vi.fn(
-      async () =>
-        new Response(JSON.stringify({ error: 'Expired' }), { status: 401 }),
+    vi.fn(async (path: string) =>
+      path === '/api/auth/session'
+        ? Response.json({
+            authenticated: true,
+            csrfToken: 'expired-session-csrf',
+            expiresAt: Date.now() + 60_000,
+          })
+        : Response.json({ error: 'Expired' }, { status: 401 }),
     ),
   );
-  const { api, setToken, subscribeAuthentication, authHeaders } =
+  const { api, bootstrapSession, subscribeAuthentication, authHeaders } =
     await import('../src/client/api');
-  setToken('expired-owner-token');
+  await bootstrapSession();
   const listener = vi.fn();
   const remove = subscribeAuthentication(listener);
   await expect(api('/runtime/setup')).rejects.toMatchObject({ status: 401 });

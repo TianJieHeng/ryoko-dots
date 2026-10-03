@@ -13,6 +13,23 @@ export function validateRuntimeScope(
   const path = url.pathname.slice(prefix.length);
   const data =
     body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+  // Legacy SDK route selector only. These are never producer identity inputs.
+  const forbidden = [
+    'owner',
+    'ownerId',
+    'principal',
+    'principalId',
+    'profile',
+    'profileId',
+    'grants',
+    'sessionId',
+    'liveSessionId',
+    'durableSessionId',
+    'generation',
+    'runtimeBinding',
+  ];
+  if (forbidden.some((key) => key in data || url.searchParams.has(key)))
+    return deny();
   const id = (value: string) => {
     const decoded = decodeURIComponent(value);
     if (!decoded || /[/\\\s]/.test(decoded)) return deny();
