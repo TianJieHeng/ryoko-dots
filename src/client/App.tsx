@@ -1,7 +1,6 @@
 import { MemoryLearning } from './runtime/MemoryLearning';
 import { specialistsSchema, configSchema } from '../shared/runtime/agents';
 import { MissionsPanel } from './runtime/MissionsPanel';
-import { controlSchema } from '../shared/runtime/missions';
 import { useResource } from './runtime/use-resource';
 import { runtimeAction } from './runtime/actions';
 import { useConversations } from './runtime/use-conversations';
@@ -24,9 +23,7 @@ import {
   LogOut,
   Monitor,
   MoreHorizontal,
-  Pause,
   PanelLeft,
-  Play,
   Plus,
   Search,
   Settings2,
@@ -202,19 +199,12 @@ function WorkspaceApp({
   const [selectedDot, setSelectedDot] = useState('');
   const runtime = useRuntime(selectedDot);
   const conversationList = useConversations(selectedDot, runtime);
-  const control = useResource(
-    '/runtime/control',
-    controlSchema,
-    runtime,
-    'missions',
-  );
   const specialists = useResource(
     '/runtime/specialists',
     specialistsSchema,
     runtime,
     'specialists',
   );
-  const runtimePaused = control.data?.admission !== 'open';
   const [selectedThread, setSelectedThread] = useState<string>();
   const [view, rawSetView] = useState<'chat' | 'tasks' | 'memories' | 'space'>(
     'chat',
@@ -400,8 +390,8 @@ function WorkspaceApp({
   const thread = conversationList.conversations.find(
     (item) => item.id === selectedThread && item.dotId === dot?.id,
   );
-  const configured =
-    runtime.available('conversations') && runtime.available('commands');
+  // Chat owns explicit execution connection; saved conversations must be reachable first.
+  const configured = runtime.available('conversations');
   const chooseDot = (next: Dot) => {
     setSelectedDot(next.id);
     setSelectedThread(
@@ -713,40 +703,6 @@ function WorkspaceApp({
               {configured ? 'SELF-HOSTED' : 'SETUP REQUIRED'}
             </span>
             <button
-              className="pause-button"
-              aria-label={
-                runtimePaused
-                  ? 'Request resumed admissions'
-                  : 'Request paused admissions'
-              }
-              disabled={!control.data || !runtime.available('missions') || busy}
-              onClick={async () => {
-                if (!runtime.setup?.scope || !control.data || busy) return;
-                setBusy(true);
-                try {
-                  await runtimeAction(
-                    runtime.setup.scope,
-                    '/runtime/control',
-                    runtimePaused ? 'resume' : 'pause',
-                    {},
-                    control.data.revision,
-                  );
-                  await control.reload();
-                } catch (cause) {
-                  setError(
-                    cause instanceof Error
-                      ? cause.message
-                      : 'Pause outcome unknown.',
-                  );
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              {runtimePaused ? <Play size={14} /> : <Pause size={14} />}
-              <span>{runtimePaused ? 'Resume' : 'Pause'}</span>
-            </button>
-            <button
               className="icon-button"
               aria-label={pane ? 'Hide computer' : 'Show computer'}
               aria-expanded={pane}
@@ -768,13 +724,6 @@ function WorkspaceApp({
             </button>
           </div>
         )}
-        {control.data && control.data.admission !== 'open' && (
-          <div className="notice">
-            Admissions: {control.data.admission.replaceAll('_', ' ')} ·
-            schedules: {control.data.schedules} · accepted work:{' '}
-            {control.data.inFlight}. Pause is not cancellation.
-          </div>
-        )}
         {view === 'space' ? (
           <SpaceWorkspace
             key={spaceId}
@@ -784,7 +733,7 @@ function WorkspaceApp({
             }
             pageId={pageId}
             workspace={workspace}
-            paused={runtimePaused}
+            paused={false}
             onPage={(id) => openPage(spaceId, id)}
             onSettings={() => setDialog({ type: 'settings' })}
             onCreateDot={() => setDialog({ type: 'dot', spaceId })}
@@ -816,7 +765,7 @@ function WorkspaceApp({
                   calls={workspace.calls.filter(
                     (call) => call.threadId === thread.id,
                   )}
-                  paused={runtimePaused}
+                  paused={false}
                   onSaved={refresh}
                   onComputer={() => setPane(true)}
                   onSchedule={() =>
@@ -957,7 +906,14 @@ function WorkspaceApp({
               />
             ) : (
               <>
-                <MissionsPanel connection={runtime} />
+                <MissionsPanel
+                  connection={runtime}
+                  conversationId={thread?.id}
+                  conversations={conversationList.conversations.filter(
+                    (item) => item.dotId === dot.id,
+                  )}
+                  onConversationChange={setSelectedThread}
+                />
                 <details>
                   <summary>Legacy task archive (read-only)</summary>
                   <label className="search-box">

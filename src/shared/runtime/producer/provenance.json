@@ -18,7 +18,23 @@
     "runtime.conversation.history",
     "runtime.conversation.export",
     "runtime.command.receipt",
-    "runtime.command"
+    "runtime.command",
+    "runtime.control.get",
+    "runtime.control.pause",
+    "runtime.control.resume",
+    "runtime.approvals.list",
+    "runtime.approval.get",
+    "runtime.approval.resolve",
+    "runtime.effects.list",
+    "runtime.mission.history",
+    "runtime.mission.get",
+    "runtime.mission.pause",
+    "runtime.mission.resume",
+    "runtime.mission.cancel",
+    "runtime.delivery.status",
+    "runtime.delivery.retry",
+    "runtime.result.get",
+    "runtime.delivery.ack"
   ],
   "status": "canonical_command_stdio_subset"
 }

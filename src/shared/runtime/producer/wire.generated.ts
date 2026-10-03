@@ -1,5 +1,93 @@
 // GENERATED exact subset of pinned producer. DO NOT EDIT.
 // Regenerate: node scripts/pin-producer-contract.mjs /path/to/ryoko-agent
+export interface RuntimeApprovalGetParams {
+  session_id: string
+  schema_version: 1
+  approval_id: string
+}
+export interface RuntimeApprovalGetResult {
+  approval: RuntimeApprovalRecord
+  detail: RuntimeApprovalDetail
+  decision: RuntimeApprovalDecision
+  input_revision: string | null
+  artifact_revision: string | null
+  dispatch_performed: false
+}
+export interface RuntimeApprovalRecord {
+  approval_id: string
+  run_id: string
+  approval_digest: string
+  action_digest: string
+  input_digest: string
+  target_digest: string
+  input_revision_digest: string
+  artifact_revision_digest: string
+  policy_version: string
+  policy_digest: string
+  status: 'pending' | 'approved' | 'denied' | 'consumed' | 'invalidated'
+  expires_at: number
+  expired: boolean
+  created_at: number
+  resolved_at: number | null
+  consumed_at: number | null
+  invalidation_reason?: string | null
+  mission_id?: string | null
+  mission_revision?: number | null
+  invalidated_at?: number | null
+}
+export interface RuntimeApprovalDetail {
+  reviewable: boolean
+  unavailable_reason: 'review_not_retained' | 'opaque_content' | 'sensitive_content' | 'content_not_retained' | 'review_size_limit' | null
+  review: RuntimeApprovalExactReview | null
+  review_digest: string | null
+}
+export interface RuntimeApprovalExactReview {
+  action: RuntimeApprovalReviewAction
+  content: RuntimeApprovalReviewContent | null
+}
+export interface RuntimeApprovalReviewAction {
+  name: string
+  arguments: Record<string, unknown>
+  operation_class: string
+  resource_roots: string[]
+  destination: string
+  destination_purpose: string
+  contract_digest: string
+}
+export interface RuntimeApprovalReviewContent {
+  encoding: 'base64'
+  data: string
+  sha256: string
+  mime: string
+}
+export interface RuntimeApprovalDecision {
+  choice: 'once' | 'deny' | null
+  resolved_at: number | null
+  consumed_at: number | null
+}
+export interface RuntimeApprovalResolveParams {
+  session_id: string
+  schema_version: 1
+  approval_id: string
+  approval_digest: string
+  choice: 'once' | 'deny'
+}
+export interface RuntimeApprovalResolveResult {
+  approval: RuntimeApprovalRecord
+  dispatch_performed: false
+}
+export interface RuntimeApprovalListParams {
+  session_id: string
+  schema_version: 1
+  run_id?: string | null
+  limit?: number
+}
+export interface RuntimeApprovalListResult {
+  approvals: RuntimeApprovalRecord[]
+  limit: number
+  truncated: boolean
+  complete: false
+}
 export interface RuntimeCapabilitiesParams {
   session_id: string
 }
@@ -119,6 +207,45 @@ export interface RuntimeCommandMessage {
   role: 'user' | 'assistant' | 'tool'
   kind: 'input' | 'output'
   committed: true
+}
+export interface RuntimeControlGetParams {
+  session_id: string
+  schema_version: 1
+  operation_id?: string | null
+}
+export interface RuntimeControlResult {
+  control: RuntimeControlState
+  operation: RuntimeControlOperation | null
+  dispatch_performed: false
+}
+export interface RuntimeControlState {
+  revision: number
+  paused: boolean
+  updated_at: number | null
+  scope: 'owner_profile'
+  admission_blocked: boolean
+  scheduled_dispatch_blocked: boolean
+  in_flight_dispatch: 'blocked_at_next_boundary' | 'allowed_at_checked_boundary'
+  accepted_commands: number
+  claimed_commands: number
+  accepted_work_retained: true
+  already_dispatched_may_complete: true
+  provider_cancelled: false
+  remote_effects_undone: false
+}
+export interface RuntimeControlOperation {
+  operation_id: string
+  digest: string
+  revision: number
+  paused: boolean
+  committed_at: number
+  status: 'committed'
+}
+export interface RuntimeControlParams {
+  session_id: string
+  schema_version: 1
+  operation_id: string
+  expected_revision: number
 }
 export interface RuntimeConversationArchiveParams {
   schema_version: 1
@@ -257,6 +384,81 @@ export interface RuntimeConversationRenameParams {
   idempotency_key: string
   expected_revision: number
   title: string
+}
+export interface RuntimeDeliveryAckParams {
+  session_id: string
+  schema_version: 1
+  delivery_id: string
+  attempt_token: string
+  sha256: string
+  text_received?: boolean
+  artifact_received?: boolean
+}
+export interface RuntimeDeliveryReceipt {
+  delivery_id: string
+  artifact_id: string
+  version: number
+  sha256: string
+  destination: RuntimeDeliveryDestination
+  state: 'pending' | 'attempting' | 'awaiting_ack' | 'partial' | 'delivered' | 'failed' | 'outcome_unknown' | 'dead_letter'
+  acknowledgment_level: 'none' | 'transport_accepted' | 'client_received'
+  components: RuntimeDeliveryComponents
+  platform_ids: string[]
+  attempt_count: number
+  max_attempts: number
+  next_attempt_at: number | null
+  deadline_at: number
+  retention_until: number
+  last_error: string | null
+  result_available: boolean
+}
+export interface RuntimeDeliveryDestination {
+  kind: 'local_runtime'
+  session_id: string
+  principal_id: string
+  profile_id: string
+  agent_id: string
+}
+export interface RuntimeDeliveryComponents {
+  text: 'not_sent' | 'client_received'
+  artifact: 'not_sent' | 'client_received'
+}
+export interface RuntimeDeliveryParams {
+  session_id: string
+  schema_version: 1
+  delivery_id: string
+}
+export interface RuntimeEffectListParams {
+  session_id: string
+  schema_version: 1
+  run_id?: string | null
+  limit?: number
+  unresolved_only?: boolean
+}
+export interface RuntimeEffectListResult {
+  effects: RuntimeEffectRecord[]
+  limit: number
+  truncated: boolean
+  complete: false
+}
+export interface RuntimeEffectRecord {
+  effect_id: string
+  run_id: string
+  operation_id: string
+  operation_type: 'artifact_publish' | 'project_artifact_publish' | 'mission_test_execution' | 'dots_page_publish' | 'dots_computer_action' | 'unsupported'
+  state: 'prepared' | 'dispatched' | 'confirmed' | 'failed' | 'outcome_unknown' | 'reconciliation_required'
+  action_digest: string
+  input_digest: string
+  target_digest: string
+  policy_version: string
+  policy_digest: string
+  generation: number
+  approval_id: string | null
+  provider_idempotency: 'supported' | 'unsupported'
+  created_at: number
+  updated_at: number
+  exactly_once_external: false
+  replay_permitted: false
 }
 export interface RuntimeEventsSinceParams {
   session_id: string
@@ -469,6 +671,260 @@ export interface RuntimeAdmissionJob {
   enqueued_at: number
   expires_at: number
   reason: string | null
+}
+export interface MissionControlParams {
+  session_id: string
+  schema_version: 1
+  mission_id?: string | null
+  expected_revision: number
+  reason?: string
+}
+export interface MissionResult {
+  mission: MissionRecord
+  dispatch_performed?: false
+}
+export interface MissionRecord {
+  outcome: string
+  project_id?: string | null
+  deliverables?: MissionDeliverable[]
+  acceptance?: (MissionExistenceCriterion | MissionSectionCriterion | MissionTextCriterion | MissionSchemaCriterion | MissionLinkedCriterion | MissionTestCriterion | MissionUserCriterion)[]
+  scope_ref?: string | null
+  budget_ref?: string | null
+  deadline?: number | null
+  dependencies?: MissionDependency[]
+  plan_steps?: MissionPlanStep[]
+  policy?: 'direct' | 'reviewed'
+  risk?: 'unknown' | 'low' | 'consequential'
+  uncertainty?: 'unknown' | 'low' | 'high'
+  max_turns?: number
+  no_progress_limit?: number
+  legacy_contract?: MissionLegacyContract
+  subgoals?: string[]
+  gates?: MissionHistoricalGate[]
+  schema_version: 1
+  mission_id: string
+  session_id: string
+  agent_id: string
+  revision: number
+  state: 'ready' | 'working' | 'waiting_for_user' | 'waiting_for_source' | 'ready_to_review' | 'completed' | 'partially_completed' | 'paused' | 'cancelled' | 'failed'
+  execution_status: string
+  acceptance_status: string
+  delivery_status: string
+  next_step: string
+  blockers: string[]
+  artifact_refs: MissionArtifactRef[]
+  effect_refs: MissionEffectRef[]
+  delivery_refs: MissionDeliveryRef[]
+  effect_refs_total?: number
+  effect_refs_truncated?: boolean
+  delivery_refs_total?: number
+  delivery_refs_truncated?: boolean
+  verification_current?: boolean | null
+  turns_used: number
+  consecutive_no_progress: number
+  verification_rounds: number
+  last_run_id: string | null
+  paused_reason: string | null
+  recovery_choices: string[]
+  missed_steer: MissionMissedSteer[]
+  created_at: number
+  updated_at: number
+  legacy_imported: boolean
+  archived?: boolean
+  archived_at?: number | null
+}
+export interface MissionDeliverable {
+  deliverable_id: string
+  description?: string
+  artifact_ref?: MissionArtifactRef | null
+  required?: boolean
+}
+export interface MissionArtifactRef {
+  artifact_id: string
+  version: number
+  digest: string
+}
+export interface MissionExistenceCriterion {
+  criterion_id: string
+  description?: string
+  artifact_refs?: MissionArtifactRef[]
+  required?: boolean
+  kind: 'existence'
+  parameters?: MissionReadParameters
+}
+export interface MissionReadParameters {
+  require_current_head?: boolean
+  require_current_dependencies?: boolean
+}
+export interface MissionSectionCriterion {
+  criterion_id: string
+  description?: string
+  artifact_refs?: MissionArtifactRef[]
+  required?: boolean
+  kind: 'markdown_sections'
+  parameters: MissionSectionParameters
+}
+export interface MissionSectionParameters {
+  require_current_head?: boolean
+  require_current_dependencies?: boolean
+  required_sections: string[]
+  nonempty?: boolean
+}
+export interface MissionTextCriterion {
+  criterion_id: string
+  description?: string
+  artifact_refs?: MissionArtifactRef[]
+  required?: boolean
+  kind: 'text_exact'
+  parameters: MissionTextParameters
+}
+export interface MissionTextParameters {
+  require_current_head?: boolean
+  require_current_dependencies?: boolean
+  contains?: string[]
+  excludes?: string[]
+  equals?: string | null
+}
+export interface MissionSchemaCriterion {
+  criterion_id: string
+  description?: string
+  artifact_refs?: MissionArtifactRef[]
+  required?: boolean
+  kind: 'json_schema'
+  parameters: MissionSchemaParameters
+}
+export interface MissionSchemaParameters {
+  require_current_head?: boolean
+  require_current_dependencies?: boolean
+  schema: Record<string, unknown>
+}
+export interface MissionLinkedCriterion {
+  criterion_id: string
+  description?: string
+  artifact_refs?: MissionArtifactRef[]
+  required?: boolean
+  kind: 'linked_consistency'
+  parameters: MissionLinkedParameters
+}
+export interface MissionLinkedParameters {
+  require_current_head?: boolean
+  require_current_dependencies?: boolean
+  sections?: MissionLinkedSection[]
+  tokens?: string[]
+}
+export interface MissionLinkedSection {
+  artifact_id: string
+  heading: string
+}
+export interface MissionTestCriterion {
+  criterion_id: string
+  description?: string
+  artifact_refs?: MissionArtifactRef[]
+  required?: boolean
+  kind: 'test_execution'
+  parameters?: MissionIsolatedTestParameters | MissionTestParameters
+}
+export interface MissionIsolatedTestParameters {
+  adapter: 'isolated_python_v1'
+  code: string
+  code_sha256: string
+}
+export interface MissionTestParameters {
+  command?: string | null
+  evidence_ref?: string | null
+}
+export interface MissionUserCriterion {
+  criterion_id: string
+  description?: string
+  artifact_refs?: MissionArtifactRef[]
+  required?: boolean
+  kind: 'user_acceptance'
+  parameters?: MissionEmptyParameters
+}
+export type MissionEmptyParameters = Record<string, never>
+export interface MissionDependency {
+  dependency_id: string
+  kind: 'artifact' | 'evidence' | 'input' | 'mission'
+  reference: string
+  version?: string | number | null
+  digest?: string | null
+  status?: string | null
+}
+export interface MissionPlanStep {
+  step_id: string
+  description?: string
+  status?: 'pending' | 'working' | 'completed' | 'blocked' | 'skipped'
+  checkpoint?: boolean
+  depends_on?: string[]
+  input_digests?: string[]
+  target_refs?: string[]
+  approval_ids?: string[]
+}
+export interface MissionLegacyContract {
+  outcome?: string
+  verification?: string
+  constraints?: string
+  boundaries?: string
+  stop_when?: string
+}
+export interface MissionHistoricalGate {
+  command: string
+  timeout_seconds?: number
+  max_retries?: number
+}
+export interface MissionEffectRef {
+  effect_id: string
+  state: 'prepared' | 'dispatched' | 'confirmed' | 'failed' | 'outcome_unknown' | 'reconciliation_required'
+}
+export interface MissionDeliveryRef {
+  delivery_id: string
+  state: string
+}
+export interface MissionMissedSteer {
+  revision: number
+  run_id?: string | null
+  effect_ids: string[]
+  reason: 'effect_already_dispatched' | 'turn_already_finalizing'
+}
+export interface MissionGetParams {
+  session_id: string
+  schema_version: 1
+  mission_id?: string | null
+}
+export interface MissionGetResult {
+  mission: MissionRecord | null
+}
+export interface MissionListParams {
+  session_id: string
+  schema_version: 1
+  limit?: number
+}
+export interface MissionListResult {
+  missions: MissionRecord[]
+  limit: number
+  limit_reached: boolean
+  complete: false
+}
+export interface RuntimeResultGetParams {
+  session_id: string
+  schema_version: 1
+  command_id: string
+  offset?: number
+  limit?: number
+}
+export interface RuntimeResultChunk {
+  command_id: string
+  artifact_id: string
+  version: number
+  sha256: string
+  size: number
+  mime: string
+  offset: number
+  data_base64: string
+  next_offset: number
+  eof: boolean
+  publication_state: 'committed' | 'published_uncommitted'
+  delivery_id: string | null
 }
 export interface RuntimeSessionParams {
   session_id: string

@@ -27,6 +27,8 @@ import {
   ConversationLedger,
   type Operation,
 } from './runtime/conversation-ledger.js';
+import { RuntimeDeliveryService } from './runtime/delivery-service.js';
+import { RuntimeControlService } from './runtime/control-service.js';
 import { CommandService } from './runtime/command-service.js';
 import { RuntimeFailure } from './runtime/conversation-rpc.js';
 export type Guard = () => void;
@@ -48,6 +50,9 @@ export class SelfHostedPlatform {
   private starting?: Promise<void>;
   readonly ledger: ConversationLedger;
   readonly commands?: CommandService;
+  readonly controls?: RuntimeControlService;
+  readonly delivery?: RuntimeDeliveryService;
+  private unsubscribeResults?: () => void;
 
   constructor(
     readonly workspace: WorkspaceStore,
@@ -74,6 +79,32 @@ export class SelfHostedPlatform {
           });
         },
       );
+    if (transport && this.commands)
+      this.controls = new RuntimeControlService(
+        workspace.ownerId,
+        database,
+        transport,
+        async (id, auth, access) =>
+          this.commands!.existingBound(id, auth, access),
+        (scope, auth, access) =>
+          this.commands!.assertBound(scope, auth, access),
+      );
+    if (transport && this.commands) {
+      this.delivery = new RuntimeDeliveryService(
+        workspace.ownerId,
+        database,
+        transport,
+        async (id, auth, access) =>
+          this.commands!.existingBound(id, auth, access),
+        (scope, auth, access) =>
+          this.commands!.assertBound(scope, auth, access),
+      );
+      this.unsubscribeResults = transport.subscribeResultAvailable?.(
+        (notice, epoch) => {
+          this.delivery!.observeResultAvailable(notice, epoch);
+        },
+      );
+    }
   }
   async start() {
     if (!this.transport) return;
@@ -117,6 +148,9 @@ export class SelfHostedPlatform {
     }));
   }
   async stop() {
+    this.unsubscribeResults?.();
+    this.delivery?.close();
+    this.controls?.close();
     await this.commands?.stop();
     await this.transport?.stop();
     this.ledger.close();
@@ -140,6 +174,20 @@ export class SelfHostedPlatform {
         features: {
           ...base.features,
           conversations: ready,
+          missions: this.controls
+            ? {
+                state: 'ready',
+                reason:
+                  'Exact conversation-bound mission and owner/profile admission controls; connect before use.',
+              }
+            : base.features.missions,
+          reviews: this.controls
+            ? {
+                state: 'ready',
+                reason:
+                  'Exact durable review detail and digest-bound resolve through an explicitly connected conversation.',
+              }
+            : base.features.reviews,
           commands: this.commands?.ready()
             ? {
                 state: 'ready',

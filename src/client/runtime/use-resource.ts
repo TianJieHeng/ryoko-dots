@@ -12,10 +12,11 @@ export function useResource<T extends { scope: RuntimeScope }>(
   schema: z.ZodType<T>,
   connection: RuntimeConnection,
   feature: Feature,
+  enabled = true,
 ) {
   const scope = connection.setup?.scope;
   const key = JSON.stringify([path, scope]);
-  const ready = connection.available(feature);
+  const ready = enabled && connection.available(feature);
   const [value, setValue] = useState<{ key: string; data?: T; error: string }>({
     key,
     error: '',

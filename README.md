@@ -4,7 +4,7 @@ The self-hosted frontend consumer is being implemented phase by phase. The runti
 
 For safe local UI inspection use Node 24, `npm ci`, `npm run build:frontend`, then `npm run preview:frontend`. This starts static assets only; API calls truthfully report the absent qualified backend. It does not start Intelligence, providers, channels, schedulers or migration.
 
-Production `npm start` now uses the authenticated [self-hosted conversation BFF](docs/runtime/self-hosted-conversations.md). It serves native workspace/page data and, with an explicitly pinned isolated Ryoko profile, canonical create/list/history/search/rename/archive/export. Commands and later surfaces remain unavailable until their backend phases.
+Production `npm start` uses the authenticated [self-hosted BFF](docs/runtime/self-hosted-conversations.md). With an explicitly reviewed, pinned Ryoko profile it serves canonical conversations, durable commands/recovery, and [exact runtime controls/reviews](docs/runtime/self-hosted-controls.md). Open a conversation and explicitly connect it before sending or using Activity. Native workspace/manual page editing remains available; agent page effects, specialists, schedules and external surfaces are qualified in their later phases. This implementation checkpoint is not a production deployment or live-provider/browser acceptance.
 
 The retained template documentation below describes the legacy application. Its credential/startup instructions are not the migrated runtime setup and do not establish current integration readiness.
 

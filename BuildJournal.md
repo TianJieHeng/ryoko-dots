@@ -341,3 +341,29 @@ Final BE03 checks:
 - `npm run build`: PASS; existing nonfatal approximately1.09MB browser bundle warning remains.
 
 Publication: BE03 implementation, focused regressions, documentation and this root journal share one direct-main checkpoint. Exact remote SHA/tree/journal and CI are verified separately after publication. Missing/pending CI is not called a pass. No PR or deployment was made.
+
+## BE04 — Exact controls, reviews, missions and immutable delivery — 2026-10-03
+
+Status: implementation and isolated real stdio qualification checkpoint; browser/live-provider/target-host acceptance remains unqualified. Previous remote BE03 `10588f1c1280ba918e4b6c5a9210791dd36ef023`, tree `cc1cfaa6692291f28c053a7f4b626a1ab2483ee6` and root journal verified. Retained local BE03 checkpoint `d6b221d495a1358efc7adc1fcf20cdb61f684716` has the identical tree. Producer remains pinned `9c39b3cbc7d23c65782e0f73f8c8102d07955e2e`; exact TypeScript/OpenRPC hashes unchanged, generated consumer subset expanded only for actual methods.
+
+Changes:
+
+- Added a durable control operation namespace and exact conversation-bound owner/profile pause, mission controls, approval detail/decision, unresolved effect and immutable delivery inspection. All controls use the full scoped path/intent digest, stable operation identity, verified actor/live binding and post-read grant fences. Recovery never dispatches again. Unknown unkeyed mission/delivery mutations remain inspectable rather than assumed successful.
+- Exact review decisions require a current persisted presentation fingerprint, matching approval digest/content/target/recipient/versions/expiry and current grants. Producer immutable reviews have no mutable revision field; documented browser revision0 sentinel is not invented authority. Only `runtime.approval.resolve` is used; no generic command approval or independent local effect occurs.
+- Owner/profile pause preserves accepted work, blocks new admission/scheduled dispatch, and fences subsequent effect boundaries while explicitly reporting already dispatched work may finish. Run cancellation, mission cancellation, provider acknowledgment, rollback and effect reconciliation remain separate.
+- Added bounded result-availability forwarding only, whole-object chunk/digest verification, opaque browser receipt admission and explicit text/artifact component acknowledgment. No private prompt/token notifications or producer attempt tokens are forwarded. ACK response loss recovers by original status only across restart. Explicit immutable-output retry obeys producer attempt/backoff/budget and never reruns inference/effects.
+- Wired Activity to a selected, explicitly connected conversation and exact server envelopes; missions/checkpoints/next steps/blockers/reviews/effects/delivery retain their independent facts. Fixed two staged frontend gates discovered during integration: canonical Chat was hidden before the very connection it needed, and unavailable global control was treated as acknowledged pause. Conversation availability now permits rendering/creation; runtime admission remains server-authoritative.
+
+Actual integration: Linux x64 Node24.19.0/Python3.12.14, isolated temporary homes/SQLite and loopback SDK fixture. Real BFF→Python control tests prove preconnect read denial, persistent pause across restart, paused input with0 provider calls, exact resume and1 provider call, bounded empty projections, and forged/foreign denials. A pending exact café-content review is seeded through the official producer store under the actual active run/lease; deny commits, injected response loss yields unknown, original-operation GET recovers accepted, and duplicate never resolves a second time.
+
+Real immutable delivery tests prove >65KB chunk reconstruction, actual result notification, matching immutable retry after persisted backoff, independent text/artifact receipts, artifact ACK committed with lost response, full BFF/producer restart and original status-only recovery to delivered. Exactly1 model request and no repeated ACK or inference. These are local synthetic-service integrations, not external provider/channel delivery or human-read evidence. No actual executor, Slack, voice, credential provisioning, migration, LAYA or deployment activation.
+
+Final gate results follow before publication. Browser/visual remains blocked by the previously recorded sandbox/browser restrictions; no browser assertions passed. Next BE05 integrates the native page/artifact executor under the same exact producer effect authority. No unqualified surface is called production-ready.
+
+Final BE04 checks:
+
+- `RYOKO_TEST_PYTHON=/tmp/dots-backend-python/bin/python RYOKO_TEST_CHECKOUT=/workspace/scratch/42f2baf55663/ryoko-agent-dots-integration npm run test:runtime-stdio`: PASS,4 files/10 tests,20.32seconds. BE03’s separate95-second hold remains passed evidence; this consolidated quick command covers all four actual stdio families without repeating that optional delay.
+- Focused nine-file controls, delivery, result UI, initial Chat readiness and command-recovery regression gate: PASS,89 tests,2.55seconds.
+- `npx tsc --noEmit`, changed-source ESLint, changed-file Prettier, `git diff --check`, and `npm run build`: PASS. Existing nonfatal bundle-size warning remains. One intermediate UI test used the old unavailable-delivery wording while the qualified result UI was being integrated; updated the assertion and reran successfully.
+
+Publication: BE04 source, frontend wiring, typed generated subset, regressions, adapter documentation and this root journal are one direct-main checkpoint. Exact remote commit/tree/journal and exact-commit CI are verified after publication; absent CI is not a pass. No PR, migration/cutover or deployment requested.

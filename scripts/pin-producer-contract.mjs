@@ -41,6 +41,22 @@ const names = [
   ].map((name) => `runtime.conversation.${name}`),
   'runtime.command.receipt',
   'runtime.command',
+  'runtime.control.get',
+  'runtime.control.pause',
+  'runtime.control.resume',
+  'runtime.approvals.list',
+  'runtime.approval.get',
+  'runtime.approval.resolve',
+  'runtime.effects.list',
+  'runtime.mission.history',
+  'runtime.mission.get',
+  'runtime.mission.pause',
+  'runtime.mission.resume',
+  'runtime.mission.cancel',
+  'runtime.delivery.status',
+  'runtime.delivery.retry',
+  'runtime.result.get',
+  'runtime.delivery.ack',
 ];
 const methods = rpc.methods.filter((m) => names.includes(m.name));
 if (names.some((name) => !methods.some((method) => method.name === name)))

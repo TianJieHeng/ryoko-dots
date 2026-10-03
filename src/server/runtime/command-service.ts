@@ -233,6 +233,38 @@ export class CommandService {
     this.current(id, auth);
     return this.executable(live, 'submit');
   }
+  existingBound(id: string, auth: Guard, access: 'read' | 'write' = 'read') {
+    const scope = this.current(id, auth, access);
+    const live = this.live.get(id);
+    if (
+      !live ||
+      !this.transport.connected ||
+      live.epoch !== (this.transport.epoch ?? 0) ||
+      scope.liveSessionId !== live.binding.liveSessionId
+    )
+      throw new ConversationError(
+        'Explicitly connect this conversation before using runtime controls.',
+        503,
+      );
+    return { scope, binding: live.binding, epoch: live.epoch };
+  }
+  assertBound(
+    scope: VerifiedConversationScope,
+    auth: Guard,
+    access: 'read' | 'write',
+  ) {
+    const current = this.existingBound(
+      scope.conversationId,
+      auth,
+      access,
+    ).scope;
+    this.guardScope(scope, auth, access);
+    if (
+      current.liveSessionId !== scope.liveSessionId ||
+      current.liveGeneration !== scope.liveGeneration
+    )
+      throw new ConversationError('Runtime control binding changed.', 409);
+  }
   ready() {
     return (
       this.transport.connected &&

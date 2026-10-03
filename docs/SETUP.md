@@ -1,6 +1,6 @@
 # Current self-hosted setup
 
-Production startup now uses the self-hosted BFF. Follow [BE02 configuration](runtime/self-hosted-conversations.md); Intelligence/model/channel variables in the legacy instructions below do not enable migrated capabilities. Owner authentication is always required. Commands and later surfaces remain explicitly unavailable until their backend phases.
+Production startup now uses the self-hosted BFF. Follow [BE02 configuration](runtime/self-hosted-conversations.md); Intelligence/model/channel variables in the legacy instructions below do not enable migrated capabilities. Owner authentication is always required. Durable commands and exact controls require an explicitly connected conversation; follow the current command/control adapter documentation. Later surfaces remain gated until their backend qualification.
 
 ---
 

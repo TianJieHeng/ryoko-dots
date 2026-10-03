@@ -11,6 +11,8 @@ const result = spawnSync(
     'run',
     'tests/self-hosted-conversations.test.ts',
     'tests/self-hosted-commands.test.ts',
+    'tests/self-hosted-controls.test.ts',
+    'tests/self-hosted-delivery.test.ts',
   ],
   { stdio: 'inherit', env: process.env },
 );

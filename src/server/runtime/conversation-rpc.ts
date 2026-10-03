@@ -33,6 +33,7 @@ export class ConversationRpc {
     private input: Readable,
     private output: Writable,
     private limits = { bytes: 1_000_000, pending: 8, timeoutMs: 15000 },
+    private resultAvailable?: (notification: unknown) => void,
   ) {
     input.on('data', this.receive);
     input.on('end', this.close);
@@ -84,7 +85,22 @@ export class ConversationRpc {
         );
         continue;
       }
-      if (!('id' in frame)) continue;
+      if (!('id' in frame)) {
+        if (
+          frame.method === 'event' &&
+          frame.params &&
+          typeof frame.params === 'object' &&
+          (frame.params as { type?: unknown }).type ===
+            'runtime.result.available'
+        ) {
+          try {
+            this.resultAvailable?.(frame.params);
+          } catch {
+            /* Invalid delivery notice is never acknowledged. */
+          }
+        }
+        continue;
+      }
       if (typeof frame.id !== 'string') return this.close();
       const pending = this.pending.get(frame.id);
       if (!pending) continue;
@@ -154,6 +170,22 @@ export const conversationMethods: ConversationMethod[] = [
   'runtime.snapshot',
   'runtime.events.since',
   'runtime.command',
+  'runtime.control.get',
+  'runtime.control.pause',
+  'runtime.control.resume',
+  'runtime.approvals.list',
+  'runtime.approval.get',
+  'runtime.approval.resolve',
+  'runtime.effects.list',
+  'runtime.mission.history',
+  'runtime.mission.get',
+  'runtime.mission.pause',
+  'runtime.mission.resume',
+  'runtime.mission.cancel',
+  'runtime.delivery.status',
+  'runtime.delivery.retry',
+  'runtime.result.get',
+  'runtime.delivery.ack',
   'runtime.command.receipt',
   'runtime.conversation.command.receipt',
   'runtime.conversation.bind',

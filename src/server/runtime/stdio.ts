@@ -127,6 +127,9 @@ export interface ConversationTransport {
     params: unknown,
   ): Promise<ConversationResults[M]>;
   stop(): Promise<void>;
+  subscribeResultAvailable?(
+    listener: (notification: unknown, epoch: number) => void,
+  ): () => void;
 }
 export class StdioConversationTransport implements ConversationTransport {
   readonly config: LaunchConfig;
@@ -136,6 +139,19 @@ export class StdioConversationTransport implements ConversationTransport {
   private starting?: Promise<RuntimeConversationCapabilities>;
   private profileHash = '';
   epoch = 0;
+  private resultListeners = new Set<
+    (notification: unknown, epoch: number) => void
+  >();
+  subscribeResultAvailable(
+    listener: (notification: unknown, epoch: number) => void,
+  ) {
+    if (this.resultListeners.size >= 4)
+      throw new Error('Result observer bound exceeded.');
+    this.resultListeners.add(listener);
+    return () => {
+      this.resultListeners.delete(listener);
+    };
+  }
   constructor(config: LaunchConfig) {
     this.config = launchConfigSchema.parse(config);
   }
@@ -256,7 +272,17 @@ export class StdioConversationTransport implements ConversationTransport {
         },
       );
       this.process = child;
-      const rpc = new ConversationRpc(child.stdout, child.stdin);
+      const launchEpoch = this.epoch + 1;
+      const rpc = new ConversationRpc(
+        child.stdout,
+        child.stdin,
+        undefined,
+        (notification) => {
+          if (this.process !== child || this.epoch !== launchEpoch) return;
+          for (const listener of this.resultListeners)
+            listener(notification, launchEpoch);
+        },
+      );
       this.rpc = rpc;
       child.once('error', rpc.close);
       child.once('exit', rpc.close);

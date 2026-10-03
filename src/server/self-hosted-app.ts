@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { commandIntentSchema } from '../shared/runtime/contracts.js';
 import { OwnerAuth, requireOwner } from './owner-auth.js';
 import { SelfHostedPlatform } from './self-hosted-platform.js';
+import { browserDeliveryAcknowledgmentSchema } from './runtime/delivery-service.js';
+import { controlActionSchema } from './runtime/control-service.js';
 import { ConversationError } from './runtime/conversation-ledger.js';
 import { PageError, pageInput, pagePatch } from './pages.js';
 import type { Store } from './store.js';
@@ -122,13 +124,112 @@ export function createSelfHostedApp({
   });
   app.get('/api/runtime/operations/:id', async (c) => {
     z.strictObject({}).parse(query(c));
+    const operationId = z.uuid().parse(c.req.param('id'));
     return c.json(
-      await platform.recover(
-        z.uuid().parse(c.req.param('id')),
+      platform.controls?.has(operationId)
+        ? await platform.controls.inspect(operationId, guard(c, platform))
+        : await platform.recover(operationId, guard(c, platform)),
+    );
+  });
+  app.get('/api/runtime/conversations/:id/results/:commandId', async (c) => {
+    z.strictObject({}).parse(query(c));
+    if (!platform.delivery)
+      throw new ConversationError(
+        'Runtime result delivery is unavailable.',
+        503,
+      );
+    return c.json(
+      await platform.delivery.readResult(
+        id.parse(c.req.param('id')),
+        id.parse(c.req.param('commandId')),
         guard(c, platform),
       ),
     );
   });
+  app.post(
+    '/api/runtime/conversations/:id/deliveries/:deliveryId/ack',
+    async (c) => {
+      z.strictObject({}).parse(query(c));
+      if (!platform.delivery)
+        throw new ConversationError(
+          'Runtime result delivery is unavailable.',
+          503,
+        );
+      const claim = browserDeliveryAcknowledgmentSchema.parse(
+        await c.req.json(),
+      );
+      return c.json(
+        await platform.delivery.acknowledge(
+          id.parse(c.req.param('id')),
+          id.parse(c.req.param('deliveryId')),
+          claim,
+          guard(c, platform),
+        ),
+      );
+    },
+  );
+  const controls = () => {
+    if (!platform.controls)
+      throw new ConversationError('Runtime controls are unavailable.', 503);
+    return platform.controls;
+  };
+  for (const name of ['control', 'missions', 'effects', 'reviews'] as const)
+    app.get(`/api/runtime/conversations/:id/${name}`, async (c) => {
+      z.strictObject({}).parse(query(c));
+      const conversationId = id.parse(c.req.param('id')),
+        auth = guard(c, platform),
+        service = controls();
+      return c.json(
+        await {
+          control: () => service.readControl(conversationId, auth),
+          missions: () => service.readMissions(conversationId, auth),
+          effects: () => service.readEffects(conversationId, auth),
+          reviews: () => service.readReviews(conversationId, auth),
+        }[name](),
+      );
+    });
+  app.get('/api/runtime/conversations/:id/reviews/:reviewId', async (c) => {
+    z.strictObject({}).parse(query(c));
+    return c.json(
+      await controls().readReview(
+        id.parse(c.req.param('id')),
+        id.parse(c.req.param('reviewId')),
+        guard(c, platform),
+      ),
+    );
+  });
+  app.get(
+    '/api/runtime/conversations/:id/deliveries/:deliveryId',
+    async (c) => {
+      z.strictObject({}).parse(query(c));
+      return c.json(
+        await controls().readDelivery(
+          id.parse(c.req.param('id')),
+          id.parse(c.req.param('deliveryId')),
+          guard(c, platform),
+        ),
+      );
+    },
+  );
+  for (const route of [
+    '/control',
+    '/missions/:missionId/actions',
+    '/reviews/:reviewId/decision',
+    '/deliveries/:deliveryId/actions',
+  ])
+    app.post('/api/runtime/conversations/:id' + route, async (c) => {
+      z.strictObject({}).parse(query(c));
+      const input = controlActionSchema.parse(await c.req.json());
+      const path = new URL(c.req.url).pathname.slice('/api'.length);
+      return c.json(
+        await controls().admit(
+          id.parse(c.req.param('id')),
+          path,
+          input,
+          guard(c, platform),
+        ),
+      );
+    });
   app.post('/api/runtime/conversations/:id/connect', async (c) => {
     z.strictObject({}).parse(await c.req.json());
     if (!platform.commands)

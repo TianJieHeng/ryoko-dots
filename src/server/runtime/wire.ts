@@ -12,6 +12,16 @@ import type {
   RuntimeConversationResult,
   RuntimeConversationBindResult,
   CommandReceipt,
+  MissionGetResult,
+  MissionListResult,
+  MissionResult,
+  RuntimeApprovalGetResult,
+  RuntimeApprovalListResult,
+  RuntimeApprovalResolveResult,
+  RuntimeControlResult,
+  RuntimeDeliveryReceipt,
+  RuntimeResultChunk,
+  RuntimeEffectListResult,
   RuntimeCommandReceiptResult,
 } from '../../shared/runtime/producer/wire.generated.js';
 export interface ReadResults {
@@ -21,6 +31,23 @@ export interface ReadResults {
 }
 export type ReadMethod = keyof ReadResults;
 export interface ConversationResults extends ReadResults {
+  'runtime.control.get': RuntimeControlResult;
+  'runtime.control.pause': RuntimeControlResult;
+  'runtime.control.resume': RuntimeControlResult;
+  'runtime.approvals.list': RuntimeApprovalListResult;
+  'runtime.approval.get': RuntimeApprovalGetResult;
+  'runtime.approval.resolve': RuntimeApprovalResolveResult;
+  'runtime.effects.list': RuntimeEffectListResult;
+  'runtime.mission.history': MissionListResult;
+  'runtime.mission.get': MissionGetResult;
+  'runtime.mission.pause': MissionResult;
+  'runtime.mission.resume': MissionResult;
+  'runtime.mission.cancel': MissionResult;
+  'runtime.delivery.status': RuntimeDeliveryReceipt;
+  'runtime.delivery.retry': RuntimeDeliveryReceipt;
+  'runtime.result.get': RuntimeResultChunk;
+  'runtime.delivery.ack': RuntimeDeliveryReceipt;
+
   'runtime.command': CommandReceipt;
   'runtime.command.receipt': RuntimeCommandReceiptResult;
   'runtime.conversation.command.receipt': RuntimeCommandReceiptResult;

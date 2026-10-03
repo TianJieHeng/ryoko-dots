@@ -3,6 +3,60 @@
 export const producerSchema = {
   "methods": [
     {
+      "name": "runtime.approval.get",
+      "summary": "Read one exact owner/session approval and retained review bytes plus durable decision. Never resolve, consume or dispatch on recovery.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeApprovalGetParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeApprovalGetResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.approval.resolve",
+      "summary": "Record one exact human decision for the owned live run. Repeated answers are rejected; this never dispatches.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeApprovalResolveParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeApprovalResolveResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.approvals.list",
+      "summary": "Read an owned oldest-first bounded approval snapshot. This is not complete history or permission to act.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeApprovalListParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeApprovalListResult"
+        }
+      }
+    },
+    {
       "name": "runtime.capabilities",
       "summary": "Negotiate the owned session's durable runtime API and executable operations.",
       "params": [
@@ -53,6 +107,60 @@ export const producerSchema = {
         "name": "result",
         "schema": {
           "$ref": "#/components/schemas/RuntimeCommandReceiptResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.control.get",
+      "summary": "Read owner/profile pause state and an optional immutable operation receipt; never replay a control.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeControlGetParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeControlResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.control.pause",
+      "summary": "CAS and idempotently set owner/profile admission and dispatch state. Existing work retains ownership; no rollback or provider stop is implied.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeControlParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeControlResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.control.resume",
+      "summary": "CAS and idempotently set owner/profile admission and dispatch state. Existing work retains ownership; no rollback or provider stop is implied.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeControlParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeControlResult"
         }
       }
     },
@@ -237,6 +345,78 @@ export const producerSchema = {
       }
     },
     {
+      "name": "runtime.delivery.ack",
+      "summary": "Record exact attempt/digest-bound client component receipt, not human read confirmation.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeDeliveryAckParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeDeliveryReceipt"
+        }
+      }
+    },
+    {
+      "name": "runtime.delivery.retry",
+      "summary": "Explicitly retry only a result notification on the owned local transport; never rerun inference.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeDeliveryParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeDeliveryReceipt"
+        }
+      }
+    },
+    {
+      "name": "runtime.delivery.status",
+      "summary": "Read delivery truth without creating a delivery attempt.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeDeliveryParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeDeliveryReceipt"
+        }
+      }
+    },
+    {
+      "name": "runtime.effects.list",
+      "summary": "Read an owned oldest-first bounded effect snapshot, never a claim of complete history.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeEffectListParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeEffectListResult"
+        }
+      }
+    },
+    {
       "name": "runtime.events.since",
       "summary": "Read bounded durable transitions, or an explicit snapshot_required with a consistent snapshot.",
       "params": [
@@ -251,6 +431,114 @@ export const producerSchema = {
         "name": "result",
         "schema": {
           "$ref": "#/components/schemas/RuntimeEventsSinceResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.mission.cancel",
+      "summary": "Apply an explicit owned mission control with exact revision and existing budget scope.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/MissionControlParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/MissionResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.mission.get",
+      "summary": "Read the owned authoritative mission independently from runtime command state.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/MissionGetParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/MissionGetResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.mission.history",
+      "summary": "Read current and immutable archived missions for this canonical conversation. Controls always target the active exact mission.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/MissionListParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/MissionListResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.mission.pause",
+      "summary": "Apply an explicit owned mission control with exact revision and existing budget scope.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/MissionControlParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/MissionResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.mission.resume",
+      "summary": "Apply an explicit owned mission control with exact revision and existing budget scope.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/MissionControlParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/MissionResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.result.get",
+      "summary": "Read bounded digest-checked immutable result bytes without executing or delivering work.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeResultGetParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeResultChunk"
         }
       }
     },
@@ -275,6 +563,592 @@ export const producerSchema = {
   ],
   "components": {
     "schemas": {
+      "RuntimeApprovalGetParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "approval_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Approval Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "approval_id"
+        ],
+        "title": "RuntimeApprovalGetParams",
+        "type": "object"
+      },
+      "RuntimeApprovalGetResult": {
+        "additionalProperties": false,
+        "properties": {
+          "approval": {
+            "$ref": "#/components/schemas/RuntimeApprovalRecord"
+          },
+          "detail": {
+            "$ref": "#/components/schemas/RuntimeApprovalDetail"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/RuntimeApprovalDecision"
+          },
+          "input_revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Revision"
+          },
+          "artifact_revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Revision"
+          },
+          "dispatch_performed": {
+            "const": false,
+            "title": "Dispatch Performed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "approval",
+          "detail",
+          "decision",
+          "input_revision",
+          "artifact_revision",
+          "dispatch_performed"
+        ],
+        "title": "RuntimeApprovalGetResult",
+        "type": "object"
+      },
+      "RuntimeApprovalRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "approval_id": {
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "approval_digest": {
+            "title": "Approval Digest",
+            "type": "string"
+          },
+          "action_digest": {
+            "title": "Action Digest",
+            "type": "string"
+          },
+          "input_digest": {
+            "title": "Input Digest",
+            "type": "string"
+          },
+          "target_digest": {
+            "title": "Target Digest",
+            "type": "string"
+          },
+          "input_revision_digest": {
+            "title": "Input Revision Digest",
+            "type": "string"
+          },
+          "artifact_revision_digest": {
+            "title": "Artifact Revision Digest",
+            "type": "string"
+          },
+          "policy_version": {
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "policy_digest": {
+            "title": "Policy Digest",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "approved",
+              "denied",
+              "consumed",
+              "invalidated"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "expires_at": {
+            "title": "Expires At",
+            "type": "number"
+          },
+          "expired": {
+            "title": "Expired",
+            "type": "boolean"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "number"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "consumed_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumed At"
+          },
+          "invalidation_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Invalidation Reason"
+          },
+          "mission_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mission Id"
+          },
+          "mission_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mission Revision"
+          },
+          "invalidated_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Invalidated At"
+          }
+        },
+        "required": [
+          "approval_id",
+          "run_id",
+          "approval_digest",
+          "action_digest",
+          "input_digest",
+          "target_digest",
+          "input_revision_digest",
+          "artifact_revision_digest",
+          "policy_version",
+          "policy_digest",
+          "status",
+          "expires_at",
+          "expired",
+          "created_at",
+          "resolved_at",
+          "consumed_at"
+        ],
+        "title": "RuntimeApprovalRecord",
+        "type": "object"
+      },
+      "RuntimeApprovalDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "reviewable": {
+            "title": "Reviewable",
+            "type": "boolean"
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "review_not_retained",
+                  "opaque_content",
+                  "sensitive_content",
+                  "content_not_retained",
+                  "review_size_limit"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable Reason"
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuntimeApprovalExactReview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "review_digest": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Digest"
+          }
+        },
+        "required": [
+          "reviewable",
+          "unavailable_reason",
+          "review",
+          "review_digest"
+        ],
+        "title": "RuntimeApprovalDetail",
+        "type": "object"
+      },
+      "RuntimeApprovalExactReview": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/RuntimeApprovalReviewAction"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuntimeApprovalReviewContent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "action",
+          "content"
+        ],
+        "title": "RuntimeApprovalExactReview",
+        "type": "object"
+      },
+      "RuntimeApprovalReviewAction": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "arguments": {
+            "additionalProperties": true,
+            "title": "Arguments",
+            "type": "object"
+          },
+          "operation_class": {
+            "title": "Operation Class",
+            "type": "string"
+          },
+          "resource_roots": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Resource Roots",
+            "type": "array"
+          },
+          "destination": {
+            "title": "Destination",
+            "type": "string"
+          },
+          "destination_purpose": {
+            "title": "Destination Purpose",
+            "type": "string"
+          },
+          "contract_digest": {
+            "title": "Contract Digest",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "arguments",
+          "operation_class",
+          "resource_roots",
+          "destination",
+          "destination_purpose",
+          "contract_digest"
+        ],
+        "title": "RuntimeApprovalReviewAction",
+        "type": "object"
+      },
+      "RuntimeApprovalReviewContent": {
+        "additionalProperties": false,
+        "properties": {
+          "encoding": {
+            "const": "base64",
+            "title": "Encoding",
+            "type": "string"
+          },
+          "data": {
+            "title": "Data",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "mime": {
+            "title": "Mime",
+            "type": "string"
+          }
+        },
+        "required": [
+          "encoding",
+          "data",
+          "sha256",
+          "mime"
+        ],
+        "title": "RuntimeApprovalReviewContent",
+        "type": "object"
+      },
+      "RuntimeApprovalDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "choice": {
+            "anyOf": [
+              {
+                "enum": [
+                  "once",
+                  "deny"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choice"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "consumed_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumed At"
+          }
+        },
+        "required": [
+          "choice",
+          "resolved_at",
+          "consumed_at"
+        ],
+        "title": "RuntimeApprovalDecision",
+        "type": "object"
+      },
+      "RuntimeApprovalResolveParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "approval_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "approval_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Approval Digest",
+            "type": "string"
+          },
+          "choice": {
+            "enum": [
+              "once",
+              "deny"
+            ],
+            "title": "Choice",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "approval_id",
+          "approval_digest",
+          "choice"
+        ],
+        "title": "RuntimeApprovalResolveParams",
+        "type": "object"
+      },
+      "RuntimeApprovalResolveResult": {
+        "additionalProperties": false,
+        "properties": {
+          "approval": {
+            "$ref": "#/components/schemas/RuntimeApprovalRecord"
+          },
+          "dispatch_performed": {
+            "const": false,
+            "title": "Dispatch Performed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "approval",
+          "dispatch_performed"
+        ],
+        "title": "RuntimeApprovalResolveResult",
+        "type": "object"
+      },
+      "RuntimeApprovalListParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Run Id"
+          },
+          "limit": {
+            "default": 100,
+            "maximum": 200,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version"
+        ],
+        "title": "RuntimeApprovalListParams",
+        "type": "object"
+      },
+      "RuntimeApprovalListResult": {
+        "additionalProperties": false,
+        "properties": {
+          "approvals": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeApprovalRecord"
+            },
+            "title": "Approvals",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          },
+          "complete": {
+            "const": false,
+            "title": "Complete",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "approvals",
+          "limit",
+          "truncated",
+          "complete"
+        ],
+        "title": "RuntimeApprovalListResult",
+        "type": "object"
+      },
       "RuntimeCapabilitiesParams": {
         "additionalProperties": false,
         "properties": {
@@ -1093,6 +1967,237 @@ export const producerSchema = {
           "committed"
         ],
         "title": "RuntimeCommandMessage",
+        "type": "object"
+      },
+      "RuntimeControlGetParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Operation Id"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version"
+        ],
+        "title": "RuntimeControlGetParams",
+        "type": "object"
+      },
+      "RuntimeControlResult": {
+        "additionalProperties": false,
+        "properties": {
+          "control": {
+            "$ref": "#/components/schemas/RuntimeControlState"
+          },
+          "operation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuntimeControlOperation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dispatch_performed": {
+            "const": false,
+            "title": "Dispatch Performed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "control",
+          "operation",
+          "dispatch_performed"
+        ],
+        "title": "RuntimeControlResult",
+        "type": "object"
+      },
+      "RuntimeControlState": {
+        "additionalProperties": false,
+        "properties": {
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "paused": {
+            "title": "Paused",
+            "type": "boolean"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "scope": {
+            "const": "owner_profile",
+            "title": "Scope",
+            "type": "string"
+          },
+          "admission_blocked": {
+            "title": "Admission Blocked",
+            "type": "boolean"
+          },
+          "scheduled_dispatch_blocked": {
+            "title": "Scheduled Dispatch Blocked",
+            "type": "boolean"
+          },
+          "in_flight_dispatch": {
+            "enum": [
+              "blocked_at_next_boundary",
+              "allowed_at_checked_boundary"
+            ],
+            "title": "In Flight Dispatch",
+            "type": "string"
+          },
+          "accepted_commands": {
+            "title": "Accepted Commands",
+            "type": "integer"
+          },
+          "claimed_commands": {
+            "title": "Claimed Commands",
+            "type": "integer"
+          },
+          "accepted_work_retained": {
+            "const": true,
+            "title": "Accepted Work Retained",
+            "type": "boolean"
+          },
+          "already_dispatched_may_complete": {
+            "const": true,
+            "title": "Already Dispatched May Complete",
+            "type": "boolean"
+          },
+          "provider_cancelled": {
+            "const": false,
+            "title": "Provider Cancelled",
+            "type": "boolean"
+          },
+          "remote_effects_undone": {
+            "const": false,
+            "title": "Remote Effects Undone",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "revision",
+          "paused",
+          "updated_at",
+          "scope",
+          "admission_blocked",
+          "scheduled_dispatch_blocked",
+          "in_flight_dispatch",
+          "accepted_commands",
+          "claimed_commands",
+          "accepted_work_retained",
+          "already_dispatched_may_complete",
+          "provider_cancelled",
+          "remote_effects_undone"
+        ],
+        "title": "RuntimeControlState",
+        "type": "object"
+      },
+      "RuntimeControlOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "operation_id": {
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "digest": {
+            "title": "Digest",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "paused": {
+            "title": "Paused",
+            "type": "boolean"
+          },
+          "committed_at": {
+            "title": "Committed At",
+            "type": "number"
+          },
+          "status": {
+            "const": "committed",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation_id",
+          "digest",
+          "revision",
+          "paused",
+          "committed_at",
+          "status"
+        ],
+        "title": "RuntimeControlOperation",
+        "type": "object"
+      },
+      "RuntimeControlParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "operation_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "operation_id",
+          "expected_revision"
+        ],
+        "title": "RuntimeControlParams",
         "type": "object"
       },
       "RuntimeConversationArchiveParams": {
@@ -1956,6 +3061,473 @@ export const producerSchema = {
           "title"
         ],
         "title": "RuntimeConversationRenameParams",
+        "type": "object"
+      },
+      "RuntimeDeliveryAckParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "delivery_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Delivery Id",
+            "type": "string"
+          },
+          "attempt_token": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Attempt Token",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "text_received": {
+            "default": false,
+            "title": "Text Received",
+            "type": "boolean"
+          },
+          "artifact_received": {
+            "default": false,
+            "title": "Artifact Received",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "delivery_id",
+          "attempt_token",
+          "sha256"
+        ],
+        "title": "RuntimeDeliveryAckParams",
+        "type": "object"
+      },
+      "RuntimeDeliveryReceipt": {
+        "additionalProperties": false,
+        "properties": {
+          "delivery_id": {
+            "title": "Delivery Id",
+            "type": "string"
+          },
+          "artifact_id": {
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "destination": {
+            "$ref": "#/components/schemas/RuntimeDeliveryDestination"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "attempting",
+              "awaiting_ack",
+              "partial",
+              "delivered",
+              "failed",
+              "outcome_unknown",
+              "dead_letter"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "acknowledgment_level": {
+            "enum": [
+              "none",
+              "transport_accepted",
+              "client_received"
+            ],
+            "title": "Acknowledgment Level",
+            "type": "string"
+          },
+          "components": {
+            "$ref": "#/components/schemas/RuntimeDeliveryComponents"
+          },
+          "platform_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Platform Ids",
+            "type": "array"
+          },
+          "attempt_count": {
+            "title": "Attempt Count",
+            "type": "integer"
+          },
+          "max_attempts": {
+            "title": "Max Attempts",
+            "type": "integer"
+          },
+          "next_attempt_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Attempt At"
+          },
+          "deadline_at": {
+            "title": "Deadline At",
+            "type": "number"
+          },
+          "retention_until": {
+            "title": "Retention Until",
+            "type": "number"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "result_available": {
+            "title": "Result Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "delivery_id",
+          "artifact_id",
+          "version",
+          "sha256",
+          "destination",
+          "state",
+          "acknowledgment_level",
+          "components",
+          "platform_ids",
+          "attempt_count",
+          "max_attempts",
+          "next_attempt_at",
+          "deadline_at",
+          "retention_until",
+          "last_error",
+          "result_available"
+        ],
+        "title": "RuntimeDeliveryReceipt",
+        "type": "object"
+      },
+      "RuntimeDeliveryDestination": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "local_runtime",
+            "title": "Kind",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "principal_id": {
+            "title": "Principal Id",
+            "type": "string"
+          },
+          "profile_id": {
+            "title": "Profile Id",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "session_id",
+          "principal_id",
+          "profile_id",
+          "agent_id"
+        ],
+        "title": "RuntimeDeliveryDestination",
+        "type": "object"
+      },
+      "RuntimeDeliveryComponents": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "enum": [
+              "not_sent",
+              "client_received"
+            ],
+            "title": "Text",
+            "type": "string"
+          },
+          "artifact": {
+            "enum": [
+              "not_sent",
+              "client_received"
+            ],
+            "title": "Artifact",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "artifact"
+        ],
+        "title": "RuntimeDeliveryComponents",
+        "type": "object"
+      },
+      "RuntimeDeliveryParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "delivery_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Delivery Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "delivery_id"
+        ],
+        "title": "RuntimeDeliveryParams",
+        "type": "object"
+      },
+      "RuntimeEffectListParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Run Id"
+          },
+          "limit": {
+            "default": 100,
+            "maximum": 200,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "unresolved_only": {
+            "default": false,
+            "title": "Unresolved Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version"
+        ],
+        "title": "RuntimeEffectListParams",
+        "type": "object"
+      },
+      "RuntimeEffectListResult": {
+        "additionalProperties": false,
+        "properties": {
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeEffectRecord"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          },
+          "complete": {
+            "const": false,
+            "title": "Complete",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "effects",
+          "limit",
+          "truncated",
+          "complete"
+        ],
+        "title": "RuntimeEffectListResult",
+        "type": "object"
+      },
+      "RuntimeEffectRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "effect_id": {
+            "title": "Effect Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "operation_id": {
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "operation_type": {
+            "enum": [
+              "artifact_publish",
+              "project_artifact_publish",
+              "mission_test_execution",
+              "dots_page_publish",
+              "dots_computer_action",
+              "unsupported"
+            ],
+            "title": "Operation Type",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "prepared",
+              "dispatched",
+              "confirmed",
+              "failed",
+              "outcome_unknown",
+              "reconciliation_required"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "action_digest": {
+            "title": "Action Digest",
+            "type": "string"
+          },
+          "input_digest": {
+            "title": "Input Digest",
+            "type": "string"
+          },
+          "target_digest": {
+            "title": "Target Digest",
+            "type": "string"
+          },
+          "policy_version": {
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "policy_digest": {
+            "title": "Policy Digest",
+            "type": "string"
+          },
+          "generation": {
+            "title": "Generation",
+            "type": "integer"
+          },
+          "approval_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Id"
+          },
+          "provider_idempotency": {
+            "enum": [
+              "supported",
+              "unsupported"
+            ],
+            "title": "Provider Idempotency",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "number"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "number"
+          },
+          "exactly_once_external": {
+            "const": false,
+            "title": "Exactly Once External",
+            "type": "boolean"
+          },
+          "replay_permitted": {
+            "const": false,
+            "title": "Replay Permitted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "effect_id",
+          "run_id",
+          "operation_id",
+          "operation_type",
+          "state",
+          "action_digest",
+          "input_digest",
+          "target_digest",
+          "policy_version",
+          "policy_digest",
+          "generation",
+          "approval_id",
+          "provider_idempotency",
+          "created_at",
+          "updated_at",
+          "exactly_once_external",
+          "replay_permitted"
+        ],
+        "title": "RuntimeEffectRecord",
         "type": "object"
       },
       "RuntimeEventsSinceParams": {
@@ -3755,6 +5327,1674 @@ export const producerSchema = {
           "reason"
         ],
         "title": "RuntimeAdmissionJob",
+        "type": "object"
+      },
+      "MissionControlParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "mission_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mission Id"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "reason": {
+            "default": "",
+            "maxLength": 1024,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "expected_revision"
+        ],
+        "title": "MissionControlParams",
+        "type": "object"
+      },
+      "MissionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "mission": {
+            "$ref": "#/components/schemas/MissionRecord"
+          },
+          "dispatch_performed": {
+            "const": false,
+            "default": false,
+            "title": "Dispatch Performed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "mission"
+        ],
+        "title": "MissionResult",
+        "type": "object"
+      },
+      "MissionRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "maxLength": 16384,
+            "minLength": 1,
+            "title": "Outcome",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Project Id"
+          },
+          "deliverables": {
+            "items": {
+              "$ref": "#/components/schemas/MissionDeliverable"
+            },
+            "maxItems": 100,
+            "title": "Deliverables",
+            "type": "array"
+          },
+          "acceptance": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "existence": "#/components/schemas/MissionExistenceCriterion",
+                  "json_schema": "#/components/schemas/MissionSchemaCriterion",
+                  "linked_consistency": "#/components/schemas/MissionLinkedCriterion",
+                  "markdown_sections": "#/components/schemas/MissionSectionCriterion",
+                  "test_execution": "#/components/schemas/MissionTestCriterion",
+                  "text_exact": "#/components/schemas/MissionTextCriterion",
+                  "user_acceptance": "#/components/schemas/MissionUserCriterion"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/MissionExistenceCriterion"
+                },
+                {
+                  "$ref": "#/components/schemas/MissionSectionCriterion"
+                },
+                {
+                  "$ref": "#/components/schemas/MissionTextCriterion"
+                },
+                {
+                  "$ref": "#/components/schemas/MissionSchemaCriterion"
+                },
+                {
+                  "$ref": "#/components/schemas/MissionLinkedCriterion"
+                },
+                {
+                  "$ref": "#/components/schemas/MissionTestCriterion"
+                },
+                {
+                  "$ref": "#/components/schemas/MissionUserCriterion"
+                }
+              ]
+            },
+            "maxItems": 32,
+            "title": "Acceptance",
+            "type": "array"
+          },
+          "scope_ref": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Scope Ref"
+          },
+          "budget_ref": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Budget Ref"
+          },
+          "deadline": {
+            "anyOf": [
+              {
+                "maximum": 253402300799,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Deadline"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/MissionDependency"
+            },
+            "maxItems": 64,
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "plan_steps": {
+            "items": {
+              "$ref": "#/components/schemas/MissionPlanStep"
+            },
+            "maxItems": 100,
+            "title": "Plan Steps",
+            "type": "array"
+          },
+          "policy": {
+            "default": "reviewed",
+            "enum": [
+              "direct",
+              "reviewed"
+            ],
+            "title": "Policy",
+            "type": "string"
+          },
+          "risk": {
+            "default": "unknown",
+            "enum": [
+              "unknown",
+              "low",
+              "consequential"
+            ],
+            "title": "Risk",
+            "type": "string"
+          },
+          "uncertainty": {
+            "default": "unknown",
+            "enum": [
+              "unknown",
+              "low",
+              "high"
+            ],
+            "title": "Uncertainty",
+            "type": "string"
+          },
+          "max_turns": {
+            "default": 20,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Max Turns",
+            "type": "integer"
+          },
+          "no_progress_limit": {
+            "default": 2,
+            "maximum": 5,
+            "minimum": 1,
+            "title": "No Progress Limit",
+            "type": "integer"
+          },
+          "legacy_contract": {
+            "$ref": "#/components/schemas/MissionLegacyContract"
+          },
+          "subgoals": {
+            "items": {
+              "maxLength": 4096,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Subgoals",
+            "type": "array"
+          },
+          "gates": {
+            "items": {
+              "$ref": "#/components/schemas/MissionHistoricalGate"
+            },
+            "maxItems": 100,
+            "title": "Gates",
+            "type": "array"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "mission_id": {
+            "title": "Mission Id",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "ready",
+              "working",
+              "waiting_for_user",
+              "waiting_for_source",
+              "ready_to_review",
+              "completed",
+              "partially_completed",
+              "paused",
+              "cancelled",
+              "failed"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "execution_status": {
+            "title": "Execution Status",
+            "type": "string"
+          },
+          "acceptance_status": {
+            "title": "Acceptance Status",
+            "type": "string"
+          },
+          "delivery_status": {
+            "title": "Delivery Status",
+            "type": "string"
+          },
+          "next_step": {
+            "title": "Next Step",
+            "type": "string"
+          },
+          "blockers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blockers",
+            "type": "array"
+          },
+          "artifact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/MissionArtifactRef"
+            },
+            "title": "Artifact Refs",
+            "type": "array"
+          },
+          "effect_refs": {
+            "items": {
+              "$ref": "#/components/schemas/MissionEffectRef"
+            },
+            "title": "Effect Refs",
+            "type": "array"
+          },
+          "delivery_refs": {
+            "items": {
+              "$ref": "#/components/schemas/MissionDeliveryRef"
+            },
+            "title": "Delivery Refs",
+            "type": "array"
+          },
+          "effect_refs_total": {
+            "default": 0,
+            "title": "Effect Refs Total",
+            "type": "integer"
+          },
+          "effect_refs_truncated": {
+            "default": false,
+            "title": "Effect Refs Truncated",
+            "type": "boolean"
+          },
+          "delivery_refs_total": {
+            "default": 0,
+            "title": "Delivery Refs Total",
+            "type": "integer"
+          },
+          "delivery_refs_truncated": {
+            "default": false,
+            "title": "Delivery Refs Truncated",
+            "type": "boolean"
+          },
+          "verification_current": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Verification Current"
+          },
+          "turns_used": {
+            "title": "Turns Used",
+            "type": "integer"
+          },
+          "consecutive_no_progress": {
+            "title": "Consecutive No Progress",
+            "type": "integer"
+          },
+          "verification_rounds": {
+            "title": "Verification Rounds",
+            "type": "integer"
+          },
+          "last_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run Id"
+          },
+          "paused_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused Reason"
+          },
+          "recovery_choices": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recovery Choices",
+            "type": "array"
+          },
+          "missed_steer": {
+            "items": {
+              "$ref": "#/components/schemas/MissionMissedSteer"
+            },
+            "title": "Missed Steer",
+            "type": "array"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "number"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "number"
+          },
+          "legacy_imported": {
+            "title": "Legacy Imported",
+            "type": "boolean"
+          },
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Archived At"
+          }
+        },
+        "required": [
+          "outcome",
+          "schema_version",
+          "mission_id",
+          "session_id",
+          "agent_id",
+          "revision",
+          "state",
+          "execution_status",
+          "acceptance_status",
+          "delivery_status",
+          "next_step",
+          "blockers",
+          "artifact_refs",
+          "effect_refs",
+          "delivery_refs",
+          "turns_used",
+          "consecutive_no_progress",
+          "verification_rounds",
+          "last_run_id",
+          "paused_reason",
+          "recovery_choices",
+          "missed_steer",
+          "created_at",
+          "updated_at",
+          "legacy_imported"
+        ],
+        "title": "MissionRecord",
+        "type": "object"
+      },
+      "MissionDeliverable": {
+        "additionalProperties": false,
+        "properties": {
+          "deliverable_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Deliverable Id",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Description",
+            "type": "string"
+          },
+          "artifact_ref": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissionArtifactRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deliverable_id"
+        ],
+        "title": "MissionDeliverable",
+        "type": "object"
+      },
+      "MissionArtifactRef": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "version": {
+            "exclusiveMaximum": 2147483648,
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          },
+          "digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Digest",
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifact_id",
+          "version",
+          "digest"
+        ],
+        "title": "MissionArtifactRef",
+        "type": "object"
+      },
+      "MissionExistenceCriterion": {
+        "additionalProperties": false,
+        "properties": {
+          "criterion_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Criterion Id",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Description",
+            "type": "string"
+          },
+          "artifact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/MissionArtifactRef"
+            },
+            "maxItems": 16,
+            "title": "Artifact Refs",
+            "type": "array"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "existence",
+            "title": "Kind",
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/MissionReadParameters"
+          }
+        },
+        "required": [
+          "criterion_id",
+          "kind"
+        ],
+        "title": "MissionExistenceCriterion",
+        "type": "object"
+      },
+      "MissionReadParameters": {
+        "additionalProperties": false,
+        "properties": {
+          "require_current_head": {
+            "default": true,
+            "title": "Require Current Head",
+            "type": "boolean"
+          },
+          "require_current_dependencies": {
+            "default": true,
+            "title": "Require Current Dependencies",
+            "type": "boolean"
+          }
+        },
+        "title": "MissionReadParameters",
+        "type": "object"
+      },
+      "MissionSectionCriterion": {
+        "additionalProperties": false,
+        "properties": {
+          "criterion_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Criterion Id",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Description",
+            "type": "string"
+          },
+          "artifact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/MissionArtifactRef"
+            },
+            "maxItems": 16,
+            "title": "Artifact Refs",
+            "type": "array"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "markdown_sections",
+            "title": "Kind",
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/MissionSectionParameters"
+          }
+        },
+        "required": [
+          "criterion_id",
+          "kind",
+          "parameters"
+        ],
+        "title": "MissionSectionCriterion",
+        "type": "object"
+      },
+      "MissionSectionParameters": {
+        "additionalProperties": false,
+        "properties": {
+          "require_current_head": {
+            "default": true,
+            "title": "Require Current Head",
+            "type": "boolean"
+          },
+          "require_current_dependencies": {
+            "default": true,
+            "title": "Require Current Dependencies",
+            "type": "boolean"
+          },
+          "required_sections": {
+            "items": {
+              "maxLength": 4096,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "title": "Required Sections",
+            "type": "array"
+          },
+          "nonempty": {
+            "default": true,
+            "title": "Nonempty",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "required_sections"
+        ],
+        "title": "MissionSectionParameters",
+        "type": "object"
+      },
+      "MissionTextCriterion": {
+        "additionalProperties": false,
+        "properties": {
+          "criterion_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Criterion Id",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Description",
+            "type": "string"
+          },
+          "artifact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/MissionArtifactRef"
+            },
+            "maxItems": 16,
+            "title": "Artifact Refs",
+            "type": "array"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "text_exact",
+            "title": "Kind",
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/MissionTextParameters"
+          }
+        },
+        "required": [
+          "criterion_id",
+          "kind",
+          "parameters"
+        ],
+        "title": "MissionTextCriterion",
+        "type": "object"
+      },
+      "MissionTextParameters": {
+        "additionalProperties": false,
+        "properties": {
+          "require_current_head": {
+            "default": true,
+            "title": "Require Current Head",
+            "type": "boolean"
+          },
+          "require_current_dependencies": {
+            "default": true,
+            "title": "Require Current Dependencies",
+            "type": "boolean"
+          },
+          "contains": {
+            "items": {
+              "maxLength": 4096,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Contains",
+            "type": "array"
+          },
+          "excludes": {
+            "items": {
+              "maxLength": 4096,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Excludes",
+            "type": "array"
+          },
+          "equals": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Equals"
+          }
+        },
+        "title": "MissionTextParameters",
+        "type": "object"
+      },
+      "MissionSchemaCriterion": {
+        "additionalProperties": false,
+        "properties": {
+          "criterion_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Criterion Id",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Description",
+            "type": "string"
+          },
+          "artifact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/MissionArtifactRef"
+            },
+            "maxItems": 16,
+            "title": "Artifact Refs",
+            "type": "array"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "json_schema",
+            "title": "Kind",
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/MissionSchemaParameters"
+          }
+        },
+        "required": [
+          "criterion_id",
+          "kind",
+          "parameters"
+        ],
+        "title": "MissionSchemaCriterion",
+        "type": "object"
+      },
+      "MissionSchemaParameters": {
+        "additionalProperties": false,
+        "properties": {
+          "require_current_head": {
+            "default": true,
+            "title": "Require Current Head",
+            "type": "boolean"
+          },
+          "require_current_dependencies": {
+            "default": true,
+            "title": "Require Current Dependencies",
+            "type": "boolean"
+          },
+          "schema": {
+            "additionalProperties": true,
+            "title": "Schema",
+            "type": "object"
+          }
+        },
+        "required": [
+          "schema"
+        ],
+        "title": "MissionSchemaParameters",
+        "type": "object"
+      },
+      "MissionLinkedCriterion": {
+        "additionalProperties": false,
+        "properties": {
+          "criterion_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Criterion Id",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Description",
+            "type": "string"
+          },
+          "artifact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/MissionArtifactRef"
+            },
+            "maxItems": 16,
+            "title": "Artifact Refs",
+            "type": "array"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "linked_consistency",
+            "title": "Kind",
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/MissionLinkedParameters"
+          }
+        },
+        "required": [
+          "criterion_id",
+          "kind",
+          "parameters"
+        ],
+        "title": "MissionLinkedCriterion",
+        "type": "object"
+      },
+      "MissionLinkedParameters": {
+        "additionalProperties": false,
+        "properties": {
+          "require_current_head": {
+            "default": true,
+            "title": "Require Current Head",
+            "type": "boolean"
+          },
+          "require_current_dependencies": {
+            "default": true,
+            "title": "Require Current Dependencies",
+            "type": "boolean"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/MissionLinkedSection"
+            },
+            "maxItems": 64,
+            "title": "Sections",
+            "type": "array"
+          },
+          "tokens": {
+            "items": {
+              "maxLength": 4096,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Tokens",
+            "type": "array"
+          }
+        },
+        "title": "MissionLinkedParameters",
+        "type": "object"
+      },
+      "MissionLinkedSection": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "heading": {
+            "maxLength": 4096,
+            "title": "Heading",
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifact_id",
+          "heading"
+        ],
+        "title": "MissionLinkedSection",
+        "type": "object"
+      },
+      "MissionTestCriterion": {
+        "additionalProperties": false,
+        "properties": {
+          "criterion_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Criterion Id",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Description",
+            "type": "string"
+          },
+          "artifact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/MissionArtifactRef"
+            },
+            "maxItems": 16,
+            "title": "Artifact Refs",
+            "type": "array"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "test_execution",
+            "title": "Kind",
+            "type": "string"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissionIsolatedTestParameters"
+              },
+              {
+                "$ref": "#/components/schemas/MissionTestParameters"
+              }
+            ],
+            "title": "Parameters"
+          }
+        },
+        "required": [
+          "criterion_id",
+          "kind"
+        ],
+        "title": "MissionTestCriterion",
+        "type": "object"
+      },
+      "MissionIsolatedTestParameters": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter": {
+            "const": "isolated_python_v1",
+            "title": "Adapter",
+            "type": "string"
+          },
+          "code": {
+            "maxLength": 8192,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "code_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Code Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "adapter",
+          "code",
+          "code_sha256"
+        ],
+        "title": "MissionIsolatedTestParameters",
+        "type": "object"
+      },
+      "MissionTestParameters": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Command"
+          },
+          "evidence_ref": {
+            "anyOf": [
+              {
+                "maxLength": 1024,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Evidence Ref"
+          }
+        },
+        "title": "MissionTestParameters",
+        "type": "object"
+      },
+      "MissionUserCriterion": {
+        "additionalProperties": false,
+        "properties": {
+          "criterion_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Criterion Id",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Description",
+            "type": "string"
+          },
+          "artifact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/MissionArtifactRef"
+            },
+            "maxItems": 16,
+            "title": "Artifact Refs",
+            "type": "array"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "user_acceptance",
+            "title": "Kind",
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/MissionEmptyParameters"
+          }
+        },
+        "required": [
+          "criterion_id",
+          "kind"
+        ],
+        "title": "MissionUserCriterion",
+        "type": "object"
+      },
+      "MissionEmptyParameters": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "MissionEmptyParameters",
+        "type": "object"
+      },
+      "MissionDependency": {
+        "additionalProperties": false,
+        "properties": {
+          "dependency_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Dependency Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "artifact",
+              "evidence",
+              "input",
+              "mission"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "reference": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Reference",
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Version"
+          },
+          "digest": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Digest"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          }
+        },
+        "required": [
+          "dependency_id",
+          "kind",
+          "reference"
+        ],
+        "title": "MissionDependency",
+        "type": "object"
+      },
+      "MissionPlanStep": {
+        "additionalProperties": false,
+        "properties": {
+          "step_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Step Id",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Description",
+            "type": "string"
+          },
+          "status": {
+            "default": "pending",
+            "enum": [
+              "pending",
+              "working",
+              "completed",
+              "blocked",
+              "skipped"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "checkpoint": {
+            "default": false,
+            "title": "Checkpoint",
+            "type": "boolean"
+          },
+          "depends_on": {
+            "items": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Depends On",
+            "type": "array"
+          },
+          "input_digests": {
+            "items": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Input Digests",
+            "type": "array"
+          },
+          "target_refs": {
+            "items": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Target Refs",
+            "type": "array"
+          },
+          "approval_ids": {
+            "items": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Approval Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "step_id"
+        ],
+        "title": "MissionPlanStep",
+        "type": "object"
+      },
+      "MissionLegacyContract": {
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Outcome",
+            "type": "string"
+          },
+          "verification": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Verification",
+            "type": "string"
+          },
+          "constraints": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Constraints",
+            "type": "string"
+          },
+          "boundaries": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Boundaries",
+            "type": "string"
+          },
+          "stop_when": {
+            "default": "",
+            "maxLength": 4096,
+            "title": "Stop When",
+            "type": "string"
+          }
+        },
+        "title": "MissionLegacyContract",
+        "type": "object"
+      },
+      "MissionHistoricalGate": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "maxLength": 4096,
+            "title": "Command",
+            "type": "string"
+          },
+          "timeout_seconds": {
+            "default": 300,
+            "maximum": 3600,
+            "minimum": 1,
+            "title": "Timeout Seconds",
+            "type": "integer"
+          },
+          "max_retries": {
+            "default": 3,
+            "maximum": 10,
+            "minimum": 0,
+            "title": "Max Retries",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "command"
+        ],
+        "title": "MissionHistoricalGate",
+        "type": "object"
+      },
+      "MissionEffectRef": {
+        "additionalProperties": false,
+        "properties": {
+          "effect_id": {
+            "title": "Effect Id",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "prepared",
+              "dispatched",
+              "confirmed",
+              "failed",
+              "outcome_unknown",
+              "reconciliation_required"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "effect_id",
+          "state"
+        ],
+        "title": "MissionEffectRef",
+        "type": "object"
+      },
+      "MissionDeliveryRef": {
+        "additionalProperties": false,
+        "properties": {
+          "delivery_id": {
+            "title": "Delivery Id",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "delivery_id",
+          "state"
+        ],
+        "title": "MissionDeliveryRef",
+        "type": "object"
+      },
+      "MissionMissedSteer": {
+        "additionalProperties": false,
+        "properties": {
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Run Id"
+          },
+          "effect_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Effect Ids",
+            "type": "array"
+          },
+          "reason": {
+            "enum": [
+              "effect_already_dispatched",
+              "turn_already_finalizing"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "effect_ids",
+          "reason"
+        ],
+        "title": "MissionMissedSteer",
+        "type": "object"
+      },
+      "MissionGetParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "mission_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mission Id"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version"
+        ],
+        "title": "MissionGetParams",
+        "type": "object"
+      },
+      "MissionGetResult": {
+        "additionalProperties": false,
+        "properties": {
+          "mission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissionRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "mission"
+        ],
+        "title": "MissionGetResult",
+        "type": "object"
+      },
+      "MissionListParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "limit": {
+            "default": 100,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version"
+        ],
+        "title": "MissionListParams",
+        "type": "object"
+      },
+      "MissionListResult": {
+        "additionalProperties": false,
+        "properties": {
+          "missions": {
+            "items": {
+              "$ref": "#/components/schemas/MissionRecord"
+            },
+            "title": "Missions",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "limit_reached": {
+            "title": "Limit Reached",
+            "type": "boolean"
+          },
+          "complete": {
+            "const": false,
+            "title": "Complete",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "missions",
+          "limit",
+          "limit_reached",
+          "complete"
+        ],
+        "title": "MissionListResult",
+        "type": "object"
+      },
+      "RuntimeResultGetParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "command_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Command Id",
+            "type": "string"
+          },
+          "offset": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "limit": {
+            "default": 65536,
+            "maximum": 65536,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "command_id"
+        ],
+        "title": "RuntimeResultGetParams",
+        "type": "object"
+      },
+      "RuntimeResultChunk": {
+        "additionalProperties": false,
+        "properties": {
+          "command_id": {
+            "title": "Command Id",
+            "type": "string"
+          },
+          "artifact_id": {
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "size": {
+            "minimum": 0,
+            "title": "Size",
+            "type": "integer"
+          },
+          "mime": {
+            "title": "Mime",
+            "type": "string"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "data_base64": {
+            "title": "Data Base64",
+            "type": "string"
+          },
+          "next_offset": {
+            "title": "Next Offset",
+            "type": "integer"
+          },
+          "eof": {
+            "title": "Eof",
+            "type": "boolean"
+          },
+          "publication_state": {
+            "enum": [
+              "committed",
+              "published_uncommitted"
+            ],
+            "title": "Publication State",
+            "type": "string"
+          },
+          "delivery_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Id"
+          }
+        },
+        "required": [
+          "command_id",
+          "artifact_id",
+          "version",
+          "sha256",
+          "size",
+          "mime",
+          "offset",
+          "data_base64",
+          "next_offset",
+          "eof",
+          "publication_state",
+          "delivery_id"
+        ],
+        "title": "RuntimeResultChunk",
         "type": "object"
       },
       "RuntimeSessionParams": {

@@ -2,12 +2,14 @@ import type { DatabaseSync } from 'node:sqlite';
 /** Global operation namespace. Call claim inside the owning admission transaction. */
 export function initializeOperationRegistry(
   db: DatabaseSync,
-  family: 'conversation' | 'command',
+  family: 'conversation' | 'command' | 'control',
 ) {
   const [table, authority] =
     family === 'conversation'
       ? ['conversation_operations', 'binding']
-      : ['runtime_command_ingress', 'authority'];
+      : family === 'command'
+        ? ['runtime_command_ingress', 'authority']
+        : ['runtime_control_ingress', 'authority'];
   db.exec(
     `CREATE TABLE IF NOT EXISTS runtime_operation_registry(operationId TEXT PRIMARY KEY,ownerId TEXT NOT NULL,family TEXT NOT NULL,digest TEXT NOT NULL,authority TEXT NOT NULL)`,
   );
@@ -35,7 +37,7 @@ export function claimOperation(
   db: DatabaseSync,
   operationId: string,
   ownerId: string,
-  family: 'conversation' | 'command',
+  family: 'conversation' | 'command' | 'control',
   digest: string,
   authority: string,
 ) {
