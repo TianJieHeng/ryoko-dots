@@ -1,3 +1,4 @@
+import { loadVoiceMedia } from './runtime/voice-config.js';
 import { ComputerService } from './computer-service.js';
 import { loadComputerHostQualification } from './runtime/computer-http-edge.js';
 import { ownerAuthConfig } from './owner-auth-config.js';
@@ -56,7 +57,12 @@ const platform = new SelfHostedPlatform(
   workspace,
   database,
   launch ? new StdioConversationTransport(launch) : undefined,
-  { service: computerService, qualification: computerQualification },
+  {
+    service: computerService,
+    qualification: computerQualification,
+    voiceMedia: loadVoiceMedia(process.env.RYOKO_VOICE_CONFIG_PATH),
+    locallyPaused: () => store.settings().paused,
+  },
 );
 const app = createSelfHostedApp({ store, auth, platform });
 app.use('*', async (c, next) => {

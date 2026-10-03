@@ -34,10 +34,12 @@ export function createShutdown(options: {
         }
       };
       await Promise.race([
-        Promise.all([
-          settle('Stopping Channels failed', options.stopPlatform),
-          settle('Closing HTTP server failed', options.closeServer),
-        ]),
+        (async () => {
+          // Drain authenticated readers/writers before closing their SQLite
+          // stores. Platform shutdown then ends media before canonical transport.
+          await settle('Closing HTTP server failed', options.closeServer);
+          await settle('Stopping runtime failed', options.stopPlatform);
+        })(),
         deadline,
       ]);
       clearTimeout(timer);

@@ -52,3 +52,32 @@ it('bounds a stuck shutdown and reports operation failures without stopping othe
   expect(exit).toHaveBeenCalledWith(1);
   expect(report).toHaveBeenCalledTimes(2);
 });
+it('drains HTTP readers before closing platform media and receipt stores', async () => {
+  let drained!: () => void;
+  const openRequests = new Promise<void>((resolve) => {
+    drained = resolve;
+  });
+  const events: string[] = [];
+  const stopPlatform = vi.fn(async () => {
+    events.push('platform');
+  });
+  const shutdown = createShutdown({
+    stopRunner: () => {},
+    stopPlatform,
+    closeServer: async () => {
+      events.push('draining');
+      await openRequests;
+      events.push('drained');
+    },
+    exit: () => {
+      events.push('exit');
+    },
+    report: vi.fn(),
+  });
+  const pending = shutdown();
+  await Promise.resolve();
+  expect(stopPlatform).not.toHaveBeenCalled();
+  drained();
+  await pending;
+  expect(events).toEqual(['draining', 'drained', 'platform', 'exit']);
+});

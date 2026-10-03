@@ -284,7 +284,7 @@ export function useVoice(
             setUserCaption(transcript);
           }
           if (data.type === 'response.output_audio_transcript.done')
-            current.transcript.push(`Dot: ${transcript}`);
+            current.transcript.push(`Media provider: ${transcript}`);
         }
         if (data.type === 'error')
           setError(

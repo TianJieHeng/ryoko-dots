@@ -77,7 +77,7 @@ export function CallView({
             </p>
           )}
           <p>
-            <small>{dot.name}</small>
+            <small>{dot.name} · media provider speech</small>
             {voice.caption || 'Speak naturally. Your Dot is here with you.'}
           </p>
         </div>
@@ -121,7 +121,9 @@ export function CallView({
         </button>
       </div>
       {!minimized && (
-        <p className="call-footer">Text and voice share this conversation</p>
+        <p className="call-footer">
+          Media conversation is separate from verified Ryoko task results
+        </p>
       )}
     </section>
   );

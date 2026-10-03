@@ -1,3 +1,5 @@
+import { RuntimeVoiceService } from './runtime/voice-service.js';
+import { OpenAIRealtimeMedia, type VoiceMedia } from './runtime/voice-media.js';
 import {
   ComputerRuntimeService,
   type ComputerRuntimeOptions,
@@ -66,13 +68,19 @@ export class SelfHostedPlatform {
   readonly nativeComputers?: ComputerRuntimeService;
   readonly identities?: IdentityRuntimeService;
   readonly delivery?: RuntimeDeliveryService;
+  readonly voice?: RuntimeVoiceService;
   private unsubscribeResults?: () => void;
+  private voiceControlRevision = -1;
+  private voiceControlPaused = false;
 
   constructor(
     readonly workspace: WorkspaceStore,
     database: string,
     readonly transport?: ConversationTransport,
-    computerOptions: ComputerRuntimeOptions = {},
+    private readonly options: ComputerRuntimeOptions & {
+      voiceMedia?: VoiceMedia;
+      locallyPaused?: () => boolean;
+    } = {},
   ) {
     this.ledger = new ConversationLedger(database, workspace.ownerId);
     if (transport)
@@ -129,7 +137,7 @@ export class SelfHostedPlatform {
         (id, auth, access) => this.commands!.existingBound(id, auth, access),
         (bound, auth, access) =>
           this.commands!.assertBound(bound.scope, auth, access),
-        computerOptions,
+        options,
       );
     if (transport && this.commands)
       this.nativePages = new PageRuntimeService(
@@ -215,6 +223,82 @@ export class SelfHostedPlatform {
           this.delivery!.observeResultAvailable(notice, epoch);
         },
       );
+      this.voice = new RuntimeVoiceService(
+        workspace.ownerId,
+        database,
+        {
+          commands: this.commands,
+          authorize: (id, auth, access) => this.voiceScope(id, auth, access),
+          // No history is forwarded to the media provider implicitly. Spoken
+          // input and an explicitly requested compute result are sufficient.
+          output: async (id, commandId, auth) => {
+            const result = await this.delivery!.readResult(id, commandId, auth);
+            return result.publicationState === 'committed'
+              ? result.finalResponse
+              : null;
+          },
+        },
+        options.voiceMedia ?? new OpenAIRealtimeMedia(),
+      );
+    }
+  }
+  /** Call authority reuses conversation, project and page grants. Only an
+   * explicitly connected canonical session may delegate compute or start media. */
+  private async voiceScope(id: string, auth: Guard, access: 'read' | 'write') {
+    const scope = await this.conversation(id, auth, access);
+    if (access === 'read') return scope;
+    const bound = this.commands!.existingBound(id, auth, 'write');
+    const meta = this.ledger.metadata(id);
+    if (
+      meta?.pageId &&
+      meta.spaceId &&
+      this.workspace.pages.get(meta.spaceId, meta.pageId).archived
+    )
+      throw new ConversationError(
+        'Restore this archived page before starting voice.',
+        403,
+      );
+    if (this.transport?.be06Qualification) {
+      await this.identities!.verifySession(
+        scope,
+        bound.binding.liveSessionId,
+        auth,
+      );
+      await this.identities!.refreshCommandAccess(scope, auth);
+    }
+    const control = await this.controls!.readControl(id, auth);
+    this.commands!.assertBound(bound.scope, auth, 'write');
+    await this.observeVoiceControl(control.control);
+    if (this.voiceControlPaused || this.options.locallyPaused?.())
+      throw new ConversationError(
+        'Voice is paused. Accepted compute remains independent.',
+        409,
+      );
+    return bound.scope;
+  }
+  private async observeVoiceControl(control: {
+    revision: number;
+    paused: boolean;
+    admission_blocked: boolean;
+  }) {
+    // An older out-of-order read must never undo a newer canonical pause.
+    if (control.revision >= this.voiceControlRevision) {
+      this.voiceControlRevision = control.revision;
+      this.voiceControlPaused = control.paused || control.admission_blocked;
+    }
+    await this.voice?.setPaused(
+      !!this.options.locallyPaused?.() || this.voiceControlPaused,
+    );
+  }
+  /** Invoked after authenticated canonical pause/resume mutations only.
+   * Unknown outcomes fail closed for media; GET receipt inspection never hangs up. */
+  async syncVoicePause(id: string, auth: Guard) {
+    if (!this.voice || !this.controls) return;
+    try {
+      const state = await this.controls.readControl(id, auth);
+      await this.observeVoiceControl(state.control);
+    } catch {
+      await this.voice.setPaused(true);
     }
   }
   /** Project-less conversations use only their server-owned Dot default Space.
@@ -345,12 +429,15 @@ export class SelfHostedPlatform {
             403,
           );
       this.commands?.startRecovery();
+      await this.voice?.setPaused(!!this.options.locallyPaused?.());
+      this.voice?.start();
     })().catch((error) => {
       this.starting = undefined;
       throw error;
     }));
   }
   async stop() {
+    await this.voice?.close();
     this.unsubscribeResults?.();
     this.delivery?.close();
     this.schedules?.close();
@@ -382,6 +469,16 @@ export class SelfHostedPlatform {
         features: {
           ...base.features,
           conversations: ready,
+          voice: this.voice
+            ? {
+                state:
+                  this.voice.media.available &&
+                  this.voice.health().cleanupHealthy
+                    ? 'ready'
+                    : 'unsupported',
+                reason: this.voice.health().reason ?? this.voice.media.reason,
+              }
+            : base.features.voice,
           ...(this.transport?.be06Qualification
             ? {
                 specialists: {

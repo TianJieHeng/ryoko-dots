@@ -1,3 +1,4 @@
+import { runtimeVoiceRoutes } from './runtime/voice-routes.js';
 import { ComputerEffectError } from './runtime/computer-effect-service.js';
 import {
   computerActionSchema,
@@ -80,6 +81,20 @@ export function createSelfHostedApp({
     }),
   );
   app.use('/api/*', auth.middleware());
+  if (platform.voice)
+    app.route(
+      '/api',
+      runtimeVoiceRoutes(
+        platform.voice,
+        (c) => guard(c, platform),
+        async (_c, auth) => {
+          auth();
+          const scope = await platform.scope(platform.transport!.config.dotId);
+          auth();
+          return scope;
+        },
+      ),
+    );
   app.get('/api/runtime/setup', async (c) => {
     const current = guard(c, platform);
     const { dotId } = z
@@ -204,29 +219,34 @@ export function createSelfHostedApp({
     z.strictObject({}).parse(query(c));
     const operationId = z.uuid().parse(c.req.param('id'));
     return c.json(
-      platform.nativeComputers?.hasOwner(operationId)
-        ? await platform.nativeComputers.inspectOwner(
-            operationId,
-            requireOwner(c),
-          )
-        : platform.nativeComputers?.has(operationId)
-          ? await platform.nativeComputers.inspect(
+      platform.voice?.ledger.operation(operationId)?.family === 'control'
+        ? await platform.voice.inspectControl(operationId, guard(c, platform))
+        : platform.nativeComputers?.hasOwner(operationId)
+          ? await platform.nativeComputers.inspectOwner(
               operationId,
-              guard(c, platform),
+              requireOwner(c),
             )
-          : platform.schedules?.has(operationId)
-            ? await platform.schedules.inspect(operationId, guard(c, platform))
-            : platform.identities?.operations.has(operationId)
-              ? await platform.identities.inspect(
+          : platform.nativeComputers?.has(operationId)
+            ? await platform.nativeComputers.inspect(
+                operationId,
+                guard(c, platform),
+              )
+            : platform.schedules?.has(operationId)
+              ? await platform.schedules.inspect(
                   operationId,
                   guard(c, platform),
                 )
-              : platform.controls?.has(operationId)
-                ? await platform.controls.inspect(
+              : platform.identities?.operations.has(operationId)
+                ? await platform.identities.inspect(
                     operationId,
                     guard(c, platform),
                   )
-                : await platform.recover(operationId, guard(c, platform)),
+                : platform.controls?.has(operationId)
+                  ? await platform.controls.inspect(
+                      operationId,
+                      guard(c, platform),
+                    )
+                  : await platform.recover(operationId, guard(c, platform)),
     );
   });
   app.get('/api/runtime/conversations/:id/results/:commandId', async (c) => {
@@ -344,14 +364,21 @@ export function createSelfHostedApp({
       z.strictObject({}).parse(query(c));
       const input = controlActionSchema.parse(await c.req.json());
       const path = new URL(c.req.url).pathname.slice('/api'.length);
-      return c.json(
-        await controls().admit(
-          id.parse(c.req.param('id')),
-          path,
-          input,
-          guard(c, platform),
-        ),
+      const conversationId = id.parse(c.req.param('id'));
+      const current = guard(c, platform);
+      const receipt = await controls().admit(
+        conversationId,
+        path,
+        input,
+        current,
       );
+      if (
+        path ===
+        `/runtime/conversations/${encodeURIComponent(conversationId)}/control`
+      )
+        await platform.syncVoicePause(conversationId, current);
+      current();
+      return c.json(receipt);
     });
   app.post('/api/runtime/conversations/:id/connect', async (c) => {
     z.strictObject({}).parse(await c.req.json());

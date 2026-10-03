@@ -380,7 +380,7 @@ export function Chat({
             }
             disabled={
               voice.status === 'idle' &&
-              (!realtimeReady || paused || !contextReady)
+              (!realtimeReady || !connected || paused || !contextReady)
             }
             title={
               media.data
