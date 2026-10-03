@@ -38,8 +38,7 @@ export function useResource<T extends { scope: RuntimeScope }>(
       setValue({ key, data, error: '' });
     } catch (cause) {
       if (generation.current === current)
-        setValue((previous) => ({
-          ...previous,
+        setValue(() => ({
           key,
           error:
             cause instanceof Error

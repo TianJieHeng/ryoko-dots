@@ -1,3 +1,4 @@
+import type { RuntimeSpecialist } from '../shared/runtime/agents';
 import { RuntimeStatus } from './runtime/RuntimeStatus';
 import type { RuntimeConnection } from './runtime/use-runtime';
 import { useEffect, useRef, useState } from 'react';
@@ -16,8 +17,10 @@ export function WorkspaceDialog({
   onClose,
   mutate,
   runtime,
+  specialist,
 }: {
   runtime?: RuntimeConnection;
+  specialist?: RuntimeSpecialist;
   dialog: Dialog;
   state: State;
   workspace: WorkspaceState;
@@ -51,12 +54,6 @@ export function WorkspaceDialog({
     dialog.type === 'dot' ? (dialog.dot?.spaceId ?? dialog.spaceId) : '',
   );
   const [interval, setInterval] = useState('86400');
-  const [learningContainer, setLearningContainer] = useState(
-    dialog.type === 'dot' ? (dialog.dot?.learningContainerId ?? '') : '',
-  );
-  const [skillDelivery, setSkillDelivery] = useState(
-    dialog.type === 'dot' ? (dialog.dot?.skillDeliveryEnabled ?? false) : false,
-  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const container = useRef<HTMLElement>(null);
@@ -122,6 +119,15 @@ export function WorkspaceDialog({
         </button>
         <span className="eyebrow">OPENDOTS TEMPLATE</span>
         <h2 id="dialog-title">{title}</h2>
+        {dialog.type === 'dot' && (
+          <p className="config-note">
+            {specialist
+              ? `Verified agent ${specialist.id} · ${specialist.role} · ${specialist.memoryBackend} · revision ${specialist.revision}`
+              : 'No verified runtime identity is available yet.'}{' '}
+            Accepted work retains its original capability snapshot;
+            configuration edits do not rewrite it.
+          </p>
+        )}
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -144,8 +150,6 @@ export function WorkspaceDialog({
                 instructions: text,
                 researchAllowed: research,
                 memoryAllowed: memory,
-                learningContainerId: learningContainer.trim() || null,
-                skillDeliveryEnabled: skillDelivery,
               };
             }
             if (dialog.type === 'settings') {
@@ -259,7 +263,7 @@ export function WorkspaceDialog({
               </select>
             </fieldset>
           )}
-          {(dialog.type === 'dot' || dialog.type === 'settings') && (
+          {dialog.type === 'dot' && (
             <>
               <label className="permission-row">
                 <input
@@ -270,8 +274,8 @@ export function WorkspaceDialog({
                 <span>
                   <strong>Public-page research</strong>
                   <small>
-                    Allow the server-side read-only browser tool. Global
-                    settings always take precedence.
+                    Request scoped research capability. Effective runtime grants
+                    and policy remain authoritative.
                   </small>
                 </span>
               </label>
@@ -284,62 +288,21 @@ export function WorkspaceDialog({
                 <span>
                   <strong>Use saved memories</strong>
                   <small>
-                    Include your preferences in new turns. Changing permission
-                    stops active work.
+                    Use this agent’s assigned backend only. Primary Ryoko uses
+                    the personal harness; specialists use isolated built-in
+                    memory.
                   </small>
                 </span>
               </label>
             </>
           )}
           {dialog.type === 'dot' && (
-            <fieldset className="space-access-fields">
-              <legend>Automatic Learning</legend>
-              <label className="field-label" htmlFor="learning-container">
-                Learning container ID
-              </label>
-              <input
-                id="learning-container"
-                value={learningContainer}
-                maxLength={64}
-                pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                placeholder="research-workflow"
-                aria-describedby="learning-help"
-                onChange={(event) => {
-                  setLearningContainer(event.target.value);
-                  if (!event.target.value.trim()) setSkillDelivery(false);
-                }}
-              />
-              <p className="muted" id="learning-help">
-                Create this container in your Intelligence project first. New
-                conversations will contribute evidence to it. Leave blank to
-                keep new conversations out of Learning. Existing conversations
-                retain their original assignment.
-              </p>
-              <label className="permission-row">
-                <input
-                  type="checkbox"
-                  checked={skillDelivery}
-                  disabled={!learningContainer.trim()}
-                  onChange={(event) => setSkillDelivery(event.target.checked)}
-                />
-                <span>
-                  <strong>Use published skills</strong>
-                  <small>
-                    Load reviewed skills from each conversation’s assigned
-                    container. Enable delivery in Intelligence too. Turning this
-                    off stops skill loading; it does not stop evidence
-                    collection.
-                  </small>
-                </span>
-              </label>
-              <a
-                href="https://docs.copilotkit.ai/learning"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Set up Learning and review skills ↗
-              </a>
-            </fieldset>
+            <p className="config-note">
+              Reviewed Learning is managed in Memory → Reviewed Learning.
+              Existing managed-service enrollment remains frozen until
+              migration; copied names and default Spaces never grant personal
+              memory access.
+            </p>
           )}
           {dialog.type === 'schedule' && (
             <>
@@ -376,9 +339,17 @@ export function WorkspaceDialog({
               {error}
             </p>
           )}
-          <button className="primary full" disabled={busy}>
-            {busy ? 'Saving…' : 'Save'}
-          </button>
+          {dialog.type !== 'settings' && (
+            <button
+              className="primary full"
+              disabled={
+                busy ||
+                (dialog.type === 'dot' && !runtime?.available('specialists'))
+              }
+            >
+              {busy ? 'Saving…' : 'Save'}
+            </button>
+          )}
         </form>
       </section>
     </div>

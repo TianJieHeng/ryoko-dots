@@ -65,7 +65,9 @@ export function Chat({
     history.reload,
   );
   const contextReady =
-    history.history !== undefined && 'pageContext' in history.history;
+    history.history !== undefined &&
+    !history.error &&
+    'pageContext' in history.history;
   const scope = runtime.setup?.scope;
   const scopeKey = JSON.stringify(scope);
   const activeScope = useRef(scopeKey);

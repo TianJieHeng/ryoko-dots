@@ -1,3 +1,5 @@
+import { MemoryLearning } from './runtime/MemoryLearning';
+import { specialistsSchema, configSchema } from '../shared/runtime/agents';
 import { MissionsPanel } from './runtime/MissionsPanel';
 import { controlSchema } from '../shared/runtime/missions';
 import { useResource } from './runtime/use-resource';
@@ -28,7 +30,6 @@ import {
   Plus,
   Search,
   Settings2,
-  Trash2,
   X,
 } from 'lucide-react';
 import type {
@@ -57,6 +58,12 @@ export function App() {
     controlSchema,
     runtime,
     'missions',
+  );
+  const specialists = useResource(
+    '/runtime/specialists',
+    specialistsSchema,
+    runtime,
+    'specialists',
   );
   const runtimePaused = control.data?.admission !== 'open';
   const [selectedThread, setSelectedThread] = useState<string>();
@@ -200,7 +207,36 @@ export function App() {
   const mutate = async (path: string, method: string, body?: unknown) => {
     setError('');
     try {
-      await api(path, method, body);
+      if (path === '/dots' || path.startsWith('/dots/')) {
+        if (
+          !runtime.available('specialists') ||
+          !runtime.setup?.scope ||
+          !specialists.data
+        )
+          throw new Error(
+            'Specialist configuration awaits the qualified runtime identity adapter.',
+          );
+        const configuration = configSchema.parse(body);
+        const existing = specialists.data.specialists.find(
+          (item) => path === `/dots/${item.dotId}`,
+        );
+        if (path !== '/dots' && !existing)
+          throw new Error('This specialist has no verified runtime binding.');
+        await runtimeAction(
+          runtime.setup.scope,
+          existing
+            ? `/runtime/specialists/${encodeURIComponent(existing.id)}/actions`
+            : '/runtime/specialists',
+          existing ? 'configure' : 'create',
+          configuration,
+          existing?.revision ?? 0,
+        );
+        await specialists.reload();
+      } else if (path.startsWith('/memories') || path === '/settings')
+        throw new Error(
+          'Use scoped runtime memory and controls. Legacy global mutation is frozen.',
+        );
+      else await api(path, method, body);
       await refresh();
       if (taskDetail)
         setTaskDetail(await api<Detail>(`/tasks/${taskDetail.task.id}`));
@@ -502,7 +538,7 @@ export function App() {
           >
             <BookOpen size={17} />
             <span>Memories</span>
-            <small>{state.memories.length}</small>
+            <small>Scoped</small>
           </button>
           <button
             className="nav-item"
@@ -787,64 +823,16 @@ export function App() {
                 </h1>
                 <p>
                   {view === 'memories'
-                    ? 'Preferences you choose to share with your Dots.'
+                    ? 'Private memory stays within the selected agent and assigned backend.'
                     : 'Inspect durable missions, exact reviews and independent delivery status.'}
                 </p>
               </div>
-              {view === 'memories' && (
-                <button
-                  className="primary"
-                  onClick={() => setDialog({ type: 'memory' })}
-                >
-                  <Plus size={15} />
-                  Add memory
-                </button>
-              )}
             </div>
             {view === 'memories' ? (
-              <>
-                <div className="memory-grid">
-                  {state.memories.map((memory) => (
-                    <article className="memory-card" key={memory.id}>
-                      <BookOpen size={18} />
-                      <p>{memory.text}</p>
-                      <div>
-                        <small>
-                          {state.settings.memoryAllowed
-                            ? 'Available to permitted Dots'
-                            : 'Memory use disabled'}
-                        </small>
-                        <button
-                          className="icon-button"
-                          aria-label="Edit memory"
-                          onClick={() => setDialog({ type: 'memory', memory })}
-                        >
-                          <MoreHorizontal size={17} />
-                        </button>
-                        <button
-                          className="icon-button"
-                          aria-label="Delete memory"
-                          onClick={() =>
-                            void mutate(`/memories/${memory.id}`, 'DELETE', {})
-                          }
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-                {!state.memories.length && (
-                  <div className="large-empty">
-                    <Mascot />
-                    <h2>A little context goes a long way.</h2>
-                    <p>
-                      Add a preference like “Keep my research briefs short.” You
-                      can change or remove it anytime.
-                    </p>
-                  </div>
-                )}
-              </>
+              <MemoryLearning
+                key={JSON.stringify(runtime.setup?.scope)}
+                connection={runtime}
+              />
             ) : (
               <>
                 <MissionsPanel connection={runtime} />
@@ -937,6 +925,13 @@ export function App() {
           onClose={() => setDialog(undefined)}
           mutate={mutate}
           runtime={runtime}
+          specialist={
+            dialog.type === 'dot'
+              ? specialists.data?.specialists.find(
+                  (item) => item.dotId === dialog.dot?.id,
+                )
+              : undefined
+          }
         />
       )}
     </div>

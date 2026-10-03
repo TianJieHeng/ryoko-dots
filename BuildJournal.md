@@ -104,3 +104,20 @@ Checks:
 Limits: native manual edits still use the existing revision-checked Dots page authority. BE05 must register that store and qualify operation receipts/immutable versions, full grant rechecks and imported source links. UI tests are not real browser interruption or live artifact-store qualification; those remain FE12 gates. Next FE06 scopes specialists, memory and reviewed Learning.
 
 Publication: this journal and source changes share FE05 checkpoint. No deployment, migration or sharing performed.
+
+## FE06 — Scoped specialists, memory and reviewed Learning — 2026-10-03
+
+Status: frontend agent/memory/skill lifecycle slice implemented; **BE06 stable identity, real memory and workflow backend gates blocked**. FE05 remote `b0f4a42ae448d701b0a98bc70c16ec9cd4ec1458` verified with matching source tree/journal.
+
+Changes: global preference mutation is no longer exposed as active specialist memory. Memory view binds owner/agent/project to an explicit backend: primary Ryoko must use personal_harness, specialists must use built_in. Renaming/copying cannot select privilege; unavailable harness state never redirects writes. Read/edit/delete/export controls require the backend's declared capability. Specialist form preserves name, instructions, research/memory choice, allowed Spaces and default destination, but submits only through verified runtime bindings/revisions; default Space never grants ownership. Effective backend/identity revision is displayed and accepted work retains its prior capability snapshot. Legacy managed Learning enrollment controls are removed from active configuration, remaining frozen for migration.
+
+Reviewed Learning now displays evidence, immutable draft/content digest, evaluation, lifecycle stage, publication/delivery destinations and rollback version. Actions are revision/digest-bound and runtime-advertised; approval requires evaluation, publication/delivery require their exact stage and destination, and rollback requires a distinct previous version. Protected resource reads discard actionable cached data on failure rather than presenting stale ready controls.
+
+Checks:
+- `npx --no-install vitest run tests/runtime-agents.test.ts tests/workspace.test.ts tests/learning.test.ts tests/learning-delivery.test.ts`: PASS, 4 files / 19 tests; 10 new tests cover privilege/backend invariants, explicit Space grants, harness outage, frozen workflow and reviewed lifecycle/rollback.
+- `npx --no-install tsc --noEmit`: PASS.
+- Targeted ESLint, changed-file formatting, `git diff --check`: PASS.
+
+Limits: no memory harness, specialist namespace or workflow service was created/activated by frontend code. Legacy server global injection and managed Learning internals must be retired by backend migration; the new UI does not certify that server cutover. Cross-process privacy/revocation and actual workflow publication/rollback require BE06/FE12 evidence. Next FE07 adds durable schedules and independent notice delivery.
+
+Publication: FE06 source and journal share the checkpoint. No credentials, migration, workflow publication or deployment performed.
