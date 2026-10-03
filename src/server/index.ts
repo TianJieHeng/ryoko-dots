@@ -3,77 +3,29 @@ import { readFileSync } from 'node:fs';
 import { createServer } from 'node:https';
 import { OwnerAuth } from './owner-auth.js';
 import { createShutdown } from './shutdown.js';
-import { reportChannelFailure, safeFailure } from './slack-channel.js';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Store } from './store.js';
-import { Runner } from './runner.js';
-import { createApp } from './app.js';
+import { createSelfHostedApp } from './self-hosted-app.js';
+import { SelfHostedPlatform } from './self-hosted-platform.js';
+import {
+  loadLaunchConfig,
+  StdioConversationTransport,
+} from './runtime/stdio.js';
 import { WorkspaceStore } from './workspace.js';
-import { Platform } from './platform.js';
-import type { PlatformConfig } from './platform-config.js';
 const authConfig = ownerAuthConfig(process.env);
-const { host, port, ownerToken } = authConfig;
+const { host, port } = authConfig;
 const database = process.env.DATABASE_PATH ?? 'data/opendots.sqlite';
 const workspace = new WorkspaceStore(database, authConfig.ownerId);
 const auth = new OwnerAuth(database, authConfig);
 const store = new Store(database);
-const config: PlatformConfig = {
-  intelligenceKey: process.env.INTELLIGENCE_API_KEY,
-  intelligenceApiUrl: process.env.INTELLIGENCE_API_URL || undefined,
-  intelligenceWsUrl: process.env.INTELLIGENCE_WS_URL || undefined,
-  apiKey: process.env.OPENAI_API_KEY,
-  model: process.env.OPENAI_MODEL,
-  baseUrl: process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1',
-  browserUrl: process.env.BROWSER_URL,
-  browserSecret: process.env.BROWSER_SECRET,
-  computerSupervisorUrl: process.env.COMPUTER_SUPERVISOR_URL,
-  computerSupervisorToken: process.env.COMPUTER_SUPERVISOR_TOKEN,
-  computerToken: process.env.COMPUTER_TOKEN,
-  computerNamespace: process.env.COMPUTER_NAMESPACE,
-  voiceKey: process.env.VOICE_API_KEY,
-  voiceModel: process.env.VOICE_MODEL,
-  voiceName: process.env.VOICE_NAME ?? 'marin',
-  slackChannel: process.env.SLACK_CHANNEL_NAME,
-  slackTeam: process.env.SLACK_TEAM_ID,
-  slackUsers: (process.env.SLACK_USER_IDS ?? '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean),
-  slackDotId: process.env.SLACK_DOT_ID || undefined,
-  runtimeUrl: `http://${host === '::1' ? '[::1]' : '127.0.0.1'}:${port}/api/copilotkit`,
-  ownerToken,
-};
-const platform = new Platform(store, workspace, config);
-const researchConfig = {
-  mode: 'live' as const,
-  apiKey: config.apiKey,
-  model: config.model,
-  baseUrl: config.baseUrl,
-  browserUrl: config.browserUrl,
-  browserSecret: config.browserSecret,
-};
-const runner = new Runner(
-  store,
-  researchConfig,
-  async (claim, _memories, signal, progress) => {
-    const threadId = workspace.taskThread(claim.id);
-    if (!threadId)
-      throw new Error(
-        'This legacy task has no Intelligence conversation. Create a new scheduled task from a conversation.',
-      );
-    progress('Running this task in its Intelligence conversation.');
-    const text = await platform.turn(threadId, claim.prompt, signal);
-    return { text, sources: [], sample: false };
-  },
+const launch = loadLaunchConfig(process.env.RYOKO_CONFIG_PATH);
+const platform = new SelfHostedPlatform(
+  workspace,
+  database,
+  launch ? new StdioConversationTransport(launch) : undefined,
 );
-const app = createApp({
-  store,
-  runner,
-  config: researchConfig,
-  auth,
-  platform,
-});
+const app = createSelfHostedApp({ store, auth, platform });
 app.use('*', async (c, next) => {
   c.header('X-Content-Type-Options', 'nosniff');
   c.header('Referrer-Policy', 'no-referrer');
@@ -105,19 +57,18 @@ const server = serve(
     console.log(
       `OpenDots template listening on ${process.env.TLS_CERT_PATH ? 'https' : 'http'}://${host}:${info.port}`,
     );
-    runner.start();
+    // Startup is independent of Intelligence and never starts a legacy scheduler.
     void platform
       .start()
-      .catch((error) =>
-        reportChannelFailure(
-          'Slack Channels activation failed; check setup status',
-          [safeFailure(error)],
+      .catch(() =>
+        console.error(
+          'Ryoko unavailable; consult authenticated capability status.',
         ),
       );
   },
 );
 const shutdown = createShutdown({
-  stopRunner: () => runner.stop(),
+  stopRunner: () => {},
   stopPlatform: () => platform.stop(),
   closeServer: () =>
     new Promise<void>((resolve, reject) =>
@@ -129,8 +80,7 @@ const shutdown = createShutdown({
     store.close();
     process.exit(code);
   },
-  report: (operation, error) =>
-    reportChannelFailure(operation, [safeFailure(error)]),
+  report: (operation) => console.error(operation),
 });
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);

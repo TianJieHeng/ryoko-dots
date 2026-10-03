@@ -17,9 +17,9 @@ const raw = readFileSync(
 );
 if (
   hash(source) !==
-    '73f089aeca65cbc1e90c8a54da0f7d11c144fc160e8d8cc99e28043e9eef1839' ||
+    'd29c02608340ab65cb5b5f7b1b66bb8bb253a5c27bf89bab0ee4c4a193740f64' ||
   hash(raw) !==
-    '1d3151320c621de5b7032a4e5fb4ba170fe09fa5400fd762df832bca09622909'
+    'c81c3c53e0bee325d172617551adb2350f463a4383a744b67fe29347c339ee29'
 )
   throw new Error('Producer pin changed; explicit review required.');
 const rpc = JSON.parse(raw);
@@ -27,6 +27,17 @@ const names = [
   'runtime.capabilities',
   'runtime.snapshot',
   'runtime.events.since',
+  ...[
+    'capabilities',
+    'create',
+    'operation.get',
+    'list',
+    'rename',
+    'archive',
+    'history',
+    'export',
+  ].map((name) => `runtime.conversation.${name}`),
+  'runtime.command.receipt',
 ];
 const methods = rpc.methods.filter((m) => names.includes(m.name));
 const schemas = {};
@@ -87,11 +98,11 @@ writeFileSync(
   JSON.stringify(
     {
       repository: 'TianJieHeng/ryoko-agent',
-      commit: '124931a916c8aa6beeaf60d08dd55ca5d20f6e3c',
+      commit: '44eec9a9650414aef3e95ef6bf78eebedbb92265',
       typescriptSha256: hash(source),
       openrpcSha256: hash(raw),
       methods: names,
-      status: 'read_only_subset_not_service_binding_qualification',
+      status: 'canonical_conversation_stdio_subset',
     },
     null,
     2,

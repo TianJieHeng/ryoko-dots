@@ -54,6 +54,14 @@ export class ReadOnlyRpc {
     method: M,
     params: unknown,
   ): Promise<ReadResults[M]> {
+    if (
+      ![
+        'runtime.capabilities',
+        'runtime.snapshot',
+        'runtime.events.since',
+      ].includes(method)
+    )
+      throw new Error('Runtime read method unavailable');
     validateWire(method, 'params', params);
     if (this.closed) throw new Error('Runtime transport disconnected');
     if (

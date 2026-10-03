@@ -21,7 +21,8 @@
     "dev:frontend": "vite",
     "build:frontend": "vite build",
     "preview:frontend": "node scripts/serve-frontend.mjs",
-    "check:runtime-contract": "node scripts/check-runtime-contract.mjs"
+    "check:runtime-contract": "node scripts/check-runtime-contract.mjs",
+    "test:runtime-stdio": "node scripts/test-runtime-stdio.mjs"
   },
   "keywords": [],
   "author": "Atai Barkai",

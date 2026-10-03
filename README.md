@@ -4,6 +4,8 @@ The self-hosted frontend consumer is being implemented phase by phase. The runti
 
 For safe local UI inspection use Node 24, `npm ci`, `npm run build:frontend`, then `npm run preview:frontend`. This starts static assets only; API calls truthfully report the absent qualified backend. It does not start Intelligence, providers, channels, schedulers or migration.
 
+Production `npm start` now uses the authenticated [self-hosted conversation BFF](docs/runtime/self-hosted-conversations.md). It serves native workspace/page data and, with an explicitly pinned isolated Ryoko profile, canonical create/list/history/search/rename/archive/export. Commands and later surfaces remain unavailable until their backend phases.
+
 The retained template documentation below describes the legacy application. Its credential/startup instructions are not the migrated runtime setup and do not establish current integration readiness.
 
 ---

@@ -20,7 +20,7 @@ const conversationSchema = z.strictObject({
   dotId: id,
   spaceId: id.nullable(),
   durableSessionId: id,
-  liveSessionId: id,
+  liveSessionId: id.nullable(),
   liveGeneration: z.number().int().nonnegative(),
 });
 type Agent = z.infer<typeof agentSchema>;
@@ -57,9 +57,19 @@ export class RuntimeBindings {
     db.exec(`CREATE TABLE IF NOT EXISTS runtime_agents(dotId TEXT PRIMARY KEY, ownerId TEXT NOT NULL, gatewayId TEXT NOT NULL, profileId TEXT NOT NULL, agentId TEXT NOT NULL, privilegeClass TEXT NOT NULL, value TEXT NOT NULL, revision INTEGER NOT NULL, revoked INTEGER NOT NULL DEFAULT 0, UNIQUE(ownerId,gatewayId,profileId,agentId));
       CREATE UNIQUE INDEX IF NOT EXISTS runtime_one_primary ON runtime_agents(ownerId) WHERE privilegeClass='primary';
       CREATE TABLE IF NOT EXISTS runtime_projects(spaceId TEXT PRIMARY KEY, ownerId TEXT NOT NULL, gatewayId TEXT NOT NULL, profileId TEXT NOT NULL, projectId TEXT NOT NULL, value TEXT NOT NULL, revision INTEGER NOT NULL, revoked INTEGER NOT NULL DEFAULT 0, UNIQUE(ownerId,gatewayId,profileId,projectId));
-      CREATE TABLE IF NOT EXISTS runtime_conversations(conversationId TEXT PRIMARY KEY, ownerId TEXT NOT NULL, dotId TEXT NOT NULL, durableSessionId TEXT NOT NULL UNIQUE, liveSessionId TEXT NOT NULL UNIQUE, value TEXT NOT NULL, revision INTEGER NOT NULL, archived INTEGER NOT NULL DEFAULT 0, revoked INTEGER NOT NULL DEFAULT 0);
+      CREATE TABLE IF NOT EXISTS runtime_conversations(conversationId TEXT PRIMARY KEY, ownerId TEXT NOT NULL, dotId TEXT NOT NULL, durableSessionId TEXT NOT NULL UNIQUE, liveSessionId TEXT UNIQUE, value TEXT NOT NULL, revision INTEGER NOT NULL, archived INTEGER NOT NULL DEFAULT 0, revoked INTEGER NOT NULL DEFAULT 0);
       CREATE TABLE IF NOT EXISTS dot_access_revisions(dotId TEXT PRIMARY KEY, revision INTEGER NOT NULL);
       INSERT OR IGNORE INTO dot_access_revisions SELECT id, 1 FROM dots;`);
+    const live = db
+      .prepare('PRAGMA table_info(runtime_conversations)')
+      .all()
+      .find((row) => row.name === 'liveSessionId');
+    if (live?.notnull)
+      db.exec(`BEGIN IMMEDIATE;
+      ALTER TABLE runtime_conversations RENAME TO runtime_conversations_be01;
+      CREATE TABLE runtime_conversations(conversationId TEXT PRIMARY KEY, ownerId TEXT NOT NULL, dotId TEXT NOT NULL, durableSessionId TEXT NOT NULL UNIQUE, liveSessionId TEXT UNIQUE, value TEXT NOT NULL, revision INTEGER NOT NULL, archived INTEGER NOT NULL DEFAULT 0, revoked INTEGER NOT NULL DEFAULT 0);
+      INSERT INTO runtime_conversations SELECT * FROM runtime_conversations_be01;
+      DROP TABLE runtime_conversations_be01; COMMIT;`);
   }
   private transaction<T>(fn: () => T): T {
     this.db.exec('BEGIN IMMEDIATE');
@@ -76,6 +86,16 @@ export class RuntimeBindings {
     return this.db
       .prepare(`SELECT * FROM ${table} WHERE ${key}=? AND ownerId=?`)
       .get(value, this.ownerId);
+  }
+  hasAgent(dotId: string) {
+    return !!this.row('runtime_agents', 'dotId', dotId);
+  }
+  hasConversation(conversationId: string) {
+    return !!this.row(
+      'runtime_conversations',
+      'conversationId',
+      conversationId,
+    );
   }
   bindAgent(input: Agent, expectedRevision = 0): VerifiedRuntimeScope {
     const value = agentSchema.parse(input);

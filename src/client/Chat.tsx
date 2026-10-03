@@ -413,19 +413,37 @@ export function Chat({
       <div className="chat-transcript">
         {history.history?.truncated && (
           <p className="notice">
-            Earlier history is outside the server retention window.
+            The server reports that some conversation history is unavailable.
+          </p>
+        )}
+        {history.history?.messages.some(
+          (message) => !message.internal && message.chunk?.sanitized,
+        ) && (
+          <p className="notice">
+            Some message text was sanitized by the server for safe display.
+          </p>
+        )}
+        {history.history?.messages.some(
+          (message) => !message.internal && message.chunk?.nonTextOmitted,
+        ) && (
+          <p className="notice">
+            This text transcript omits non-text content, such as attachments or
+            tool details.
+          </p>
+        )}
+        {history.history?.messages.some(
+          (message) =>
+            !message.internal && message.chunk && !message.chunk.complete,
+        ) && (
+          <p className="notice">
+            Some message text is only partially loaded.
+            {history.history.nextCursor && !history.limitReached
+              ? ' Load more conversation to continue it.'
+              : ' The full text is not available in this view.'}
           </p>
         )}
         {history.history?.interruption && (
           <p className="notice">{history.history.interruption}</p>
-        )}
-        {history.history?.nextCursor && (
-          <button
-            disabled={history.loading}
-            onClick={() => void history.loadOlder()}
-          >
-            Load earlier messages
-          </button>
         )}
         {!messages.length && !history.loading && (
           <div className="chat-welcome">
@@ -476,6 +494,16 @@ export function Chat({
             </>
           )}
         />
+        {history.history?.nextCursor && (
+          <button
+            disabled={history.loading || history.limitReached}
+            onClick={() => void history.loadMore()}
+          >
+            {history.loading
+              ? 'Loading more conversation…'
+              : 'Load more conversation'}
+          </button>
+        )}
         <div ref={bottom} />
       </div>
       {media.data && (

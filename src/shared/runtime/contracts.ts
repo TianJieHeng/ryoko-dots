@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 export const contractVersion = 'ryoko-dots/1' as const;
 const id = z.string().min(1).max(256);
+const historyCursor = z.string().min(1).max(2048);
 const revision = z.number().int().nonnegative();
 export const scopeSchema = z.strictObject({
   owner: id,
@@ -69,7 +70,7 @@ export const conversationListSchema = z.strictObject({
   version: z.literal(contractVersion),
   scope: scopeSchema,
   conversations: z.array(conversationSchema).max(100),
-  nextCursor: id.nullable(),
+  nextCursor: historyCursor.nullable(),
 });
 export const transcriptPartSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('text'), text: z.string().max(262144) }),
@@ -94,6 +95,24 @@ export const transcriptPartSchema = z.discriminatedUnion('kind', [
     sample: z.boolean(),
   }),
 ]);
+/** Offsets count original UTF-8 source bytes, before display sanitization. */
+export const transcriptChunkSchema = z
+  .strictObject({
+    offset: z.number().int().nonnegative(),
+    nextOffset: z.number().int().nonnegative().optional(),
+    complete: z.boolean(),
+    sanitized: z.boolean(),
+    nonTextOmitted: z.boolean(),
+    physicalSessionId: id,
+  })
+  .refine(
+    (chunk) =>
+      chunk.nextOffset === undefined ||
+      (chunk.complete
+        ? chunk.nextOffset >= chunk.offset
+        : chunk.nextOffset > chunk.offset),
+    { message: 'Chunk source offset must advance unless text is complete.' },
+  );
 export const messageSchema = z.strictObject({
   id,
   revision,
@@ -101,6 +120,7 @@ export const messageSchema = z.strictObject({
   parts: z.array(transcriptPartSchema).max(100),
   internal: z.boolean(),
   committed: z.boolean(),
+  chunk: transcriptChunkSchema.optional(),
 });
 export type TranscriptMessage = z.infer<typeof messageSchema>;
 export const historySchema = z.strictObject({
@@ -113,7 +133,7 @@ export const historySchema = z.strictObject({
     .strictObject({ id, spaceId: id, title: z.string().max(500), revision })
     .nullable()
     .optional(),
-  nextCursor: id.nullable(),
+  nextCursor: historyCursor.nullable(),
   sessionSequence: revision,
   runtimeCursor: id.nullable(),
   truncated: z.boolean(),

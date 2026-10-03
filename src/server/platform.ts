@@ -1,3 +1,4 @@
+/** LEGACY RETIREMENT SEAM: retained for migration/regression tests only. Production index imports the self-hosted BFF. */
 import { ComputerService } from './computer-service.js';
 import { PageService } from './page-service.js';
 import { randomUUID } from 'node:crypto';

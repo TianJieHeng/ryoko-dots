@@ -1,3 +1,4 @@
+/** LEGACY RETIREMENT SEAM: retained for migration/regression tests only. Production index imports the self-hosted BFF. */
 import { runtimeSetup } from './runtime/setup.js';
 import { computerRoutes } from './computer-routes.js';
 import { Hono } from 'hono';

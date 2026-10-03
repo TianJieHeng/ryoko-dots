@@ -1,3 +1,4 @@
+/** LEGACY RETIREMENT SEAM: retained for migration/regression tests only. Production index imports the self-hosted BFF. */
 import { pageRoutes } from './page-routes.js';
 import { Hono } from 'hono';
 import { z } from 'zod';

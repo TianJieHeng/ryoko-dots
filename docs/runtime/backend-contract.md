@@ -1,3 +1,7 @@
+# Current backend checkpoint
+
+BE02 replaces production startup with the authenticated self-hosted canonical conversation BFF. See [the current adapter, configuration, routes and verification](self-hosted-conversations.md). The BE00 record below remains historical; its producer blockers were addressed by the new pinned producer and actual Node stdio qualification. Full command/channel/deployment parity remains pending later phases.
+
 # BE00 read-only backend foundation
 
 Status: implemented bounded consumer foundation; **OD00 and integrated BE00 acceptance blocked** on the owning transport/binding prerequisites below. This is not a write-capable cutover. `/api/runtime/setup` now exists and truthfully reports unqualified features through the existing authenticated boundary. The legacy server remains until later retirement phases.

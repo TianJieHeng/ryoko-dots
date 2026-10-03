@@ -60,6 +60,144 @@ export interface RuntimeToolView {
   selected_tool_ids: string[]
   unavailable_reasons: Record<string, string>
 }
+export interface RuntimeCommandReceiptParams {
+  session_id: string
+  schema_version: 1
+  command_id: string
+}
+export interface RuntimeCommandReceiptResult {
+  schema_version: 1
+  command_id: string
+  found: boolean
+  receipt: CommandReceipt | null
+  status: 'accepted' | 'claimed' | 'completed' | 'failed' | 'blocked' | 'cancelled' | null
+  durable_revision: number
+}
+export interface CommandReceipt {
+  schema_version: 1
+  command_id: string
+  status: 'accepted' | 'rejected' | 'duplicate'
+  durable_revision: number
+  run_id: string | null
+  conflict?: RuntimeConflict | null
+}
+export interface RuntimeConflict {
+  code: string
+  message: string
+}
+export interface RuntimeConversationArchiveParams {
+  schema_version: 1
+  conversation_id: string
+  idempotency_key: string
+  expected_revision: number
+  archived: boolean
+}
+export interface RuntimeConversationResult {
+  schema_version: 1
+  conversation: RuntimeConversation
+}
+export interface RuntimeConversation {
+  conversation_id: string
+  title: string
+  archived: boolean
+  revision: number
+  created_at: number
+  updated_at: number
+  source: 'web'
+}
+export interface RuntimeConversationParams {
+  schema_version: 1
+}
+export interface RuntimeConversationCapabilities {
+  schema_version: 1
+  authority: 'trusted_stdio_owner'
+  owner_scope: 'principal_profile_agent_home'
+  identity: RuntimeConversationIdentity
+  methods: string[]
+  max_page: number
+  max_text_chunk_chars: number
+  max_page_text_bytes: number
+  transcript_format: 'safe_transcript_v1'
+  command_message_linkage: 'unavailable'
+  restore_supported: false
+}
+export interface RuntimeConversationIdentity {
+  principal_id: string
+  profile_id: string
+  agent_id: string
+  policy_digest: string
+  config_digest: string
+}
+export interface RuntimeConversationCreateParams {
+  schema_version: 1
+  idempotency_key: string
+  title?: string
+}
+export interface RuntimeConversationCreateResult {
+  schema_version: 1
+  conversation: RuntimeConversation
+  created: boolean
+}
+export interface RuntimeConversationHistoryParams {
+  schema_version: 1
+  conversation_id: string
+  limit?: number
+  cursor?: string | null
+}
+export interface RuntimeConversationHistoryResult {
+  schema_version: 1
+  conversation_id: string
+  format: 'safe_transcript_v1'
+  messages: RuntimeConversationTextChunk[]
+  lineage: string[]
+  snapshot_max_row_id: number
+  next_cursor: string | null
+  has_more: boolean
+}
+export interface RuntimeConversationTextChunk {
+  message_id: string
+  physical_session_id: string
+  role: 'user' | 'assistant'
+  text: string
+  text_offset: number
+  text_complete: boolean
+  text_sanitized: boolean
+  non_text_omitted: boolean
+  timestamp: number
+  committed: true
+  command_id: null
+}
+export interface RuntimeConversationListParams {
+  schema_version: 1
+  limit?: number
+  cursor?: string | null
+  archived?: boolean
+  query?: string
+}
+export interface RuntimeConversationListResult {
+  schema_version: 1
+  conversations: RuntimeConversation[]
+  next_cursor: string | null
+  has_more: boolean
+}
+export interface RuntimeConversationOperationParams {
+  schema_version: 1
+  idempotency_key: string
+}
+export interface RuntimeConversationOperationResult {
+  schema_version: 1
+  found: boolean
+  idempotency_key: string
+  operation: 'create' | 'rename' | 'archive' | null
+  conversation: RuntimeConversation | null
+}
+export interface RuntimeConversationRenameParams {
+  schema_version: 1
+  conversation_id: string
+  idempotency_key: string
+  expected_revision: number
+  title: string
+}
 export interface RuntimeEventsSinceParams {
   session_id: string
   schema_version: 1

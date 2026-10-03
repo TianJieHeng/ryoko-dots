@@ -4,6 +4,12 @@ import type {
   RuntimeCapabilities,
   MissionSnapshot,
   RuntimeEventsSinceResult,
+  RuntimeConversationCapabilities,
+  RuntimeConversationCreateResult,
+  RuntimeConversationOperationResult,
+  RuntimeConversationListResult,
+  RuntimeConversationHistoryResult,
+  RuntimeConversationResult,
 } from '../../shared/runtime/producer/wire.generated.js';
 export interface ReadResults {
   'runtime.capabilities': RuntimeCapabilities;
@@ -11,6 +17,17 @@ export interface ReadResults {
   'runtime.events.since': RuntimeEventsSinceResult;
 }
 export type ReadMethod = keyof ReadResults;
+export interface ConversationResults {
+  'runtime.conversation.capabilities': RuntimeConversationCapabilities;
+  'runtime.conversation.create': RuntimeConversationCreateResult;
+  'runtime.conversation.operation.get': RuntimeConversationOperationResult;
+  'runtime.conversation.list': RuntimeConversationListResult;
+  'runtime.conversation.history': RuntimeConversationHistoryResult;
+  'runtime.conversation.export': RuntimeConversationHistoryResult;
+  'runtime.conversation.rename': RuntimeConversationResult;
+  'runtime.conversation.archive': RuntimeConversationResult;
+}
+export type ConversationMethod = keyof ConversationResults;
 const ajv = new Ajv({
   allErrors: false,
   removeAdditional: false,
@@ -33,7 +50,7 @@ const validators = new Map(
   ]),
 );
 export function validateWire(
-  method: ReadMethod,
+  method: ReadMethod | ConversationMethod,
   side: 'params' | 'result',
   value: unknown,
 ): void {

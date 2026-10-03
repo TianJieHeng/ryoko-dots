@@ -5,8 +5,16 @@ import {
   type RuntimeHistory,
 } from '../../shared/runtime/contracts';
 import { api } from '../api';
-import { mergeMessages } from './projection';
+import { HistoryLimitError, mergeHistoryPage } from './projection';
 import type { RuntimeConnection } from './use-runtime';
+
+type HistoryState = {
+  key: string;
+  history?: RuntimeHistory;
+  error: string;
+  limitReached: boolean;
+};
+
 export function useHistory(
   conversationId: string,
   connection: RuntimeConnection,
@@ -14,17 +22,26 @@ export function useHistory(
   const scope = connection.setup?.scope;
   const key = JSON.stringify([conversationId, scope]);
   const ready = connection.available('conversations');
-  const [value, setValue] = useState<{
-    key: string;
-    history?: RuntimeHistory;
-    error: string;
-  }>({ key, error: '' });
+  const [value, setValue] = useState<HistoryState>({
+    key,
+    error: '',
+    limitReached: false,
+  });
+  const currentValue = useRef(value);
   const [loading, setLoading] = useState(false);
   const generation = useRef(0);
   const busy = useRef(false);
   const load = useCallback(
     async (cursor?: string) => {
       if (!scope || !ready || busy.current) return;
+      const previous = currentValue.current;
+      if (
+        cursor &&
+        (previous.key !== key ||
+          previous.limitReached ||
+          previous.history?.nextCursor !== cursor)
+      )
+        return;
       const current = generation.current;
       busy.current = true;
       setLoading(true);
@@ -44,30 +61,29 @@ export function useHistory(
           );
         if (cursor && parsed.nextCursor === cursor)
           throw new Error('History cursor did not advance.');
-        setValue((previous) => ({
-          key,
-          history:
-            cursor && previous.key === key && previous.history
-              ? {
-                  ...parsed,
-                  messages: mergeMessages(
-                    parsed.messages,
-                    previous.history.messages,
-                  ),
-                }
-              : parsed,
-          error: '',
-        }));
+        // Validate and merge before setting React state so conflicting pages
+        // are caught here and leave the last good history/cursor untouched.
+        const history = mergeHistoryPage(
+          cursor ? previous.history : undefined,
+          parsed,
+        );
+        const next = { key, history, error: '', limitReached: false };
+        currentValue.current = next;
+        setValue(next);
       } catch (cause) {
-        if (generation.current === current)
-          setValue((previous) => ({
-            ...previous,
+        if (generation.current === current) {
+          const next = {
+            ...(previous.key === key ? previous : { key }),
             key,
             error:
               cause instanceof Error
                 ? cause.message
                 : 'Conversation history unavailable.',
-          }));
+            limitReached: cause instanceof HistoryLimitError,
+          };
+          currentValue.current = next;
+          setValue(next);
+        }
       } finally {
         if (generation.current === current) {
           busy.current = false;
@@ -80,18 +96,27 @@ export function useHistory(
   useEffect(() => {
     generation.current++;
     busy.current = false;
-    setValue({ key, error: '' });
+    const next = { key, error: '', limitReached: false };
+    currentValue.current = next;
+    setValue(next);
+    setLoading(false);
     void load();
     return () => {
       generation.current++;
       busy.current = false;
     };
   }, [key, ready, load]);
-  const current = value.key === key && ready ? value : { key, error: '' };
+  const current =
+    value.key === key && ready
+      ? value
+      : { key, error: '', limitReached: false };
   return {
     ...current,
     loading,
     reload: () => load(),
-    loadOlder: () => load(current.history?.nextCursor ?? undefined),
+    loadMore: () => {
+      const cursor = current.history?.nextCursor;
+      return cursor && !current.limitReached ? load(cursor) : Promise.resolve();
+    },
   };
 }
