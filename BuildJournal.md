@@ -496,3 +496,27 @@ Final BE09 checks:
 - Final TypeScript, changed-source ESLint, changed-file Prettier, production build and diff checks PASS. Formatting the new stdio fixture resolved an intermediate format-only warning; the final targeted check passed. Existing nonfatal bundle-size warning remains. Consolidated runtime runner now includes the voice stdio proof.
 
 Publication: BE09 durable voice/media boundary, frontend provenance/connect gate, startup/routes, tests, guide and this shared journal form one direct-main checkpoint. Exact remote SHA/tree/journal and observed commit CI are verified after publication. Live microphone/playback/provider, latency/cost/quotas, unknown-media operator reconciliation, process-tree shutdown and host backup/cutover remain unqualified. Next BE10 replaces managed Slack ingress/delivery with the scoped self-hosted adapter.
+
+## BE10 — Self-hosted Slack ingress and immutable delivery — 2026-10-03
+
+Status: integration in progress; no BE10 live Slack or release acceptance claimed. Previous Dots remote BE09 `ef7e679e00bf208dd17cb5eac20f997149e4d045`, tree `dd30c40774eddc6c30aab1ab0317a21eb65be9c1`, root journal blob `b441d016a2e9641ec6a5b6ff4a6421b2a8ebab52` verified. Producer remains98b9eeb. Scope: signature-verified bounded ingress, explicit owner/actor/channel standing reply authority, durable inbox/thread/outbox identities, one canonical Ryoko command per accepted input and exact immutable reply reconciliation. Signed events alone must not grant access to private context. No real workspace installation, credential setup, external Slack message or deployment.
+
+Staged baseline has54 focused passes and a separate59-pass/8-stdio-skip selection with type/lint/format/build checks. Final assembly and real published-producer/loopback Slack proof follow; staged fake producer responses are not counted as actual producer qualification.
+
+Implemented BE10:
+
+- One self-hosted signed-events ingress replaces the managed channel route. Exact team/app/channel/human pair authorization, signature age/digest, owner identity and bounded payloads gate admission; bots/edits/reactions do not become commands. Thread/event identities and inbox/outbox state survive restart and dedupe across web/channel paths.
+- Separately reviewed, expiring actor/channel standing authority explicitly covers primary-context original-command replies to the original thread, bound to exact runtime identity/project scope. Technical allowlists or HMAC alone do not authorize private-context disclosure. Before admission, result read and send, actual enrolled primary/project grants and current server policy are rechecked. Policy changes/removal fence existing work rather than silently repurpose private history.
+- Replies come only from verified immutable canonical results. Original destination, bot author, ordered immutable block markers/text and exact Slack timestamp prove delivery. Accepted-send response loss stays unknown until bounded authenticated inspection finds the original message; absence is never permission to resend. Only explicit429 rejection permits bounded paced retry. No replayed inference, fabricated mission ID or premature producer delivery ACK.
+- Frontend channel status/provenance and nullable mission identity match producer facts; receipt inspection is an authenticated POST with original operation identity. Artifacts remain owner-authenticated result links rather than public uploads. Runtime defaults off, competing managed/socket/producer ingress is rejected, and no credentials/installations/messages are activated.
+- Startup/connect and stop are ordered so a shutdown race cannot leave a new sender active after its ledger closes. Broader process-tree, quota, actual workspace permissions and operational gates remain explicit.
+
+Actual published-pin channel proof:Node→Python3.14.7/producer98b9eeb→loopback model→durable outbox→loopback Slack,PASS12.49seconds. Accepted send deliberately loses its response; full producer/channel restart, duplicate signed event and authenticated exact bot-marker reconciliation retain exactly1 command,1 model call,1 Slack POST and1 inspect, with0 producer delivery ACKs. This is actual local protocol integration with synthetic credentials/services, not a real Slack workspace qualification.
+
+Final BE10 checks:
+
+- Actual published-producer stdio/loopback channel fixture:PASS,1 test,12.49seconds, exact command/model/send/inspect counts above. Final current-checkout focused suite:57 tests across5 files PASS. Staged54 and broader59/8 skips remain historical attributed evidence, not summed.
+- Final parent TypeScript, changed-source ESLint, changed-file Prettier, production build and diff checks PASS. Existing nonfatal bundle-size warning remains. Consolidated stdio runner now includes Slack.
+- Startup/shutdown, inspection drain and local-pause races are covered. Authority-history changes after the first durable input remain fail-closed pending separately reviewed migration. Live app membership/scopes, actual rate limits, provider behavior and external delivery are not certified by the synthetic service.
+
+Publication: BE10 signed ingress, durable inbox/outbox/bridge, frontend, configuration specimens, tests, guide and this root journal form one direct-main checkpoint. Exact remote SHA/tree/journal and observed CI are verified after publication. No external message, credential provisioning, channel installation or deployment occurred. Next BE11 integrates legacy archives, operational readiness, consistent offline recovery and production-only packaging.

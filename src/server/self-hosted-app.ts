@@ -29,6 +29,8 @@ import { controlActionSchema } from './runtime/control-service.js';
 import { ConversationError } from './runtime/conversation-ledger.js';
 import { PageError, pageInput, pagePatch } from './pages.js';
 import type { Store } from './store.js';
+import { createSelfHostedSlackApp } from './runtime/slack-routes.js';
+import type { SelfHostedSlack } from './runtime/slack-service.js';
 const id = z.string().min(1).max(256);
 const cursor = z.string().min(1).max(2048);
 const create = z.strictObject({
@@ -67,12 +69,19 @@ export function createSelfHostedApp({
   auth,
   platform,
   store,
+  slack,
 }: {
   auth: OwnerAuth;
   platform: SelfHostedPlatform;
   store: Store;
+  slack?: SelfHostedSlack;
 }) {
   const app = new Hono();
+  if (slack)
+    app.route(
+      '/',
+      createSelfHostedSlackApp({ service: slack, auth, platform }),
+    );
   app.use(
     '/api/*',
     bodyLimit({
@@ -111,6 +120,16 @@ export function createSelfHostedApp({
       );
     }
     const value = await platform.setup(dotId);
+    if (slack && value.scope && dotId === slack.config.dotId) {
+      const channel = slack.status(value.scope);
+      value.features.slack = {
+        state: channel.state,
+        reason:
+          channel.state === 'ready'
+            ? 'Qualified signed-events adapter with scoped owner reply authority and immutable outbox.'
+            : 'Slack is disabled, disconnected, or lacks current scoped authority and connected-workspace qualification.',
+      };
+    }
     current();
     return c.json(value);
   });

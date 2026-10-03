@@ -1,0 +1,15 @@
+{
+  "enabled": false,
+  "authority": "dots_signed_events",
+  "exclusiveIngressConfirmed": true,
+  "ownerId": "replace-with-existing-owner-id",
+  "dotId": "replace-with-existing-dot-id",
+  "teamId": "TREPLACE",
+  "appId": "AREPLACE",
+  "botUserId": "UREPLACEBOT",
+  "allowedChannelIds": ["CREPLACE"],
+  "allowedHumanUserIds": ["UREPLACEHUMAN"],
+  "appOrigin": "https://dots.example.test",
+  "replyAuthority": null,
+  "qualification": null
+}

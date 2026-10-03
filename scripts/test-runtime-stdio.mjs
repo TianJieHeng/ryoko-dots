@@ -18,6 +18,7 @@ const result = spawnSync(
     'tests/self-hosted-schedules.test.ts',
     'tests/self-hosted-computers.test.ts',
     'tests/self-hosted-voice-stdio.test.ts',
+    'tests/self-hosted-slack-stdio.test.ts',
   ],
   { stdio: 'inherit', env: process.env },
 );

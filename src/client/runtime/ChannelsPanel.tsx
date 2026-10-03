@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { inspectChannelDelivery } from './channel-delivery';
 import {
   canRetryDelivery,
   channelStatusSchema,
@@ -122,8 +123,11 @@ export function ChannelsPanel({
         <article className="task-detail-card" key={delivery.id}>
           <h4>{delivery.destination}</h4>
           <p>
-            {delivery.state} · mission {delivery.missionId} · immutable output{' '}
-            {delivery.outputVersion}
+            {delivery.state} ·{' '}
+            {delivery.missionId
+              ? `mission ${delivery.missionId}`
+              : 'command output'}{' '}
+            · immutable output {delivery.outputVersion}
           </p>
           <p>Provider receipt: {delivery.providerReceipt ?? 'not confirmed'}</p>
           {delivery.reviewPath && (
@@ -132,7 +136,31 @@ export function ChannelsPanel({
             </a>
           )}
           {delivery.allowedActions.includes('inspect') && (
-            <button onClick={() => void deliveries.reload()}>
+            <button
+              disabled={busy}
+              onClick={async () => {
+                if (!connection.setup?.scope || lock.current) return;
+                lock.current = true;
+                setBusy(true);
+                setError('');
+                try {
+                  await inspectChannelDelivery(
+                    connection.setup.scope,
+                    delivery.id,
+                  );
+                  await deliveries.reload();
+                } catch (cause) {
+                  setError(
+                    cause instanceof Error
+                      ? cause.message
+                      : 'Delivery inspection unavailable; no new send was attempted.',
+                  );
+                } finally {
+                  lock.current = false;
+                  setBusy(false);
+                }
+              }}
+            >
               Inspect delivery state
             </button>
           )}
@@ -171,7 +199,7 @@ export function ChannelsPanel({
           {delivery.state === 'unknown' && (
             <p className="notice">
               Send acknowledgment is unknown. Inspect the provider receipt
-              before any new attempt; the successful mission is retained.
+              before any new attempt; the original command result is retained.
             </p>
           )}
         </article>

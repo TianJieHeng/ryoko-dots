@@ -59,6 +59,8 @@ export const browserScope = (scope: VerifiedRuntimeScope): RuntimeScope => ({
 /** Self-hosted BFF. Intentionally imports no Intelligence, model loop or scheduler. */
 export class SelfHostedPlatform {
   private starting?: Promise<void>;
+  /** Derived only from the installation's durable verified ingress ledger. */
+  conversationOrigin?: (id: string) => 'slack' | undefined;
   readonly ledger: ConversationLedger;
   readonly commands?: CommandService;
   readonly schedules?: RuntimeScheduleService;
@@ -632,7 +634,9 @@ export class SelfHostedPlatform {
       lineageId: raw.conversation_id,
       revision: raw.revision,
       archived: raw.archived,
-      origin: prior?.pageId ? 'page' : origin,
+      origin: prior?.pageId
+        ? 'page'
+        : (this.conversationOrigin?.(raw.conversation_id) ?? origin),
     });
     if (!this.workspace.runtimeBindings.hasConversation(row.id))
       this.workspace.runtimeBindings.bindConversation({

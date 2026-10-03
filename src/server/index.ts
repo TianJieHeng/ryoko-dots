@@ -16,6 +16,10 @@ import {
   StdioConversationTransport,
 } from './runtime/stdio.js';
 import { WorkspaceStore } from './workspace.js';
+import {
+  createSlackRuntime,
+  startSlackRuntime,
+} from './runtime/slack-runtime.js';
 const authConfig = ownerAuthConfig(process.env);
 const { host, port } = authConfig;
 const database = process.env.DATABASE_PATH ?? 'data/opendots.sqlite';
@@ -64,7 +68,14 @@ const platform = new SelfHostedPlatform(
     locallyPaused: () => store.settings().paused,
   },
 );
-const app = createSelfHostedApp({ store, auth, platform });
+const slack = createSlackRuntime({
+  database,
+  auth,
+  platform,
+  env: process.env,
+  locallyPaused: () => store.settings().paused,
+});
+const app = createSelfHostedApp({ store, auth, platform, slack });
 app.use('*', async (c, next) => {
   c.header('X-Content-Type-Options', 'nosniff');
   c.header('Referrer-Policy', 'no-referrer');
@@ -99,6 +110,7 @@ const server = serve(
     // Startup is independent of Intelligence and never starts a legacy scheduler.
     void platform
       .start()
+      .then(() => startSlackRuntime(slack))
       .catch(() =>
         console.error(
           'Ryoko unavailable; consult authenticated capability status.',
@@ -108,7 +120,13 @@ const server = serve(
 );
 const shutdown = createShutdown({
   stopRunner: () => {},
-  stopPlatform: () => platform.stop(),
+  stopPlatform: async () => {
+    try {
+      await slack?.stop();
+    } finally {
+      await platform.stop();
+    }
+  },
   closeServer: () =>
     new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),

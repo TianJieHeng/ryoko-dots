@@ -75,7 +75,7 @@ export const deliverySchema = z.strictObject({
   id,
   revision,
   conversationId: id,
-  missionId: id,
+  missionId: id.nullable(),
   outputVersion: id,
   destination: z.string().min(1).max(1000),
   state: z.enum(['held', 'queued', 'delivered', 'failed', 'unknown']),
