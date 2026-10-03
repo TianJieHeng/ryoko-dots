@@ -1,6 +1,6 @@
 # Owner-scoped identities, memory and reviewed workflows
 
-Producer pin: `3453afefce2b21947390fac0e03d9eaa67f326e9`. The schema hashes are unchanged; this revision fixes exact JSON-manifest review by scanning decoded content without treating its base64 transport wrapper as a JWT.
+Producer pin: `98b9eeb7d2afc02d0e0393fea285f010000a0378`. The BE06 selected schemas are unchanged. The full producer schema hashes advance for BE07 scheduler status and are recorded in the generated provenance. This producer retains the exact JSON-manifest review fix that scans decoded content without treating its base64 transport wrapper as a JWT.
 
 The trusted stdio process remains the configured primary with `personal_mcp` memory. A displayed Dot name never selects authority. Specialist conversation creation explicitly selects a producer-issued stable ID; bind and reconnect then inspect `runtime.agent.session.get` and reject identity/backend mismatches, unfrozen enrollment, archival or revoked authority. Stable built-in namespace values come from the producer registry, never browser JSON.
 

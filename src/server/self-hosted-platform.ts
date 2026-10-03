@@ -1,3 +1,6 @@
+import { LegacyScheduleMigration } from './runtime/legacy-schedule-migration.js';
+import { RuntimeScheduleService } from './runtime/schedule-service.js';
+import type { ControlBinding } from './runtime/control-service.js';
 import { IdentityRuntimeService } from './runtime/identity-runtime-service.js';
 import { PageRuntimeService } from './runtime/page-runtime-service.js';
 import {
@@ -52,6 +55,8 @@ export class SelfHostedPlatform {
   private starting?: Promise<void>;
   readonly ledger: ConversationLedger;
   readonly commands?: CommandService;
+  readonly schedules?: RuntimeScheduleService;
+  private readonly legacySchedules?: LegacyScheduleMigration;
   readonly controls?: RuntimeControlService;
   readonly nativePages?: PageRuntimeService;
   readonly identities?: IdentityRuntimeService;
@@ -155,6 +160,24 @@ export class SelfHostedPlatform {
           this.controls!.assertWorkflowPublicationPresented(id, prepared, auth),
       );
     if (transport && this.commands) {
+      this.legacySchedules = new LegacyScheduleMigration(workspace, database, {
+        assertCurrent: (scope) =>
+          this.assertScheduleBinding(scope, () => {}, 'write'),
+      });
+      this.schedules = new RuntimeScheduleService(
+        workspace.ownerId,
+        database,
+        transport,
+        (id, auth, access) => this.scheduleBinding(id, auth, access),
+        (scope, auth, access) =>
+          this.assertScheduleBinding(scope, auth, access),
+        {
+          resolveLegacy: (sourceId, scope) =>
+            this.legacySchedules!.resolveLegacy(sourceId, scope),
+        },
+      );
+    }
+    if (transport && this.commands) {
       this.delivery = new RuntimeDeliveryService(
         workspace.ownerId,
         database,
@@ -170,6 +193,98 @@ export class SelfHostedPlatform {
         },
       );
     }
+  }
+  /** Project-less conversations use only their server-owned Dot default Space.
+   * Browser payloads cannot select a project, session or grant. Every request
+   * verifies producer project ownership and the current explicit agent grant. */
+  private async scheduleBinding(
+    id: string,
+    auth: Guard,
+    access: 'read' | 'write',
+  ): Promise<ControlBinding> {
+    let bound = this.commands!.existingBound(id, auth, access);
+    if (!this.transport?.be06Qualification || !this.identities)
+      throw new ConversationError(
+        'Verified runtime identity is required for schedules.',
+        503,
+      );
+    await this.identities.verifySession(
+      bound.scope,
+      bound.binding.liveSessionId,
+      auth,
+    );
+    await this.identities.projects(bound.scope.dotId, auth);
+    bound = this.commands!.existingBound(id, auth, access);
+    const spaceId =
+      bound.scope.spaceId ??
+      this.identities.scheduleDefaultSpace(bound.scope.dotId);
+    if (!spaceId)
+      throw new ConversationError(
+        'Choose a verified default Space before using schedules.',
+        409,
+      );
+    const projectScope = this.workspace.runtimeBindings.resolveDot(
+      bound.scope.dotId,
+      spaceId,
+    );
+    if (!projectScope.projectId)
+      throw new ConversationError(
+        'Schedules require a verified project grant.',
+        409,
+      );
+    const result = await this.transport.call('runtime.project.get', {
+      schema_version: 1,
+      session_id: bound.binding.liveSessionId,
+      project_id: projectScope.projectId,
+    });
+    this.commands!.assertBound(bound.scope, auth, access);
+    this.workspace.runtimeBindings.assertCurrent(projectScope, access);
+    const project = result.project;
+    if (
+      project.id !== projectScope.projectId ||
+      project.project_id !== projectScope.projectId ||
+      project.archived ||
+      project.owner_principal_id !== projectScope.principalId ||
+      !project.grants.some(
+        (grant) =>
+          grant.principal_id === projectScope.principalId &&
+          grant.agent_id === projectScope.agentId &&
+          grant.permissions.includes(access),
+      )
+    )
+      throw new ConversationError(
+        'Current schedule project grant did not verify.',
+        403,
+      );
+    const scoped = { ...bound, scope: { ...bound.scope, ...projectScope } };
+    this.assertScheduleBinding(scoped.scope, auth, access);
+    return scoped;
+  }
+  private assertScheduleBinding(
+    scope: VerifiedConversationScope,
+    auth: Guard,
+    access: 'read' | 'write',
+  ) {
+    const current = this.commands!.existingBound(
+      scope.conversationId,
+      auth,
+      access,
+    );
+    this.commands!.assertBound(current.scope, auth, access);
+    const spaceId =
+      current.scope.spaceId ??
+      this.identities?.scheduleDefaultSpace(current.scope.dotId);
+    if (!spaceId || spaceId !== scope.spaceId)
+      throw new ConversationError('Schedule project selection changed.', 409);
+    const projected = {
+      ...current.scope,
+      ...this.workspace.runtimeBindings.resolveDot(
+        current.scope.dotId,
+        spaceId,
+      ),
+    };
+    if (JSON.stringify(projected) !== JSON.stringify(scope))
+      throw new ConversationError('Schedule authority changed.', 409);
   }
   async start() {
     if (!this.transport) return;
@@ -215,6 +330,8 @@ export class SelfHostedPlatform {
   async stop() {
     this.unsubscribeResults?.();
     this.delivery?.close();
+    this.schedules?.close();
+    this.legacySchedules?.close();
     this.identities?.close();
     this.controls?.close();
     await this.commands?.stop();
@@ -260,6 +377,20 @@ export class SelfHostedPlatform {
                 },
               }
             : {}),
+          schedules:
+            this.schedules &&
+            this.transport?.be06Qualification &&
+            (
+              this.transport.config.identityProjects ??
+              this.transport.config.nativePages?.projects ??
+              []
+            ).length
+              ? {
+                  state: 'ready',
+                  reason:
+                    'Conversation-scoped schedule configuration and history. A verified default project and live scheduler proof are required for activation.',
+                }
+              : base.features.schedules,
           artifacts: this.nativePages
             ? {
                 state: 'ready',

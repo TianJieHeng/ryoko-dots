@@ -281,6 +281,14 @@ export class ConversationRpc {
 }
 export const conversationMethods: ConversationMethod[] = [
   ...be06Methods,
+  'runtime.schedule.create',
+  'runtime.schedule.import',
+  'runtime.schedule.update',
+  'runtime.schedule.get',
+  'runtime.schedule.list',
+  'runtime.schedule.run_now',
+  'runtime.schedule.cutover',
+  'runtime.schedule.scheduler.status',
   'client.capabilities',
   'runtime.project.get',
   'runtime.effect.get',

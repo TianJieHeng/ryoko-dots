@@ -456,6 +456,19 @@ export class IdentityRuntimeService {
     await this.projects(scope.dotId, auth);
     this.workspace.runtimeBindings.assertCurrent(scope);
   }
+  scheduleDefaultSpace(dotId: string): string | null {
+    const scope = this.workspace.runtimeBindings.resolveDot(dotId);
+    const projectId = this.entry(scope.agentId)?.agent.config
+      .default_project_id;
+    if (!projectId) return null;
+    return (
+      this.mappings().find(
+        (mapping) =>
+          mapping.projectId === projectId &&
+          this.workspace.canAccessSpace(dotId, mapping.spaceId),
+      )?.spaceId ?? null
+    );
+  }
   async projectReviewScope(id: string, projectId: string, auth: Guard) {
     const b = await this.binding(id, auth, 'read', projectId);
     return {

@@ -1,3 +1,4 @@
+import { scheduleActionSchema } from './runtime/schedule-service.js';
 import {
   identityMethods,
   identityReadActions,
@@ -133,15 +134,67 @@ export function createSelfHostedApp({
       201,
     );
   });
+  const schedules = () => {
+    if (!platform.schedules)
+      throw new ConversationError('Runtime schedules are unavailable.', 503);
+    return platform.schedules;
+  };
+  app.get('/api/runtime/conversations/:id/schedules/scheduler', async (c) => {
+    z.strictObject({}).parse(query(c));
+    return c.json(
+      await schedules().readSchedulerStatus(
+        id.parse(c.req.param('id')),
+        guard(c, platform),
+      ),
+    );
+  });
+  app.get('/api/runtime/conversations/:id/schedules', async (c) => {
+    z.strictObject({}).parse(query(c));
+    return c.json(
+      await schedules().readSchedules(
+        id.parse(c.req.param('id')),
+        guard(c, platform),
+      ),
+    );
+  });
+  app.get('/api/runtime/conversations/:id/schedules/:scheduleId', async (c) => {
+    z.strictObject({}).parse(query(c));
+    return c.json(
+      await schedules().readSchedule(
+        id.parse(c.req.param('id')),
+        id.parse(c.req.param('scheduleId')),
+        guard(c, platform),
+      ),
+    );
+  });
+  for (const route of [
+    '/api/runtime/conversations/:id/schedules',
+    '/api/runtime/conversations/:id/schedules/:scheduleId/actions',
+  ])
+    app.post(route, async (c) => {
+      z.strictObject({}).parse(query(c));
+      const input = scheduleActionSchema.parse(await c.req.json());
+      return c.json(
+        await schedules().admit(
+          id.parse(c.req.param('id')),
+          new URL(c.req.url).pathname.slice(4),
+          input,
+          guard(c, platform),
+        ),
+        202,
+      );
+    });
   app.get('/api/runtime/operations/:id', async (c) => {
     z.strictObject({}).parse(query(c));
     const operationId = z.uuid().parse(c.req.param('id'));
     return c.json(
-      platform.identities?.operations.has(operationId)
-        ? await platform.identities.inspect(operationId, guard(c, platform))
-        : platform.controls?.has(operationId)
-          ? await platform.controls.inspect(operationId, guard(c, platform))
-          : await platform.recover(operationId, guard(c, platform)),
+      platform.schedules?.has(operationId)
+        ? await platform.schedules.inspect(operationId, guard(c, platform))
+        : platform.identities?.operations.has(operationId)
+          ? await platform.identities.inspect(operationId, guard(c, platform))
+          : platform.controls?.has(operationId)
+            ? await platform.controls.inspect(operationId, guard(c, platform))
+            : await platform.recover(operationId, guard(c, platform)),
     );
   });
   app.get('/api/runtime/conversations/:id/results/:commandId', async (c) => {

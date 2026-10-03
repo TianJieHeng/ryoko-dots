@@ -14,6 +14,26 @@ import type {
 } from '../shared/types.js';
 
 export type Claim = Task & { lease: string };
+export interface LegacyScheduleFreeze {
+  sourceId: string;
+  ownerId: string;
+  binding: string;
+  definition: string;
+  snapshot: string;
+  frozenAt: number;
+  retiredAt: number | null;
+  retirementReceipt: string | null;
+  retiredHistory: string | null;
+}
+export interface LegacyOccurrenceReconciliation {
+  sourceId: string;
+  occurrenceId: string;
+  originalRun: string;
+  outcome: 'completed' | 'failed' | 'cancelled' | 'skipped';
+  receipt: string;
+  reconciledAt: number;
+}
+
 const defaults: Settings = {
   name: 'Dot',
   paused: false,
@@ -34,6 +54,86 @@ export class Store {
       CREATE INDEX IF NOT EXISTS tasks_due ON tasks(status, nextRunAt);
       CREATE INDEX IF NOT EXISTS runs_task ON runs(taskId, startedAt);
       CREATE INDEX IF NOT EXISTS events_task ON events(taskId, id);`);
+    // Persistent SQL guards also fence pre-upgrade Store connections. No freeze
+    // is created merely by opening a database, and there is no unfreeze method.
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS legacy_schedule_freezes (
+        sourceId TEXT PRIMARY KEY, ownerId TEXT NOT NULL, binding TEXT NOT NULL,
+        definition TEXT NOT NULL, snapshot TEXT NOT NULL, frozenAt INTEGER NOT NULL,
+        retiredAt INTEGER, retirementReceipt TEXT, retiredHistory TEXT,
+        CHECK ((retiredAt IS NULL AND retirementReceipt IS NULL AND retiredHistory IS NULL)
+          OR (retiredAt IS NOT NULL AND retirementReceipt IS NOT NULL AND retiredHistory IS NOT NULL))
+      );
+      CREATE TABLE IF NOT EXISTS legacy_occurrence_reconciliations (
+        sourceId TEXT NOT NULL, occurrenceId TEXT NOT NULL, originalRun TEXT NOT NULL,
+        outcome TEXT NOT NULL CHECK(outcome IN ('completed','failed','cancelled','skipped')),
+        receipt TEXT NOT NULL, reconciledAt INTEGER NOT NULL,
+        PRIMARY KEY(sourceId, occurrenceId)
+      );
+      CREATE TRIGGER IF NOT EXISTS legacy_freeze_no_replace BEFORE INSERT ON legacy_schedule_freezes
+        WHEN EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=NEW.sourceId)
+        BEGIN SELECT RAISE(ABORT, 'Legacy admission freeze is permanent.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_freeze_no_delete BEFORE DELETE ON legacy_schedule_freezes
+        BEGIN SELECT RAISE(ABORT, 'Legacy admission freeze is permanent.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_freeze_immutable BEFORE UPDATE ON legacy_schedule_freezes
+        WHEN OLD.retiredAt IS NOT NULL OR NEW.sourceId != OLD.sourceId OR NEW.ownerId != OLD.ownerId
+          OR NEW.binding != OLD.binding OR NEW.definition != OLD.definition OR NEW.snapshot != OLD.snapshot
+          OR NEW.frozenAt != OLD.frozenAt OR NEW.retiredAt IS NULL
+        BEGIN SELECT RAISE(ABORT, 'Legacy migration evidence is immutable.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_task_no_insert BEFORE INSERT ON tasks
+        WHEN EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=NEW.id)
+        BEGIN SELECT RAISE(ABORT, 'Legacy task admissions are frozen.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_task_no_delete BEFORE DELETE ON tasks
+        WHEN EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=OLD.id)
+        BEGIN SELECT RAISE(ABORT, 'Legacy source history is read-only.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_task_no_move BEFORE UPDATE ON tasks
+        WHEN NEW.id != OLD.id AND EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=NEW.id)
+        BEGIN SELECT RAISE(ABORT, 'Legacy task admissions are frozen.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_task_fenced_update BEFORE UPDATE ON tasks
+        WHEN EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=OLD.id)
+          AND (NEW.id != OLD.id OR NEW.prompt != OLD.prompt OR NEW.intervalSeconds IS NOT OLD.intervalSeconds
+            OR NEW.createdAt != OLD.createdAt OR OLD.status != 'running' OR NEW.status='running'
+            OR NEW.lease IS NOT NULL OR NEW.leaseUntil IS NOT NULL
+            OR EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=OLD.id AND retiredAt IS NOT NULL))
+        BEGIN SELECT RAISE(ABORT, 'Legacy task admissions are frozen.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_run_no_insert BEFORE INSERT ON runs
+        WHEN EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=NEW.taskId)
+        BEGIN SELECT RAISE(ABORT, 'Legacy occurrence admissions are frozen.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_run_no_delete BEFORE DELETE ON runs
+        WHEN EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=OLD.taskId)
+        BEGIN SELECT RAISE(ABORT, 'Legacy source history is read-only.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_run_no_move BEFORE UPDATE ON runs
+        WHEN (NEW.taskId != OLD.taskId AND EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=NEW.taskId))
+          OR (NEW.id != OLD.id AND EXISTS(SELECT 1 FROM runs JOIN legacy_schedule_freezes ON sourceId=taskId WHERE runs.id=NEW.id))
+        BEGIN SELECT RAISE(ABORT, 'Legacy occurrence admissions are frozen.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_run_fenced_update BEFORE UPDATE ON runs
+        WHEN EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=OLD.taskId)
+          AND (OLD.status != 'running' OR NEW.status NOT IN ('completed','failed','interrupted')
+            OR NEW.id != OLD.id OR NEW.taskId != OLD.taskId OR NEW.startedAt != OLD.startedAt
+            OR NEW.finishedAt IS NULL
+            OR EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=OLD.taskId AND retiredAt IS NOT NULL)
+            OR EXISTS(SELECT 1 FROM legacy_occurrence_reconciliations WHERE sourceId=OLD.taskId AND occurrenceId=OLD.id))
+        BEGIN SELECT RAISE(ABORT, 'Legacy source history is read-only.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_event_no_update BEFORE UPDATE ON events
+        WHEN EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=OLD.taskId)
+        BEGIN SELECT RAISE(ABORT, 'Legacy source history is read-only.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_event_no_delete BEFORE DELETE ON events
+        WHEN EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=OLD.taskId)
+        BEGIN SELECT RAISE(ABORT, 'Legacy source history is read-only.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_event_retired_insert BEFORE INSERT ON events
+        WHEN EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=NEW.taskId AND retiredAt IS NOT NULL)
+        BEGIN SELECT RAISE(ABORT, 'Retired legacy history is read-only.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_reconciliation_no_replace BEFORE INSERT ON legacy_occurrence_reconciliations
+        WHEN EXISTS(SELECT 1 FROM legacy_occurrence_reconciliations WHERE sourceId=NEW.sourceId AND occurrenceId=NEW.occurrenceId)
+        BEGIN SELECT RAISE(ABORT, 'Legacy reconciliation evidence is immutable.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_reconciliation_admission BEFORE INSERT ON legacy_occurrence_reconciliations
+        WHEN NOT EXISTS(SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=NEW.sourceId AND retiredAt IS NULL)
+        BEGIN SELECT RAISE(ABORT, 'Frozen, unretired source required.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_reconciliation_no_update BEFORE UPDATE ON legacy_occurrence_reconciliations
+        BEGIN SELECT RAISE(ABORT, 'Legacy reconciliation evidence is immutable.'); END;
+      CREATE TRIGGER IF NOT EXISTS legacy_reconciliation_no_delete BEFORE DELETE ON legacy_occurrence_reconciliations
+        BEGIN SELECT RAISE(ABORT, 'Legacy reconciliation evidence is immutable.'); END;
+    `);
     this.db
       .prepare('INSERT OR IGNORE INTO settings VALUES (1, ?)')
       .run(JSON.stringify(defaults));
@@ -150,6 +250,7 @@ export class Store {
     return this.transaction(() => {
       const task = this.task(id);
       if (!task) return undefined;
+      this.assertLegacyMutable(id);
       if (action === 'run' && task.status === 'running') return task;
       const status =
         action === 'run'
@@ -169,6 +270,7 @@ export class Store {
     });
   }
   schedule(id: string, intervalSeconds: number | null): Task | undefined {
+    this.assertLegacyMutable(id);
     const task = this.task(id);
     if (!task) return undefined;
     const next =
@@ -194,7 +296,9 @@ export class Store {
       const settings = this.settings();
       if (settings.paused || !settings.researchAllowed) return null;
       const expired = this.db
-        .prepare("SELECT * FROM tasks WHERE status='running' AND leaseUntil<=?")
+        .prepare(
+          "SELECT * FROM tasks WHERE status='running' AND leaseUntil<=? AND NOT EXISTS (SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=tasks.id)",
+        )
         .all(now) as unknown as Task[];
       for (const task of expired)
         this.invalidate(
@@ -204,7 +308,7 @@ export class Store {
         );
       const task = this.db
         .prepare(
-          "SELECT * FROM tasks WHERE status='queued' OR (status='completed' AND nextRunAt IS NOT NULL AND nextRunAt<=?) ORDER BY createdAt LIMIT 1",
+          "SELECT * FROM tasks WHERE (status='queued' OR (status='completed' AND nextRunAt IS NOT NULL AND nextRunAt<=?)) AND NOT EXISTS (SELECT 1 FROM legacy_schedule_freezes WHERE sourceId=tasks.id) ORDER BY createdAt LIMIT 1",
         )
         .get(now) as unknown as Task | undefined;
       if (!task) return null;
@@ -275,6 +379,191 @@ export class Store {
         )
         .run(error, now, claim.id);
       this.event(claim.id, claim.lease, error);
+    });
+  }
+  legacyWorkspaceOwner(): string | null {
+    if (
+      !this.db
+        .prepare(
+          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='workspace_owner'",
+        )
+        .get()
+    )
+      return null;
+    const row = this.db
+      .prepare('SELECT ownerId FROM workspace_owner WHERE singleton=1')
+      .get();
+    return typeof row?.ownerId === 'string' ? row.ownerId : null;
+  }
+  private assertLegacyMutable(id: string) {
+    if (this.legacyFreeze(id))
+      throw new Error('Legacy task admissions are frozen.');
+  }
+  legacyFreeze(sourceId: string): LegacyScheduleFreeze | undefined {
+    return this.db
+      .prepare('SELECT * FROM legacy_schedule_freezes WHERE sourceId=?')
+      .get(sourceId) as unknown as LegacyScheduleFreeze | undefined;
+  }
+  /** Trusted migration primitive. Caller verifies source ownership and immutable
+   * runtime definition. BEGIN IMMEDIATE serializes the fence with every claim. */
+  freezeLegacyTask(
+    sourceId: string,
+    ownerId: string,
+    binding: string,
+    definition: string,
+    now = Date.now(),
+    expectedTask?: string,
+  ) {
+    return this.transaction(() => {
+      const previous = this.legacyFreeze(sourceId);
+      if (previous) {
+        if (
+          previous.ownerId !== ownerId ||
+          previous.binding !== binding ||
+          previous.definition !== definition
+        )
+          throw new Error('Legacy migration definition or binding changed.');
+        return previous;
+      }
+      const source = this.detail(sourceId);
+      if (!source) throw new Error('Legacy task not found.');
+      if (
+        expectedTask !== undefined &&
+        JSON.stringify(source.task) !== expectedTask
+      )
+        throw new Error('Legacy task changed before admission freeze.');
+      this.db
+        .prepare(
+          'INSERT INTO legacy_schedule_freezes VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL)',
+        )
+        .run(
+          sourceId,
+          ownerId,
+          binding,
+          definition,
+          JSON.stringify(source),
+          now,
+        );
+      return this.legacyFreeze(sourceId)!;
+    });
+  }
+  legacyReconciliations(sourceId: string): LegacyOccurrenceReconciliation[] {
+    return this.db
+      .prepare(
+        'SELECT * FROM legacy_occurrence_reconciliations WHERE sourceId=? ORDER BY occurrenceId',
+      )
+      .all(sourceId) as unknown as LegacyOccurrenceReconciliation[];
+  }
+  /** Evidence is supplied only after independent server-owned reconciliation.
+   * Never infer a terminal effect from an expired lease or an interrupted run. */
+  reconcileLegacyOccurrence(
+    input: Omit<LegacyOccurrenceReconciliation, 'reconciledAt'>,
+    now = Date.now(),
+  ) {
+    return this.transaction(() => {
+      const frozen = this.legacyFreeze(input.sourceId);
+      if (!frozen) throw new Error('Legacy source is not frozen.');
+      const previous = this.legacyReconciliations(input.sourceId).find(
+        (row) => row.occurrenceId === input.occurrenceId,
+      );
+      if (previous) {
+        if (
+          previous.originalRun !== input.originalRun ||
+          previous.outcome !== input.outcome ||
+          previous.receipt !== input.receipt
+        )
+          throw new Error('Legacy reconciliation evidence changed.');
+        return previous;
+      }
+      if (frozen.retiredAt !== null)
+        throw new Error('Legacy source is retired.');
+      const run = this.detail(input.sourceId)?.runs.find(
+        (row) => row.id === input.occurrenceId,
+      );
+      if (!run || JSON.stringify(run) !== input.originalRun)
+        throw new Error('Legacy occurrence changed during reconciliation.');
+      if (run.status === 'completed' || run.status === 'failed')
+        throw new Error('Terminal legacy results cannot be rewritten.');
+      this.db
+        .prepare(
+          'INSERT INTO legacy_occurrence_reconciliations VALUES (?, ?, ?, ?, ?, ?)',
+        )
+        .run(
+          input.sourceId,
+          input.occurrenceId,
+          input.originalRun,
+          input.outcome,
+          input.receipt,
+          now,
+        );
+      const task = this.task(input.sourceId)!;
+      if (task.lease === input.occurrenceId)
+        this.db
+          .prepare(
+            "UPDATE tasks SET status='paused', lease=NULL, leaseUntil=NULL, updatedAt=? WHERE id=?",
+          )
+          .run(now, input.sourceId);
+      return this.legacyReconciliations(input.sourceId).find(
+        (row) => row.occurrenceId === input.occurrenceId,
+      )!;
+    });
+  }
+  legacyHistory(sourceId: string) {
+    const detail = this.detail(sourceId);
+    if (!detail) throw new Error('Legacy task not found.');
+    return { detail, reconciliations: this.legacyReconciliations(sourceId) };
+  }
+  legacyUnresolved(sourceId: string): string[] {
+    const { detail, reconciliations } = this.legacyHistory(sourceId);
+    const unresolved = detail.runs
+      .filter((run) => {
+        const reconciled = reconciliations.find(
+          (row) => row.occurrenceId === run.id,
+        );
+        if (reconciled && reconciled.originalRun === JSON.stringify(run))
+          return false;
+        return (
+          !['completed', 'failed', 'cancelled', 'skipped'].includes(
+            run.status,
+          ) || run.finishedAt === null
+        );
+      })
+      .map((run) => run.id);
+    if (detail.task.status === 'running' || detail.task.lease !== null) {
+      const claim = detail.task.lease ?? `task:${sourceId}`;
+      if (!unresolved.includes(claim)) unresolved.push(claim);
+    }
+    return unresolved;
+  }
+  /** Atomically persists the retirement receipt and exact reconciled history;
+   * the admission fence is permanent and the receipt can never be replaced. */
+  retireLegacyTask(
+    sourceId: string,
+    expectedHistory: string,
+    receipt: string,
+    now = Date.now(),
+  ) {
+    return this.transaction(() => {
+      const frozen = this.legacyFreeze(sourceId);
+      if (!frozen) throw new Error('Legacy source is not frozen.');
+      if (frozen.retiredAt !== null) {
+        if (
+          frozen.retirementReceipt !== receipt ||
+          frozen.retiredHistory !== expectedHistory
+        )
+          throw new Error('Legacy retirement evidence changed.');
+        return frozen;
+      }
+      if (JSON.stringify(this.legacyHistory(sourceId)) !== expectedHistory)
+        throw new Error('Legacy history changed during retirement.');
+      if (this.legacyUnresolved(sourceId).length)
+        throw new Error('Legacy occurrences still require reconciliation.');
+      this.db
+        .prepare(
+          'UPDATE legacy_schedule_freezes SET retiredAt=?, retirementReceipt=?, retiredHistory=? WHERE sourceId=?',
+        )
+        .run(now, receipt, expectedHistory, sourceId);
+      return this.legacyFreeze(sourceId)!;
     });
   }
   memories(): Memory[] {

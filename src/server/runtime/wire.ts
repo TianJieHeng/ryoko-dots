@@ -6,6 +6,8 @@ import {
 import Ajv from 'ajv';
 import { producerSchema } from '../../shared/runtime/producer/schema.generated.js';
 import type {
+  ScheduleRecordResult,
+  ScheduleSchedulerStatusResult,
   ClientCapabilitiesResult,
   RuntimeProjectResult,
   RuntimeEffectGetResult,
@@ -45,6 +47,14 @@ export interface ReadResults {
 }
 export type ReadMethod = keyof ReadResults;
 export interface ConversationResults extends ReadResults, Be06Results {
+  'runtime.schedule.create': ScheduleRecordResult;
+  'runtime.schedule.import': ScheduleRecordResult;
+  'runtime.schedule.update': ScheduleRecordResult;
+  'runtime.schedule.get': ScheduleRecordResult;
+  'runtime.schedule.list': ScheduleRecordResult;
+  'runtime.schedule.run_now': ScheduleRecordResult;
+  'runtime.schedule.cutover': ScheduleRecordResult;
+  'runtime.schedule.scheduler.status': ScheduleSchedulerStatusResult;
   'client.capabilities': ClientCapabilitiesResult;
   'runtime.project.get': RuntimeProjectResult;
   'runtime.effect.get': RuntimeEffectGetResult;

@@ -71,7 +71,7 @@ export function MissionsPanel({
       {!connection.available('conversations') && (
         <RuntimeStatus connection={connection} compact />
       )}
-      <SchedulesPanel connection={connection} />
+      <SchedulesPanel connection={connection} conversationId={selected?.id} />
     </section>
   );
 }

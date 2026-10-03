@@ -1,9 +1,17 @@
 {
   "repository": "TianJieHeng/ryoko-agent",
-  "commit": "3453afefce2b21947390fac0e03d9eaa67f326e9",
-  "typescriptSha256": "418386827d1d1a12e8c20c1b8e7d3081a6f317aea270da52262cec5f52fc12ca",
-  "openrpcSha256": "1bf4ab3a304834538db5e379a06ce7e3b37acd53c8e0b193808d10a4fd5b447a",
+  "commit": "98b9eeb7d2afc02d0e0393fea285f010000a0378",
+  "typescriptSha256": "19fdf11f4aa587d7bcdd58927c0cdbbdec463cfdeaa90003e0ac6284266539d2",
+  "openrpcSha256": "fa7b08c3edd56190daadeef533928685113fd70a2ae8959b2fb7b61aee5051b2",
   "methods": [
+    "runtime.schedule.create",
+    "runtime.schedule.import",
+    "runtime.schedule.update",
+    "runtime.schedule.get",
+    "runtime.schedule.list",
+    "runtime.schedule.run_now",
+    "runtime.schedule.cutover",
+    "runtime.schedule.scheduler.status",
     "runtime.capabilities",
     "runtime.snapshot",
     "runtime.events.since",
@@ -50,5 +58,5 @@
     "dots.approval"
   ],
   "notifications": ["request.cancel"],
-  "status": "canonical_native_pages_stdio_subset"
+  "status": "canonical_native_pages_schedules_stdio_subset"
 }

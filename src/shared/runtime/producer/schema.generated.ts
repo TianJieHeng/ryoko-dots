@@ -669,6 +669,150 @@ export const producerSchema = {
       }
     },
     {
+      "name": "runtime.schedule.create",
+      "summary": "Create a paused immutable owner-bound local schedule",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ScheduleCreateParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ScheduleRecordResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.schedule.cutover",
+      "summary": "Retain a trusted legacy-retirement attestation; does not independently verify foreign execution",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ScheduleCutoverParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ScheduleRecordResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.schedule.get",
+      "summary": "Read owned schedule health, occurrences and retained notification intents",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ScheduleGetParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ScheduleRecordResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.schedule.import",
+      "summary": "Import a declared paused reconciled foreign schedule with deterministic identity",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ScheduleImportParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ScheduleRecordResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.schedule.list",
+      "summary": "List owned project schedules",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ScheduleProjectParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ScheduleRecordResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.schedule.run_now",
+      "summary": "Admit one idempotent occurrence through the ordinary durable command queue",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ScheduleRunNowParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ScheduleRecordResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.schedule.scheduler.status",
+      "summary": "Read owned profile stdio scheduler lifecycle and actual locked-tick evidence; never activate scheduling or dispatch work",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeSessionParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ScheduleSchedulerStatusResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.schedule.update",
+      "summary": "Pause, resume or revoke an exact schedule revision",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ScheduleUpdateParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ScheduleRecordResult"
+        }
+      }
+    },
+    {
       "name": "runtime.snapshot",
       "summary": "Read a consistent durable mission projection and its restart-stable cursor.",
       "params": [
@@ -8407,6 +8551,314 @@ export const producerSchema = {
         "title": "RuntimeResultChunk",
         "type": "object"
       },
+      "ScheduleCreateParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "command_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Command Id",
+            "type": "string"
+          },
+          "definition_json": {
+            "maxLength": 131072,
+            "minLength": 2,
+            "title": "Definition Json",
+            "type": "string"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Revision"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "command_id",
+          "definition_json"
+        ],
+        "title": "ScheduleCreateParams",
+        "type": "object"
+      },
+      "ScheduleRecordResult": {
+        "additionalProperties": false,
+        "properties": {
+          "record_json": {
+            "maxLength": 131072,
+            "title": "Record Json",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record_json"
+        ],
+        "title": "ScheduleRecordResult",
+        "type": "object"
+      },
+      "ScheduleCutoverParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "project_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "schedule_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Schedule Id",
+            "type": "string"
+          },
+          "command_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Command Id",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "source_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "retirement_receipt": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Retirement Receipt",
+            "type": "string"
+          },
+          "unresolved_occurrences": {
+            "items": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Unresolved Occurrences",
+            "type": "array"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "project_id",
+          "schedule_id",
+          "command_id",
+          "expected_revision",
+          "source_id",
+          "retirement_receipt",
+          "unresolved_occurrences"
+        ],
+        "title": "ScheduleCutoverParams",
+        "type": "object"
+      },
+      "ScheduleGetParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "project_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "schedule_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Schedule Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "project_id",
+          "schedule_id"
+        ],
+        "title": "ScheduleGetParams",
+        "type": "object"
+      },
+      "ScheduleImportParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "command_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Command Id",
+            "type": "string"
+          },
+          "definition_json": {
+            "maxLength": 131072,
+            "minLength": 2,
+            "title": "Definition Json",
+            "type": "string"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Revision"
+          },
+          "import_json": {
+            "maxLength": 131072,
+            "minLength": 2,
+            "title": "Import Json",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "command_id",
+          "definition_json",
+          "import_json"
+        ],
+        "title": "ScheduleImportParams",
+        "type": "object"
+      },
+      "ScheduleProjectParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "project_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "project_id"
+        ],
+        "title": "ScheduleProjectParams",
+        "type": "object"
+      },
+      "ScheduleRunNowParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "project_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "schedule_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Schedule Id",
+            "type": "string"
+          },
+          "command_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Command Id",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "project_id",
+          "schedule_id",
+          "command_id",
+          "expected_revision"
+        ],
+        "title": "ScheduleRunNowParams",
+        "type": "object"
+      },
       "RuntimeSessionParams": {
         "additionalProperties": false,
         "properties": {
@@ -8427,6 +8879,245 @@ export const producerSchema = {
           "schema_version"
         ],
         "title": "RuntimeSessionParams",
+        "type": "object"
+      },
+      "ScheduleSchedulerStatusResult": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "authority": {
+            "const": "runtime_cron",
+            "title": "Authority",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "surface": {
+            "enum": [
+              "stdio",
+              "other"
+            ],
+            "title": "Surface",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "disabled",
+              "awaiting_maintenance",
+              "waiting",
+              "ticking",
+              "healthy",
+              "lock_busy",
+              "standby_other_owner",
+              "paused",
+              "draining",
+              "retired",
+              "error",
+              "stopping",
+              "unsupported_surface"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "maintenance_started": {
+            "title": "Maintenance Started",
+            "type": "boolean"
+          },
+          "maintenance_live": {
+            "title": "Maintenance Live",
+            "type": "boolean"
+          },
+          "recurring_admission_ready": {
+            "title": "Recurring Admission Ready",
+            "type": "boolean"
+          },
+          "tick_lock_held": {
+            "title": "Tick Lock Held",
+            "type": "boolean"
+          },
+          "other_gateway_owner_live": {
+            "title": "Other Gateway Owner Live",
+            "type": "boolean"
+          },
+          "poll_interval_seconds": {
+            "anyOf": [
+              {
+                "maximum": 300,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poll Interval Seconds"
+          },
+          "last_maintenance_at": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Maintenance At"
+          },
+          "last_tick_started_at": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tick Started At"
+          },
+          "last_tick_completed_at": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tick Completed At"
+          },
+          "last_tick_succeeded_at": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tick Succeeded At"
+          },
+          "last_error_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "invalid_config",
+                  "tick_failed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error Code"
+          },
+          "execution_requires_live_owned_session": {
+            "const": true,
+            "title": "Execution Requires Live Owned Session",
+            "type": "boolean"
+          },
+          "scheduler_pause_cancels_running": {
+            "const": false,
+            "title": "Scheduler Pause Cancels Running",
+            "type": "boolean"
+          },
+          "dispatch_performed": {
+            "const": false,
+            "title": "Dispatch Performed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "schema_version",
+          "authority",
+          "enabled",
+          "surface",
+          "state",
+          "maintenance_started",
+          "maintenance_live",
+          "recurring_admission_ready",
+          "tick_lock_held",
+          "other_gateway_owner_live",
+          "poll_interval_seconds",
+          "last_maintenance_at",
+          "last_tick_started_at",
+          "last_tick_completed_at",
+          "last_tick_succeeded_at",
+          "last_error_code",
+          "execution_requires_live_owned_session",
+          "scheduler_pause_cancels_running",
+          "dispatch_performed"
+        ],
+        "title": "ScheduleSchedulerStatusResult",
+        "type": "object"
+      },
+      "ScheduleUpdateParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "project_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "schedule_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Schedule Id",
+            "type": "string"
+          },
+          "command_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Command Id",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "state": {
+            "enum": [
+              "active",
+              "paused",
+              "revoked"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "project_id",
+          "schedule_id",
+          "command_id",
+          "expected_revision",
+          "state"
+        ],
+        "title": "ScheduleUpdateParams",
         "type": "object"
       },
       "DotsApprovalRequest": {

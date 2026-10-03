@@ -99,11 +99,11 @@ const sha = (bytes: string | Buffer) =>
 const pins = [
   [
     'apps/shared/src/gateway-contract.generated.ts',
-    '418386827d1d1a12e8c20c1b8e7d3081a6f317aea270da52262cec5f52fc12ca',
+    '19fdf11f4aa587d7bcdd58927c0cdbbdec463cfdeaa90003e0ac6284266539d2',
   ],
   [
     'apps/shared/src/gateway-contract.openrpc.json',
-    '1bf4ab3a304834538db5e379a06ce7e3b37acd53c8e0b193808d10a4fd5b447a',
+    'fa7b08c3edd56190daadeef533928685113fd70a2ae8959b2fb7b61aee5051b2',
   ],
 ];
 /** No shell, inherited provider secrets, Python injection flags, or browser-selected paths. */
@@ -253,6 +253,14 @@ export class StdioConversationTransport implements ConversationTransport {
             max_concurrent_children: z.literal(1).optional(),
           })
           .optional(),
+        cron: z
+          .strictObject({
+            stdio_scheduler: z.strictObject({
+              enabled: z.boolean(),
+              interval_seconds: z.number().int().min(1).max(3600),
+            }),
+          })
+          .optional(),
         runtime_budget: z.record(z.string(), z.unknown()).optional(),
         onboarding: z
           .strictObject({
@@ -339,7 +347,7 @@ export class StdioConversationTransport implements ConversationTransport {
       stage = 'source_pin';
       verifyGitCheckout(
         this.config.checkout,
-        '3453afefce2b21947390fac0e03d9eaa67f326e9',
+        '98b9eeb7d2afc02d0e0393fea285f010000a0378',
       );
       for (const [file, expected] of pins)
         if (sha(readFileSync(join(this.config.checkout, file))) !== expected)

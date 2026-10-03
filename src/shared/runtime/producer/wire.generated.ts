@@ -1108,9 +1108,87 @@ export interface RuntimeResultChunk {
   publication_state: 'committed' | 'published_uncommitted'
   delivery_id: string | null
 }
+export interface ScheduleCreateParams {
+  session_id: string
+  schema_version: 1
+  command_id: string
+  definition_json: string
+  expected_revision?: number | null
+}
+export interface ScheduleRecordResult {
+  record_json: string
+}
+export interface ScheduleCutoverParams {
+  session_id: string
+  schema_version: 1
+  project_id: string
+  schedule_id: string
+  command_id: string
+  expected_revision: number
+  source_id: string
+  retirement_receipt: string
+  unresolved_occurrences: string[]
+}
+export interface ScheduleGetParams {
+  session_id: string
+  schema_version: 1
+  project_id: string
+  schedule_id: string
+}
+export interface ScheduleImportParams {
+  session_id: string
+  schema_version: 1
+  command_id: string
+  definition_json: string
+  expected_revision?: number | null
+  import_json: string
+}
+export interface ScheduleProjectParams {
+  session_id: string
+  schema_version: 1
+  project_id: string
+}
+export interface ScheduleRunNowParams {
+  session_id: string
+  schema_version: 1
+  project_id: string
+  schedule_id: string
+  command_id: string
+  expected_revision: number
+}
 export interface RuntimeSessionParams {
   session_id: string
   schema_version: 1
+}
+export interface ScheduleSchedulerStatusResult {
+  schema_version: 1
+  authority: 'runtime_cron'
+  enabled: boolean
+  surface: 'stdio' | 'other'
+  state: 'disabled' | 'awaiting_maintenance' | 'waiting' | 'ticking' | 'healthy' | 'lock_busy' | 'standby_other_owner' | 'paused' | 'draining' | 'retired' | 'error' | 'stopping' | 'unsupported_surface'
+  maintenance_started: boolean
+  maintenance_live: boolean
+  recurring_admission_ready: boolean
+  tick_lock_held: boolean
+  other_gateway_owner_live: boolean
+  poll_interval_seconds: number | null
+  last_maintenance_at: number | null
+  last_tick_started_at: number | null
+  last_tick_completed_at: number | null
+  last_tick_succeeded_at: number | null
+  last_error_code: 'invalid_config' | 'tick_failed' | null
+  execution_requires_live_owned_session: true
+  scheduler_pause_cancels_running: false
+  dispatch_performed: false
+}
+export interface ScheduleUpdateParams {
+  session_id: string
+  schema_version: 1
+  project_id: string
+  schedule_id: string
+  command_id: string
+  expected_revision: number
+  state: 'active' | 'paused' | 'revoked'
 }
 export interface DotsApprovalRequest {
   session_id: string
