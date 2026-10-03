@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { PageEffectReceipt } from './PageEffectReceipt';
 import { SchedulesPanel } from './SchedulesPanel';
 import { CommandResults } from './CommandResults';
 import { useResource } from './use-resource';
@@ -444,6 +445,14 @@ function ConversationActivity({
             </p>
             <p>Action digest {effect.action_digest}</p>
             <p>Target digest {effect.target_digest}</p>
+            {effect.operation_type === 'dots_page_publish' && scope && (
+              <PageEffectReceipt
+                scope={scope}
+                conversationId={conversationId}
+                effectId={effect.effect_id}
+                disabled={busy}
+              />
+            )}
             {effect.approval_id && (
               <button onClick={() => setSelectedReview(effect.approval_id!)}>
                 Inspect associated review

@@ -102,6 +102,7 @@ export function useRuntime(dotId = '') {
       const setup = await connectConversation(
         conversationId,
         current.setup.scope,
+        dotId,
       );
       if (!fence.current.current(generation) || selector.current !== dotId)
         throw new Error('Runtime binding changed while connecting.');

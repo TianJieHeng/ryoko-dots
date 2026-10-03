@@ -36,9 +36,11 @@ export function SpaceLibrary({
   const [query, setQuery] = useState('');
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const [sort, setSort] = useState('recent');
+  const [showArchived, setShowArchived] = useState(false);
   const filtered = useMemo(
     () =>
       pages
+        .filter((page) => !!page.archived === showArchived)
         .filter((page) =>
           `${page.title} ${page.content}`
             .toLocaleLowerCase()
@@ -49,7 +51,7 @@ export function SpaceLibrary({
             ? a.title.localeCompare(b.title)
             : b.updatedAt - a.updatedAt || a.title.localeCompare(b.title),
         ),
-    [pages, query, sort],
+    [pages, query, sort, showArchived],
   );
   return (
     <section
@@ -67,6 +69,14 @@ export function SpaceLibrary({
         </button>
       </header>
       <div className="library-tools">
+        <label>
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(event) => setShowArchived(event.target.checked)}
+          />
+          Show archived pages
+        </label>
         <label className="library-search">
           <Search size={17} />
           <input
@@ -109,7 +119,13 @@ export function SpaceLibrary({
         </div>
       </div>
       <div className="library-section-label">
-        <h2>{query ? 'Search results' : 'All pages'}</h2>
+        <h2>
+          {query
+            ? 'Search results'
+            : showArchived
+              ? 'Archived pages'
+              : 'All pages'}
+        </h2>
         <span>
           {filtered.length} {filtered.length === 1 ? 'page' : 'pages'}
         </span>
@@ -126,7 +142,10 @@ export function SpaceLibrary({
                 <FileText size={20} strokeWidth={1.5} />
               </span>
               <div className="library-card-body">
-                <h3>{page.title}</h3>
+                <h3>
+                  {page.title}
+                  {page.archived ? ' · Archived' : ''}
+                </h3>
                 <p>
                   {pageExcerpt(page.content) ||
                     'An empty page, ready to write.'}
@@ -156,7 +175,13 @@ export function SpaceLibrary({
       ) : (
         <div className="library-empty">
           <FileText size={30} strokeWidth={1.3} />
-          <h2>{query ? 'No matching pages' : 'No pages yet'}</h2>
+          <h2>
+            {query
+              ? 'No matching pages'
+              : showArchived
+                ? 'No archived pages'
+                : 'No pages yet'}
+          </h2>
           <p>
             {query
               ? 'Try a different title or phrase.'

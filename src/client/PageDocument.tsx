@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -16,6 +17,7 @@ import {
 import type { Page } from '../server/pages';
 import type { WorkspaceState } from '../shared/types';
 import { api } from './api';
+import { archiveSavedPage } from './page-archive';
 import { usePageAutosave } from './editor/use-page-autosave';
 import { inspectMarkdown } from './editor/markdown';
 import { DocumentMenu } from './editor/DocumentMenu';
@@ -58,6 +60,45 @@ export function PageDocument({
   const [move, setMove] = useState(false);
   const [notice, setNotice] = useState('');
   const [chatOpen, setChatOpen] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const archiveLock = useRef(false),
+    active = useRef(true);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+  const toggleArchive = async () => {
+    if (archiveLock.current) return;
+    archiveLock.current = true;
+    setArchiving(true);
+    setNotice('');
+    try {
+      const next = await archiveSavedPage(controller, !page.archived, () => {
+        if (!active.current)
+          throw new Error('The page view changed before archiving.');
+      });
+      controller.receive(next);
+      onSaved(next);
+      setNotice(
+        next.archived
+          ? 'Page archived. Its history and source links are retained.'
+          : 'Page restored.',
+      );
+      if (next.archived) setChatOpen(false);
+    } catch (error) {
+      if (active.current)
+        setNotice(
+          error instanceof Error
+            ? error.message
+            : 'Archive outcome unavailable. Refresh to inspect the page.',
+        );
+    } finally {
+      archiveLock.current = false;
+      if (active.current) setArchiving(false);
+    }
+  };
   const safety = useMemo(() => inspectMarkdown(draft.content), [draft.content]);
   const sourceMode = source || !safety.supported;
   useEffect(() => {
@@ -189,6 +230,14 @@ export function PageDocument({
                   setSource(!sourceMode);
                 },
               },
+              {
+                label: archiving
+                  ? 'Updating archive status…'
+                  : page.archived
+                    ? 'Restore page'
+                    : 'Archive page',
+                action: () => void toggleArchive(),
+              },
               { label: 'Move page', action: () => setMove(!move) },
               { label: 'New subpage', action: onSubpage },
               { label: 'Download Markdown', action: download },
@@ -205,6 +254,12 @@ export function PageDocument({
         </header>
         <div className="document-scroll">
           <article className="document-reading-column">
+            {page.archived && (
+              <p className="notice">
+                This page is archived. Restore it from the page menu to return
+                it to the active library.
+              </p>
+            )}
             {state.error && (
               <div
                 className={`document-save-notice ${state.status}`}

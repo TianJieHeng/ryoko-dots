@@ -191,6 +191,12 @@ export const runtimeExactReviewSchema = z
   .strictObject({
     ...envelope,
     review: reviewSchema.nullable(),
+    decisionUnavailableReason: z
+      .string()
+      .min(1)
+      .max(1000)
+      .nullable()
+      .optional(),
     detail: z.object({
       approval: runtimeApprovalSchema,
       detail: z.object({

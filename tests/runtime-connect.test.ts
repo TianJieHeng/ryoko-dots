@@ -106,3 +106,49 @@ it('does not retry or fall back to binding through a read when connection fails'
   ).rejects.toThrow('Disconnected');
   expect(fetch).toHaveBeenCalledTimes(1);
 });
+
+it('accepts first explicit native mapping revision only after a matching authenticated selected-Dot read', async () => {
+  const mapped = { ...setup, scope: { ...setup.scope!, generation: 2 } };
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(Response.json(mapped))
+    .mockResolvedValueOnce(Response.json(mapped));
+  vi.stubGlobal('fetch', fetch);
+  expect(
+    await connectConversation('conversation', setup.scope!, 'dot / selected'),
+  ).toEqual(mapped);
+  expect(fetch.mock.calls.map((call) => call[1].method)).toEqual([
+    'POST',
+    'GET',
+  ]);
+  expect(fetch.mock.calls[1][0]).toBe(
+    '/api/runtime/setup?dotId=dot%20%2F%20selected',
+  );
+});
+it('rejects contradictory fresh scope and lower generation without another connection POST', async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(
+      Response.json({ ...setup, scope: { ...setup.scope!, generation: 2 } }),
+    )
+    .mockResolvedValueOnce(
+      Response.json({ ...setup, scope: { ...setup.scope!, generation: 3 } }),
+    );
+  vi.stubGlobal('fetch', fetch);
+  await expect(
+    connectConversation('conversation', setup.scope!, 'dot'),
+  ).rejects.toThrow('another binding');
+  expect(fetch.mock.calls.map((call) => call[1].method)).toEqual([
+    'POST',
+    'GET',
+  ]);
+  fetch
+    .mockReset()
+    .mockResolvedValueOnce(
+      Response.json({ ...setup, scope: { ...setup.scope!, generation: 0 } }),
+    );
+  await expect(
+    connectConversation('conversation', setup.scope!, 'dot'),
+  ).rejects.toThrow('another binding');
+  expect(fetch).toHaveBeenCalledTimes(1);
+});

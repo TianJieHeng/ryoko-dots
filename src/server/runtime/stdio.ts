@@ -9,7 +9,11 @@ import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { z } from 'zod';
 import { ConversationRpc, conversationMethods } from './conversation-rpc.js';
-import type { ConversationMethod, ConversationResults } from './wire.js';
+import type {
+  ConversationMethod,
+  ConversationResults,
+  NativeHandler,
+} from './wire.js';
 import type { RuntimeConversationCapabilities } from '../../shared/runtime/producer/wire.generated.js';
 const id = z.string().min(1).max(256);
 const path = z.string().max(4096).refine(isAbsolute);
@@ -39,6 +43,15 @@ export const launchConfigSchema = z.strictObject({
     .strictObject({
       OPENAI_API_KEY: z.string().min(1).max(8192).optional(),
       OPENAI_BASE_URL: endpoint.optional(),
+    })
+    .optional(),
+  nativePages: z
+    .strictObject({
+      adapterId: id,
+      projects: z
+        .array(z.strictObject({ spaceId: id, projectId: id }))
+        .min(1)
+        .max(100),
     })
     .optional(),
   identity: z.strictObject({
@@ -127,6 +140,7 @@ export interface ConversationTransport {
     params: unknown,
   ): Promise<ConversationResults[M]>;
   stop(): Promise<void>;
+  setNativeHandler?(handler: NativeHandler): () => void;
   subscribeResultAvailable?(
     listener: (notification: unknown, epoch: number) => void,
   ): () => void;
@@ -139,6 +153,15 @@ export class StdioConversationTransport implements ConversationTransport {
   private starting?: Promise<RuntimeConversationCapabilities>;
   private profileHash = '';
   epoch = 0;
+  private nativeHandler?: NativeHandler;
+  setNativeHandler(handler: NativeHandler) {
+    if (this.nativeHandler)
+      throw new Error('Native handler already registered.');
+    this.nativeHandler = handler;
+    return () => {
+      if (this.nativeHandler === handler) this.nativeHandler = undefined;
+    };
+  }
   private resultListeners = new Set<
     (notification: unknown, epoch: number) => void
   >();
@@ -228,12 +251,37 @@ export class StdioConversationTransport implements ConversationTransport {
     )
       throw new Error('Ryoko launch identity mismatch.');
     const agents = identity.agents as
-      Record<string, { role?: string }> | undefined;
+      | Record<
+          string,
+          { role?: string; allowed_tools?: string[]; project_grants?: string[] }
+        >
+      | undefined;
     if (agents?.[this.config.identity.agent_id]?.role !== 'primary')
       throw new Error(
         'Only the verified primary agent is qualified for this command adapter.',
       );
 
+    if (this.config.nativePages) {
+      const policy = agents?.[this.config.identity.agent_id];
+      if (
+        !['dots_page_read', 'dots_page_propose'].every((tool) =>
+          policy?.allowed_tools?.includes(tool),
+        ) ||
+        !this.config.nativePages.projects.every((project) =>
+          policy?.project_grants?.includes(project.projectId),
+        )
+      )
+        throw new Error(
+          'Native pages need exact reviewed tool and project grants.',
+        );
+      if (
+        new Set(this.config.nativePages.projects.map((p) => p.spaceId)).size !==
+          this.config.nativePages.projects.length ||
+        new Set(this.config.nativePages.projects.map((p) => p.projectId))
+          .size !== this.config.nativePages.projects.length
+      )
+        throw new Error('Native page project mappings must be one-to-one.');
+    }
     this.profileHash = sha(raw);
   }
   start(): Promise<RuntimeConversationCapabilities> {
@@ -282,6 +330,16 @@ export class StdioConversationTransport implements ConversationTransport {
           for (const listener of this.resultListeners)
             listener(notification, launchEpoch);
         },
+        async (method, params, signal) => {
+          if (
+            this.process !== child ||
+            this.epoch !== launchEpoch ||
+            !this.nativeHandler ||
+            !this.config.nativePages
+          )
+            throw new Error('Native callback binding unavailable.');
+          return this.nativeHandler(method, params, signal);
+        },
       );
       this.rpc = rpc;
       child.once('error', rpc.close);
@@ -309,6 +367,23 @@ export class StdioConversationTransport implements ConversationTransport {
           .some((method) => !proof.methods.includes(method))
       )
         throw new Error('Ryoko capability identity or bounds mismatch.');
+      if (this.config.nativePages) {
+        if (!this.nativeHandler)
+          throw new Error('Native page callbacks are not installed.');
+        const native = await rpc.call('client.capabilities', {
+          server_requests: true,
+          dots_native: true,
+        });
+        if (
+          ![
+            'dots.effect.dispatch',
+            'dots.effect.inspect',
+            'dots.page.read',
+            'dots.approval',
+          ].every((method) => native.server_requests.includes(method))
+        )
+          throw new Error('Native page callbacks are not supported.');
+      }
       this.proof = proof;
       this.epoch++;
       return proof;

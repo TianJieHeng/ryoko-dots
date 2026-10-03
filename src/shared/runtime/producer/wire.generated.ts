@@ -1,5 +1,13 @@
 // GENERATED exact subset of pinned producer. DO NOT EDIT.
 // Regenerate: node scripts/pin-producer-contract.mjs /path/to/ryoko-agent
+export interface ClientCapabilitiesParams {
+  server_requests?: boolean
+  dots_native?: boolean
+}
+export interface ClientCapabilitiesResult {
+  server_requests: string[]
+  declines_not_shown?: boolean
+}
 export interface RuntimeApprovalGetParams {
   session_id: string
   schema_version: 1
@@ -428,18 +436,119 @@ export interface RuntimeDeliveryParams {
   schema_version: 1
   delivery_id: string
 }
-export interface RuntimeEffectListParams {
+export interface DotsReconcileParams {
   session_id: string
   schema_version: 1
-  run_id?: string | null
-  limit?: number
-  unresolved_only?: boolean
+  effect_id: string
 }
-export interface RuntimeEffectListResult {
-  effects: RuntimeEffectRecord[]
-  limit: number
-  truncated: boolean
-  complete: false
+export interface DotsEffectResult {
+  effect_id: string
+  operation_id: string
+  state: 'prepared' | 'dispatched' | 'confirmed' | 'failed' | 'outcome_unknown' | 'reconciliation_required'
+  receipt: DotsEffectReceipt | null
+  replay_permitted?: false
+}
+export interface DotsEffectReceipt {
+  identity: DotsEffectIdentity
+  state: 'committed' | 'not_applied' | 'outcome_unknown'
+  receipt_id?: string | null
+  content_sha256?: string | null
+  version?: number | null
+  result_sha256?: string | null
+  reason: 'committed' | 'conflict' | 'grant_revoked' | 'takeover' | 'stale_snapshot' | 'unavailable' | 'unknown'
+}
+export interface DotsEffectIdentity {
+  schema_version?: 1
+  principal_id: string
+  profile_id: string
+  agent_id: string
+  runtime_session_id: string
+  run_id: string
+  operation_id: string
+  effect_id: string
+  approval_id: string
+  approval_digest: string
+  action_digest: string
+  input_digest: string
+  policy_digest: string
+  policy_version: string
+  generation: number
+  adapter_id: string
+  adapter_kind: 'page' | 'computer'
+  grant_revision: number
+  scope_json: string
+  content_sha256: string
+  content_size: number
+}
+export interface DotsPagePrepareParams {
+  session_id: string
+  schema_version: 1
+  command_id: string
+  proposal: DotsPageProposal
+}
+export interface DotsPageProposal {
+  kind?: 'page'
+  store_id: string
+  project_id: string
+  space_id: string
+  page_id: string
+  expected_head_version: number
+  expected_grant_revision: number
+  document: DotsPageDocument
+}
+export interface DotsPageDocument {
+  title: string
+  content: string
+  parent_id: string | null
+  archived: boolean
+}
+export interface DotsPreparedResult {
+  command_id: string
+  run_id: string
+  operation_id: string
+  action_digest: string
+  input_digest: string
+  content_sha256: string
+  approval_id: string
+  approval_digest: string
+  expires_at: number
+}
+export interface DotsPagePublishParams {
+  session_id: string
+  schema_version: 1
+  command_id: string
+  proposal: DotsPageProposal
+  approval_id: string
+  approval_digest: string
+}
+export interface DotsRegistrationParams {
+  session_id: string
+  schema_version: 1
+  adapter_id: string
+  kind: 'page' | 'computer'
+  expected_revision?: number | null
+  revision: number
+  enabled: boolean
+  project_ids?: string[]
+  space_ids?: string[]
+  actions?: ('navigate' | 'read' | 'snapshot' | 'screenshot' | 'click' | 'type' | 'key' | 'scroll' | 'files_list' | 'files_read' | 'files_write' | 'exec')[]
+}
+export interface DotsRegistrationResult {
+  adapter_id: string
+  kind: 'page' | 'computer'
+  revision: number
+  enabled: boolean
+  agent_id: string
+  registered: true
+}
+export interface RuntimeEffectParams {
+  session_id: string
+  schema_version: 1
+  effect_id: string
+}
+export interface RuntimeEffectGetResult {
+  effect: RuntimeEffectRecord
+  evidence: RuntimeEffectEvidence[]
 }
 export interface RuntimeEffectRecord {
   effect_id: string
@@ -459,6 +568,28 @@ export interface RuntimeEffectRecord {
   updated_at: number
   exactly_once_external: false
   replay_permitted: false
+}
+export interface RuntimeEffectEvidence {
+  sequence: number
+  generation: number
+  from_state: 'prepared' | 'dispatched' | 'confirmed' | 'failed' | 'outcome_unknown' | 'reconciliation_required'
+  state: 'prepared' | 'dispatched' | 'confirmed' | 'failed' | 'outcome_unknown' | 'reconciliation_required'
+  created_at: number
+  receipt_available: boolean
+  receipt_sha256: string | null
+}
+export interface RuntimeEffectListParams {
+  session_id: string
+  schema_version: 1
+  run_id?: string | null
+  limit?: number
+  unresolved_only?: boolean
+}
+export interface RuntimeEffectListResult {
+  effects: RuntimeEffectRecord[]
+  limit: number
+  truncated: boolean
+  complete: false
 }
 export interface RuntimeEventsSinceParams {
   session_id: string
@@ -905,6 +1036,57 @@ export interface MissionListResult {
   limit_reached: boolean
   complete: false
 }
+export interface RuntimeProjectParams {
+  session_id: string
+  schema_version: 1
+  project_id: string
+}
+export interface RuntimeProjectResult {
+  project: RuntimeProjectRecord
+}
+export interface RuntimeProjectRecord {
+  id: string
+  project_id: string
+  slug: string
+  name: string
+  description: string | null
+  icon: string | null
+  color: string | null
+  board_slug: string | null
+  primary_path: string | null
+  archived: boolean
+  created_at: number
+  folders: RuntimeProjectFolder[]
+  revision: number
+  owner_principal_id: string | null
+  purpose: string
+  source_refs: ProjectSourceRef[]
+  canonical_artifact_refs: ArtifactVersionRef[]
+  active_mission_refs: ProjectMissionRef[]
+  grants: ProjectGrant[]
+}
+export interface RuntimeProjectFolder {
+  path: string
+  label: string | null
+  is_primary: boolean
+  added_at: number
+}
+export interface ProjectSourceRef {
+  capture_id: string
+}
+export interface ArtifactVersionRef {
+  artifact_id: string
+  version: number
+}
+export interface ProjectMissionRef {
+  session_id: string
+  run_id: string
+}
+export interface ProjectGrant {
+  principal_id: string
+  agent_id: string
+  permissions: ('read' | 'write' | 'share')[]
+}
 export interface RuntimeResultGetParams {
   session_id: string
   schema_version: 1
@@ -929,4 +1111,109 @@ export interface RuntimeResultChunk {
 export interface RuntimeSessionParams {
   session_id: string
   schema_version: 1
+}
+export interface DotsApprovalRequest {
+  session_id: string
+  authority: DotsReadAuthority
+  approval_id: string
+  approval_digest: string
+  action_digest: string
+  expires_at: number
+}
+export interface DotsReadAuthority {
+  principal_id: string
+  profile_id: string
+  agent_id: string
+  runtime_session_id: string
+  run_id: string
+  policy_digest: string
+  generation: number
+}
+export interface DotsApprovalResult {
+  approval_id: string
+  approval_digest: string
+  choice: 'once' | 'deny'
+}
+export interface DotsDispatchRequest {
+  session_id: string
+  identity: DotsEffectIdentity
+  proposal: DotsPageProposal | DotsComputerProposal
+  content_json: string
+  deadline_at: number
+}
+export interface DotsComputerProposal {
+  kind?: 'computer'
+  executor_id: string
+  expected_grant_revision: number
+  expected_control_revision: number
+  snapshot_id: number
+  snapshot_sha256: string
+  action: 'navigate' | 'read' | 'snapshot' | 'screenshot' | 'click' | 'type' | 'key' | 'scroll' | 'files_list' | 'files_read' | 'files_write' | 'exec'
+  input: DotsEmptyInput | DotsNavigateInput | DotsClickInput | DotsTypeInput | DotsKeyInput | DotsScrollInput | DotsFilesListInput | DotsFilesReadInput | DotsFilesWriteInput | DotsExecInput
+}
+export type DotsEmptyInput = Record<string, never>
+export interface DotsNavigateInput {
+  url: string
+}
+export interface DotsClickInput {
+  ref: string
+  snapshotId: number
+}
+export interface DotsTypeInput {
+  ref: string
+  snapshotId: number
+  text: string
+  submit?: boolean
+}
+export interface DotsKeyInput {
+  key: string
+}
+export interface DotsScrollInput {
+  deltaY: number
+}
+export interface DotsFilesListInput {
+  path?: string
+}
+export interface DotsFilesReadInput {
+  path: string
+}
+export interface DotsFilesWriteInput {
+  path: string
+  contents: string
+  append?: boolean
+}
+export interface DotsExecInput {
+  command: string
+  timeoutMs?: number
+}
+export interface DotsInspectRequest {
+  session_id: string
+  identity: DotsEffectIdentity
+  deadline_at: number
+}
+export interface DotsPageReadRequest {
+  session_id: string
+  authority: DotsReadAuthority
+  scope: DotsPageReadScope
+  deadline_at: number
+}
+export interface DotsPageReadScope {
+  store_id: string
+  project_id: string
+  space_id: string
+  page_id: string
+  expected_grant_revision: number
+  version?: number | null
+}
+export interface DotsPageReadResult {
+  authority: DotsReadAuthority
+  scope: DotsPageReadScope
+  version: number
+  content_json: string
+  content_sha256: string
+}
+export interface RequestCancelPayload {
+  id: string
+  method: string
+  reason: string
 }

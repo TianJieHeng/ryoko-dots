@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import process from 'node:process';
 import ts from 'typescript';
+import { format } from 'prettier';
 const root = process.argv[2];
 if (!root) throw new Error('Provide the reviewed producer checkout path.');
 const hash = (value) => createHash('sha256').update(value).digest('hex');
@@ -58,6 +59,30 @@ const names = [
   'runtime.result.get',
   'runtime.delivery.ack',
 ];
+names.push(
+  'client.capabilities',
+  'runtime.project.get',
+  'runtime.effect.get',
+  'runtime.dots.register',
+  'runtime.dots.page.prepare',
+  'runtime.dots.page.publish',
+  'runtime.dots.effect.reconcile',
+);
+const callbackNames = [
+  'dots.effect.dispatch',
+  'dots.effect.inspect',
+  'dots.page.read',
+  'dots.approval',
+];
+const serverRequests = rpc['x-server-requests'].filter((m) =>
+  callbackNames.includes(m.name),
+);
+if (
+  callbackNames.some(
+    (name) => !serverRequests.some((method) => method.name === name),
+  )
+)
+  throw new Error('Required native callback absent.');
 const methods = rpc.methods.filter((m) => names.includes(m.name));
 if (names.some((name) => !methods.some((method) => method.name === name)))
   throw new Error('A required qualified producer method is absent.');
@@ -76,6 +101,13 @@ function collect(value) {
   Object.values(value).forEach(collect);
 }
 collect(methods);
+collect(serverRequests);
+const notifications = rpc['x-notifications'].filter(
+  (entry) => entry.name === 'request.cancel',
+);
+if (notifications.length !== 1)
+  throw new Error('Native cancellation contract absent.');
+collect(notifications);
 const parsed = ts.createSourceFile(
   'wire.ts',
   source,
@@ -112,20 +144,25 @@ writeFileSync(
 writeFileSync(
   'src/shared/runtime/producer/schema.generated.ts',
   header +
-    `export const producerSchema = ${JSON.stringify({ methods, components: { schemas } }, null, 2)};\n`,
+    `export const producerSchema = ${JSON.stringify({ methods, serverRequests, notifications, components: { schemas } }, null, 2)};\n`,
 );
 writeFileSync(
   'src/shared/runtime/producer/provenance.json',
-  JSON.stringify(
-    {
-      repository: 'TianJieHeng/ryoko-agent',
-      commit: '9c39b3cbc7d23c65782e0f73f8c8102d07955e2e',
-      typescriptSha256: hash(source),
-      openrpcSha256: hash(raw),
-      methods: names,
-      status: 'canonical_command_stdio_subset',
-    },
-    null,
-    2,
-  ) + '\n',
+  await format(
+    JSON.stringify(
+      {
+        repository: 'TianJieHeng/ryoko-agent',
+        commit: '9c39b3cbc7d23c65782e0f73f8c8102d07955e2e',
+        typescriptSha256: hash(source),
+        openrpcSha256: hash(raw),
+        methods: names,
+        serverRequests: callbackNames,
+        notifications: ['request.cancel'],
+        status: 'canonical_native_pages_stdio_subset',
+      },
+      null,
+      2,
+    ),
+    { parser: 'json' },
+  ),
 );

@@ -50,6 +50,7 @@ export class CommandService {
       access: 'read' | 'write',
     ) => void,
     private pageContext: (id: string) => string = () => '',
+    private assertCommandAllowed: (intent: CommandIntent) => void = () => {},
   ) {
     this.ledger = new CommandLedger(database, workspace.ownerId);
     this.projection = new RuntimeProjection(database);
@@ -333,7 +334,9 @@ export class CommandService {
     expectedGeneration: number,
     auth: Guard,
   ) {
-    let scope = await this.authorize(intent.conversationId, auth, 'write');
+    const access = intent.operation === 'cancel' ? 'read' : 'write';
+    let scope = await this.authorize(intent.conversationId, auth, access);
+    this.assertCommandAllowed(intent);
     if (scope.authorityRevision !== expectedGeneration)
       throw new ConversationError('Command authority generation changed.', 409);
     const context =
@@ -366,7 +369,7 @@ export class CommandService {
     let dispatched = false;
     try {
       const live = await this.ensure(intent.conversationId, auth);
-      scope = await this.authorize(intent.conversationId, auth, 'write');
+      scope = await this.authorize(intent.conversationId, auth, access);
       if (this.authority(scope) !== admitted.record.authority)
         throw new ConversationError('Command authority changed.', 403);
       if (!this.executable(live, intent.operation))
@@ -379,7 +382,7 @@ export class CommandService {
           schema_version: 1,
           session_id: live.binding.liveSessionId,
         });
-        this.guardRecord(admitted.record, auth, 'write');
+        this.guardRecord(admitted.record, auth, access);
         if (
           snapshot.session_id !== intent.conversationId ||
           snapshot.revision !== intent.expectedRevision
@@ -390,7 +393,8 @@ export class CommandService {
           );
       }
       // Context is explicitly untrusted text, never authority, instructions or a tool grant.
-      this.guardRecord(admitted.record, auth, 'write');
+      this.guardRecord(admitted.record, auth, access);
+      this.assertCommandAllowed(intent);
       dispatched = true;
       const raw = await this.transport.call('runtime.command', {
         schema_version: 1,

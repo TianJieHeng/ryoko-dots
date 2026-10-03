@@ -330,6 +330,31 @@ describe('conversation-scoped runtime control UI', () => {
     expect(html).toContain('opaque content');
     expect(html).not.toContain('Approve once');
   });
+  it('keeps withdrawn native review bytes visible but disables decisions without forging producer status', () => {
+    const reason =
+      'Original native page request was withdrawn. Inspect its existing receipt.';
+    vi.mocked(useResource).mockReturnValue(
+      resource(
+        runtimeExactReviewSchema.parse({
+          ...exact,
+          decisionUnavailableReason: reason,
+        }),
+      ) as ReturnType<typeof useResource>,
+    );
+    const html = renderToStaticMarkup(
+      <ReviewDetail
+        conversationId="chat"
+        reviewId="review"
+        connection={connection}
+        busy={false}
+        run={async () => {}}
+      />,
+    );
+    expect(html).toContain(reason);
+    expect(html).toContain('&lt;script&gt;');
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>Approve once<\/button>/);
+    expect(html).toContain('pending');
+  });
   it('inspects local delivery independently of Slack without offering unqualified retry', () => {
     vi.mocked(useResource).mockReturnValue(
       resource(runtimeDeliverySchema.parse(delivery)) as ReturnType<

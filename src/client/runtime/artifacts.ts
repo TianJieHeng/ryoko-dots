@@ -40,6 +40,7 @@ export async function verifyArtifactBytes(
 export async function fetchArtifact(
   meta: RuntimeArtifact,
   signal?: AbortSignal,
+  dotId?: string,
 ): Promise<Blob> {
   const artifact = availableArtifact(meta);
   const generation = getAuthenticationGeneration();
@@ -51,7 +52,7 @@ export async function fetchArtifact(
   };
   checkCurrent();
   const response = await fetch(
-    `/api/runtime/artifacts/${encodeURIComponent(artifact.id)}/versions/${encodeURIComponent(artifact.version)}/content`,
+    `/api/runtime/artifacts/${encodeURIComponent(artifact.id)}/versions/${encodeURIComponent(artifact.version)}/content${dotId ? `?dotId=${encodeURIComponent(dotId)}` : ''}`,
     {
       credentials: 'same-origin',
       headers: authHeaders(),

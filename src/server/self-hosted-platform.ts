@@ -1,3 +1,4 @@
+import { PageRuntimeService } from './runtime/page-runtime-service.js';
 import {
   contractVersion,
   setupSchema,
@@ -51,6 +52,7 @@ export class SelfHostedPlatform {
   readonly ledger: ConversationLedger;
   readonly commands?: CommandService;
   readonly controls?: RuntimeControlService;
+  readonly nativePages?: PageRuntimeService;
   readonly delivery?: RuntimeDeliveryService;
   private unsubscribeResults?: () => void;
 
@@ -69,14 +71,55 @@ export class SelfHostedPlatform {
         (scope, auth, access) => this.guard(scope, auth, access),
         (id) => {
           const meta = this.ledger.metadata(id);
-          if (!meta?.pageId) return '';
+          const nativeContext = this.nativePages?.context(id) ?? '';
+          if (!meta?.pageId) return nativeContext;
           const page = workspace.pages.get(meta.spaceId!, meta.pageId);
-          return JSON.stringify({
-            id: page.id,
-            title: page.title.slice(0, 500),
-            revision: page.revision,
-            content: page.content.slice(0, 12000),
-          });
+          return (
+            nativeContext +
+            '\n' +
+            JSON.stringify({
+              id: page.id,
+              title: page.title.slice(0, 500),
+              revision: page.revision,
+              content: page.content.slice(0, 12000),
+            })
+          );
+        },
+        (intent) => {
+          if (intent.operation === 'cancel') return;
+          const meta = this.ledger.metadata(intent.conversationId);
+          if (
+            meta?.pageId &&
+            meta.spaceId &&
+            workspace.pages.get(meta.spaceId, meta.pageId).archived
+          )
+            throw new ConversationError(
+              'Restore this archived page before starting agent work.',
+              403,
+            );
+        },
+      );
+    if (transport && this.commands)
+      this.nativePages = new PageRuntimeService(
+        workspace,
+        database,
+        transport,
+        (id, auth, access) => this.commands!.existingBound(id, auth, access),
+        (bound, auth, access) =>
+          this.commands!.assertBound(bound.scope, auth, access),
+        (id) => {
+          const meta = this.ledger.metadata(id);
+          return (
+            !meta?.pageId ||
+            !meta.spaceId ||
+            !workspace.pages.get(meta.spaceId, meta.pageId).archived
+          );
+        },
+        (id) => {
+          const meta = this.ledger.metadata(id);
+          return meta?.pageId && meta.spaceId
+            ? { pageId: meta.pageId, spaceId: meta.spaceId }
+            : null;
         },
       );
     if (transport && this.commands)
@@ -88,6 +131,9 @@ export class SelfHostedPlatform {
           this.commands!.existingBound(id, auth, access),
         (scope, auth, access) =>
           this.commands!.assertBound(scope, auth, access),
+        (bound, params, auth, markDispatched) =>
+          this.nativePages!.decideNative(bound, params, auth, markDispatched),
+        (id, review) => this.nativePages!.decisionUnavailableReason(id, review),
       );
     if (transport && this.commands) {
       this.delivery = new RuntimeDeliveryService(
@@ -152,6 +198,7 @@ export class SelfHostedPlatform {
     this.delivery?.close();
     this.controls?.close();
     await this.commands?.stop();
+    this.nativePages?.close();
     await this.transport?.stop();
     this.ledger.close();
   }
@@ -174,6 +221,13 @@ export class SelfHostedPlatform {
         features: {
           ...base.features,
           conversations: ready,
+          artifacts: this.nativePages
+            ? {
+                state: 'ready',
+                reason:
+                  'Immutable owner-authorized native page versions with digest-verified downloads.',
+              }
+            : base.features.artifacts,
           missions: this.controls
             ? {
                 state: 'ready',

@@ -1,4 +1,4 @@
-import { api } from '../api';
+import { api, getAuthenticationGeneration } from '../api';
 import {
   sameScope,
   setupSchema,
@@ -45,7 +45,9 @@ export function connectionState(setup: RuntimeSetup): ConnectionState {
 export async function connectConversation(
   conversationId: string,
   scope: RuntimeScope,
+  dotId?: string,
 ) {
+  const authentication = getAuthenticationGeneration();
   const setup = parseSetup(
     await api<unknown>(
       `/runtime/conversations/${encodeURIComponent(conversationId)}/connect`,
@@ -53,7 +55,28 @@ export async function connectConversation(
       {},
     ),
   );
-  if (!sameScope(scope, setup.scope))
-    throw new Error('Connected runtime belongs to another binding.');
-  return setup;
+  const assertAuthentication = () => {
+    if (authentication !== getAuthenticationGeneration())
+      throw new Error('Authentication changed while connecting.');
+  };
+  assertAuthentication();
+  if (sameScope(scope, setup.scope)) return setup;
+  // First explicit native registration can establish a reviewed Space/project
+  // mapping and advance only its authority revision. Never trust the POST alone:
+  // independently read the selected Dot and require the exact same new scope.
+  if (
+    dotId &&
+    setup.scope &&
+    setup.scope.generation > scope.generation &&
+    sameScope({ ...scope, generation: setup.scope.generation }, setup.scope)
+  ) {
+    const refreshed = parseSetup(
+      await api<unknown>(`/runtime/setup?dotId=${encodeURIComponent(dotId)}`),
+    );
+    assertAuthentication();
+    if (sameScope(setup.scope, refreshed.scope)) return refreshed;
+  }
+  throw new Error(
+    'Connected runtime belongs to another binding. Refresh current access before reconnecting.',
+  );
 }

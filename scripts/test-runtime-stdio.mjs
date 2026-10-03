@@ -13,6 +13,8 @@ const result = spawnSync(
     'tests/self-hosted-commands.test.ts',
     'tests/self-hosted-controls.test.ts',
     'tests/self-hosted-delivery.test.ts',
+    'tests/self-hosted-pages.test.ts',
+    'tests/self-hosted-pages.test.ts',
   ],
   { stdio: 'inherit', env: process.env },
 );

@@ -1,6 +1,15 @@
 import Ajv from 'ajv';
 import { producerSchema } from '../../shared/runtime/producer/schema.generated.js';
 import type {
+  ClientCapabilitiesResult,
+  RuntimeProjectResult,
+  RuntimeEffectGetResult,
+  DotsRegistrationResult,
+  DotsPreparedResult,
+  DotsEffectResult,
+  DotsEffectReceipt,
+  DotsPageReadResult,
+  DotsApprovalResult,
   RuntimeCapabilities,
   MissionSnapshot,
   RuntimeEventsSinceResult,
@@ -31,6 +40,13 @@ export interface ReadResults {
 }
 export type ReadMethod = keyof ReadResults;
 export interface ConversationResults extends ReadResults {
+  'client.capabilities': ClientCapabilitiesResult;
+  'runtime.project.get': RuntimeProjectResult;
+  'runtime.effect.get': RuntimeEffectGetResult;
+  'runtime.dots.register': DotsRegistrationResult;
+  'runtime.dots.page.prepare': DotsPreparedResult;
+  'runtime.dots.page.publish': DotsEffectResult;
+  'runtime.dots.effect.reconcile': DotsEffectResult;
   'runtime.control.get': RuntimeControlResult;
   'runtime.control.pause': RuntimeControlResult;
   'runtime.control.resume': RuntimeControlResult;
@@ -62,6 +78,18 @@ export interface ConversationResults extends ReadResults {
   'runtime.conversation.archive': RuntimeConversationResult;
 }
 export type ConversationMethod = keyof ConversationResults;
+export interface NativeResults {
+  'dots.effect.dispatch': DotsEffectReceipt;
+  'dots.effect.inspect': DotsEffectReceipt;
+  'dots.page.read': DotsPageReadResult;
+  'dots.approval': DotsApprovalResult;
+}
+export type NativeMethod = keyof NativeResults;
+export type NativeHandler = (
+  method: NativeMethod,
+  params: unknown,
+  signal: AbortSignal,
+) => Promise<NativeResults[NativeMethod]>;
 const ajv = new Ajv({
   allErrors: false,
   removeAdditional: false,
@@ -69,25 +97,35 @@ const ajv = new Ajv({
   coerceTypes: false,
 });
 const validators = new Map(
-  producerSchema.methods.map((method) => [
-    method.name,
-    {
-      params: ajv.compile({
-        ...producerSchema,
-        $ref: method.params[0].schema.$ref,
-      }),
-      result: ajv.compile({
-        ...producerSchema,
-        $ref: method.result.schema.$ref,
-      }),
-    },
-  ]),
+  [...producerSchema.methods, ...producerSchema.serverRequests].map(
+    (method) => [
+      method.name,
+      {
+        params: ajv.compile({
+          ...producerSchema,
+          $ref: method.params[0].schema.$ref,
+        }),
+        result: ajv.compile({
+          ...producerSchema,
+          $ref: method.result.schema.$ref,
+        }),
+      },
+    ],
+  ),
 );
 export function validateWire(
-  method: ReadMethod | ConversationMethod,
+  method: ReadMethod | ConversationMethod | NativeMethod,
   side: 'params' | 'result',
   value: unknown,
 ): void {
   if (!validators.get(method)?.[side](value))
     throw new Error(`Invalid ${method} ${side} schema`);
+}
+
+const cancellationValidator = ajv.compile({
+  ...producerSchema,
+  $ref: '#/components/schemas/RequestCancelPayload',
+});
+export function validNativeCancellation(value: unknown): boolean {
+  return !!cancellationValidator(value);
 }

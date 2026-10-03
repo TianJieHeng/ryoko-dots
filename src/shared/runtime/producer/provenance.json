@@ -34,7 +34,21 @@
     "runtime.delivery.status",
     "runtime.delivery.retry",
     "runtime.result.get",
-    "runtime.delivery.ack"
+    "runtime.delivery.ack",
+    "client.capabilities",
+    "runtime.project.get",
+    "runtime.effect.get",
+    "runtime.dots.register",
+    "runtime.dots.page.prepare",
+    "runtime.dots.page.publish",
+    "runtime.dots.effect.reconcile"
   ],
-  "status": "canonical_command_stdio_subset"
+  "serverRequests": [
+    "dots.effect.dispatch",
+    "dots.effect.inspect",
+    "dots.page.read",
+    "dots.approval"
+  ],
+  "notifications": ["request.cancel"],
+  "status": "canonical_native_pages_stdio_subset"
 }

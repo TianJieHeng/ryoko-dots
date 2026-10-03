@@ -9,14 +9,17 @@ import { RuntimeStatus } from './RuntimeStatus';
 import type { RuntimeConnection } from './use-runtime';
 export function ArtifactLibrary({
   connection,
+  dotId,
 }: {
   connection: RuntimeConnection;
+  dotId?: string;
 }) {
   const data = useResource(
-    '/runtime/artifacts',
+    `/runtime/artifacts?dotId=${encodeURIComponent(dotId ?? '')}`,
     artifactsSchema,
     connection,
     'artifacts',
+    !!dotId,
   );
   const [selected, setSelected] = useState<string>();
   const [error, setError] = useState('');
@@ -25,11 +28,12 @@ export function ArtifactLibrary({
   const [busy, setBusy] = useState(false);
   const controller = useRef<AbortController | undefined>(undefined);
   const generation = useRef(0);
-  const key = JSON.stringify(connection.setup?.scope);
+  const key = JSON.stringify([connection.setup?.scope, dotId]);
   useEffect(() => {
     generation.current++;
     controller.current?.abort();
     setSelected(undefined);
+    setBusy(false);
     setPreview('');
     setVerified('');
     setError('');
@@ -49,7 +53,11 @@ export function ArtifactLibrary({
     setVerified('');
     setPreview('');
     try {
-      const blob = await fetchArtifact(artifact, abort.signal);
+      if (!dotId)
+        throw new Error(
+          'Select a Dot before reading its authorized artifacts.',
+        );
+      const blob = await fetchArtifact(artifact, abort.signal, dotId);
       if (abort.signal.aborted || generation.current !== current) return;
       setVerified(
         `Complete bytes verified · ${artifact.size} bytes · ${artifact.sha256}`,
@@ -63,10 +71,17 @@ export function ArtifactLibrary({
         setTimeout(() => URL.revokeObjectURL(url), 1000);
       } else if (
         artifact.mime.startsWith('text/') ||
-        artifact.mime === 'application/json'
+        artifact.mime === 'application/json' ||
+        artifact.mime === 'application/vnd.ryoko.dots.page+json'
       ) {
         const text = await blob.text();
-        if (generation.current === current) setPreview(text.slice(0, 200000));
+        if (generation.current === current)
+          setPreview(
+            text.length > 200000
+              ? text.slice(0, 200000) +
+                  '\n[Preview limited to 200,000 characters; download contains the complete verified artifact.]'
+              : text,
+          );
       } else
         setPreview(
           'Verified binary file. Download it to inspect with a suitable application.',
@@ -89,6 +104,11 @@ export function ArtifactLibrary({
         Native pages retain one byte authority. Publication and sharing require
         separate approval.
       </p>
+      {!dotId && (
+        <p className="notice">
+          Select a Dot to inspect its authorized page artifacts.
+        </p>
+      )}
       {!connection.available('artifacts') && (
         <RuntimeStatus connection={connection} compact />
       )}

@@ -179,3 +179,23 @@ it('rejects authentication revocation during the byte stream', async () => {
     'Authentication changed',
   );
 });
+
+it('carries the selected Dot into the authenticated immutable content read', async () => {
+  const fetcher = vi.fn(
+    async () =>
+      new Response(bytes, {
+        headers: {
+          'content-type': artifact.mime,
+          'content-length': String(bytes.length),
+        },
+      }),
+  );
+  vi.stubGlobal('fetch', fetcher);
+  expect(
+    await (await fetchArtifact(artifact, undefined, 'dot / selected')).text(),
+  ).toBe('hello');
+  expect(fetcher).toHaveBeenCalledWith(
+    '/api/runtime/artifacts/artifact-1/versions/immutable-v1/content?dotId=dot%20%2F%20selected',
+    expect.objectContaining({ credentials: 'same-origin', redirect: 'error' }),
+  );
+});

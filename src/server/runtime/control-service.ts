@@ -161,6 +161,20 @@ export class RuntimeControlService {
       auth: Guard,
       access: 'read' | 'write',
     ) => void,
+    private nativeDecision?: (
+      bound: ControlBinding,
+      params: {
+        approval_id: string;
+        approval_digest: string;
+        choice: 'once' | 'deny';
+      },
+      auth: Guard,
+      markDispatched: () => void,
+    ) => Promise<RuntimeApprovalResolveResult | undefined>,
+    private nativeDecisionReason?: (
+      conversationId: string,
+      review: RuntimeApprovalGetResult,
+    ) => string | null,
   ) {
     this.db = new DatabaseSync(database);
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
@@ -415,6 +429,8 @@ export class RuntimeControlService {
       conversationId,
       review,
       detail: result,
+      decisionUnavailableReason:
+        this.nativeDecisionReason?.(conversationId, result) ?? null,
     };
   }
   private checkDelivery(
@@ -627,9 +643,24 @@ export class RuntimeControlService {
         params: object,
       ) => {
         this.fence(bound, auth, 'write');
-        dispatched = true;
         // Persist a valid producer receipt before checking whether its browser
         // detached. The durable action belongs to the original owner regardless.
+        if (method === 'runtime.approval.resolve' && this.nativeDecision) {
+          const result = await this.nativeDecision(
+            bound,
+            params as {
+              approval_id: string;
+              approval_digest: string;
+              choice: 'once' | 'deny';
+            },
+            auth,
+            () => {
+              dispatched = true;
+            },
+          );
+          if (result) return result as ControlResults[M];
+        }
+        dispatched = true;
         return this.transport.call(method, {
           ...params,
           schema_version: 1,

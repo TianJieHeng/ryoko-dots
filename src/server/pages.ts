@@ -1,3 +1,4 @@
+import { initializeNativePageStore } from './runtime/page-effect-service.js';
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
@@ -13,6 +14,7 @@ export const pagePatch = z
     title: z.string().trim().min(1).max(160).optional(),
     content: z.string().max(100000).optional(),
     parentId: z.string().min(1).nullable().optional(),
+    archived: z.boolean().optional(),
     expectedRevision: z.number().int().positive(),
   })
   .strict();
@@ -23,6 +25,7 @@ export interface Page {
   title: string;
   content: string;
   revision: number;
+  archived?: boolean;
   createdAt: number;
   updatedAt: number;
   sourceThreadId: string | null;
@@ -54,6 +57,7 @@ export class Pages {
       db.exec(
         'ALTER TABLE page_threads ADD COLUMN leaseUntil INTEGER NOT NULL DEFAULT 0',
       );
+    initializeNativePageStore(db);
   }
   requireSpace(spaceId: string) {
     if (!this.spaceExists(spaceId))
@@ -62,16 +66,24 @@ export class Pages {
   list(spaceId: string): Page[] {
     this.requireSpace(spaceId);
     return this.db
-      .prepare('SELECT * FROM pages WHERE spaceId=? ORDER BY createdAt,id')
-      .all(spaceId) as unknown as Page[];
+      .prepare(
+        'SELECT pages.*,coalesce(runtime_page_flags.archived,0) AS archived FROM pages LEFT JOIN runtime_page_flags ON runtime_page_flags.pageId=pages.id WHERE spaceId=? ORDER BY createdAt,id',
+      )
+      .all(spaceId)
+      .map((row) => ({
+        ...row,
+        archived: !!row.archived,
+      })) as unknown as Page[];
   }
   get(spaceId: string, id: string): Page {
     this.requireSpace(spaceId);
     const row = this.db
-      .prepare('SELECT * FROM pages WHERE id=? AND spaceId=?')
+      .prepare(
+        'SELECT pages.*,coalesce(runtime_page_flags.archived,0) AS archived FROM pages LEFT JOIN runtime_page_flags ON runtime_page_flags.pageId=pages.id WHERE id=? AND spaceId=?',
+      )
       .get(id, spaceId);
     if (!row) throw new PageError('Page not found in this Space.', 404);
-    return row as unknown as Page;
+    return { ...row, archived: !!row.archived } as unknown as Page;
   }
   private parent(spaceId: string, parentId: string | null, id?: string) {
     const seen = new Set([id]);
@@ -179,6 +191,12 @@ export class Pages {
       const parent =
         data.parentId === undefined ? page.parentId : data.parentId;
       this.parent(spaceId, parent, id);
+      if (data.archived !== undefined)
+        this.db
+          .prepare(
+            'INSERT INTO runtime_page_flags VALUES(?,?) ON CONFLICT(pageId) DO UPDATE SET archived=excluded.archived',
+          )
+          .run(id, Number(data.archived));
       this.db
         .prepare(
           'UPDATE pages SET title=?,content=?,parentId=?,revision=revision+1,updatedAt=? WHERE id=? AND revision=?',

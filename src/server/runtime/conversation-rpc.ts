@@ -2,8 +2,11 @@ import { randomUUID } from 'node:crypto';
 import type { Readable, Writable } from 'node:stream';
 import {
   validateWire,
+  validNativeCancellation,
   type ConversationMethod,
   type ConversationResults,
+  type NativeHandler,
+  type NativeMethod,
 } from './wire.js';
 
 /** Safe errors contain no producer message, diagnostics, raw params or credentials. */
@@ -29,11 +32,16 @@ export class ConversationRpc {
   private buffer = Buffer.alloc(0);
   private pending = new Map<string, Pending>();
   private closed = false;
+  private callbacks = new Map<
+    string | number,
+    { controller: AbortController; sessionId: string; method: string }
+  >();
   constructor(
     private input: Readable,
     private output: Writable,
     private limits = { bytes: 1_000_000, pending: 8, timeoutMs: 15000 },
     private resultAvailable?: (notification: unknown) => void,
+    private nativeHandler?: NativeHandler,
   ) {
     input.on('data', this.receive);
     input.on('end', this.close);
@@ -66,26 +74,51 @@ export class ConversationRpc {
         frame.jsonrpc !== '2.0'
       )
         return this.close();
-      // Private live output is never projected. Server requests fail closed.
+      // Only bounded, schema-pinned owned native callbacks may execute.
       if ('method' in frame && 'id' in frame) {
         if (
           (typeof frame.id !== 'string' && typeof frame.id !== 'number') ||
+          (typeof frame.id === 'string' && frame.id.length > 256) ||
+          (typeof frame.id === 'number' && !Number.isSafeInteger(frame.id)) ||
+          this.callbacks.has(frame.id) ||
           this.output.writableLength > this.limits.bytes
         )
           return this.close();
-        this.output.write(
-          JSON.stringify({
-            jsonrpc: '2.0',
-            id: frame.id,
-            error: {
-              code: -32601,
-              message: 'Unsupported client method; no approval granted.',
-            },
-          }) + '\n',
-        );
+        void this.nativeRequest(frame.id, frame.method, frame.params);
         continue;
       }
       if (!('id' in frame)) {
+        if (
+          frame.method === 'event' &&
+          frame.params &&
+          typeof frame.params === 'object'
+        ) {
+          const notice = frame.params as {
+            type?: unknown;
+            session_id?: unknown;
+            payload?: unknown;
+          };
+          if (
+            notice.type === 'request.cancel' &&
+            validNativeCancellation(notice.payload)
+          ) {
+            const payload = notice.payload as {
+              id: string;
+              method: string;
+              reason: string;
+            };
+            const pending = this.callbacks.get(payload.id);
+            if (
+              pending &&
+              pending.sessionId === notice.session_id &&
+              pending.method === payload.method
+            ) {
+              this.callbacks.delete(payload.id);
+              pending.controller.abort();
+            }
+            continue;
+          }
+        }
         if (
           frame.method === 'event' &&
           frame.params &&
@@ -118,6 +151,84 @@ export class ConversationRpc {
       else pending.reject(new RuntimeFailure('unknown'));
     }
   };
+  private async nativeRequest(
+    id: string | number,
+    method: unknown,
+    params: unknown,
+  ) {
+    const reply = (frame: object) => {
+      if (this.closed || this.output.writableLength > this.limits.bytes) return;
+      const bytes = JSON.stringify({ jsonrpc: '2.0', id, ...frame }) + '\n';
+      if (Buffer.byteLength(bytes) > this.limits.bytes) return this.close();
+      this.output.write(bytes, (error) => {
+        if (error) this.close();
+      });
+    };
+    if (
+      !this.nativeHandler ||
+      typeof method !== 'string' ||
+      ![
+        'dots.effect.dispatch',
+        'dots.effect.inspect',
+        'dots.page.read',
+        'dots.approval',
+      ].includes(method) ||
+      this.callbacks.size >= 8
+    ) {
+      reply({
+        error: {
+          code: -32601,
+          message: 'Unsupported client method; no approval granted.',
+        },
+      });
+      return;
+    }
+    const controller = new AbortController();
+    this.callbacks.set(id, {
+      controller,
+      sessionId: String(
+        (params as { session_id?: unknown } | null)?.session_id ?? '',
+      ),
+      method,
+    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      validateWire(method as NativeMethod, 'params', params);
+      const value = params as { deadline_at?: number; expires_at?: number };
+      const deadline = value.deadline_at ?? value.expires_at ?? 0;
+      const duration = Math.min(
+        method === 'dots.approval' ? 300000 : 70000,
+        deadline * 1000 - Date.now(),
+      );
+      if (!Number.isFinite(duration) || duration <= 0)
+        throw new Error('Expired');
+      const result = await Promise.race([
+        this.nativeHandler(method as NativeMethod, params, controller.signal),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            controller.abort();
+            reject(new Error('Expired'));
+          }, duration);
+        }),
+      ]);
+      if (controller.signal.aborted) return;
+      validateWire(method as NativeMethod, 'result', result);
+      reply({ result });
+    } catch {
+      if (!this.closed && !controller.signal.aborted)
+        reply({
+          error: {
+            code: -32000,
+            message: 'Native request unavailable; inspect before retrying.',
+          },
+        });
+    } finally {
+      clearTimeout(timer);
+      controller.abort();
+      if (this.callbacks.get(id)?.controller === controller)
+        this.callbacks.delete(id);
+    }
+  }
   async call<M extends ConversationMethod>(
     method: M,
     params: unknown,
@@ -158,6 +269,8 @@ export class ConversationRpc {
     this.closed = true;
     this.input.off('data', this.receive);
     this.buffer = Buffer.alloc(0);
+    for (const callback of this.callbacks.values()) callback.controller.abort();
+    this.callbacks.clear();
     for (const item of this.pending.values()) {
       clearTimeout(item.timer);
       item.reject(new RuntimeFailure('unknown'));
@@ -166,6 +279,13 @@ export class ConversationRpc {
   };
 }
 export const conversationMethods: ConversationMethod[] = [
+  'client.capabilities',
+  'runtime.project.get',
+  'runtime.effect.get',
+  'runtime.dots.register',
+  'runtime.dots.page.prepare',
+  'runtime.dots.page.publish',
+  'runtime.dots.effect.reconcile',
   'runtime.capabilities',
   'runtime.snapshot',
   'runtime.events.since',

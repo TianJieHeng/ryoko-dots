@@ -182,22 +182,27 @@ export function ReviewDetail({
       </p>
     );
   return (
-    <ExactReviewCard
-      review={exact.data.review}
-      scope={connection.setup.scope}
-      disabled={busy}
-      refresh={() => void exact.reload()}
-      decide={async (review, choice, inspectOnly) => {
-        await run(
-          `reviews/${encodeURIComponent(review.id)}/decision`,
-          'approval.resolve',
-          { approvalDigest: review.approvalDigest, choice },
-          review.revision,
-          inspectOnly,
-        );
-        await exact.reload();
-      }}
-    />
+    <>
+      {exact.data.decisionUnavailableReason && (
+        <p className="notice">{exact.data.decisionUnavailableReason}</p>
+      )}
+      <ExactReviewCard
+        review={exact.data.review}
+        scope={connection.setup.scope}
+        disabled={busy || !!exact.data.decisionUnavailableReason}
+        refresh={() => void exact.reload()}
+        decide={async (review, choice, inspectOnly) => {
+          await run(
+            `reviews/${encodeURIComponent(review.id)}/decision`,
+            'approval.resolve',
+            { approvalDigest: review.approvalDigest, choice },
+            review.revision,
+            inspectOnly,
+          );
+          await exact.reload();
+        }}
+      />
+    </>
   );
 }
 

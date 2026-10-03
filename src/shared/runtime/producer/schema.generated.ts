@@ -3,6 +3,24 @@
 export const producerSchema = {
   "methods": [
     {
+      "name": "client.capabilities",
+      "summary": "What the calling client handles, sent once per connection (after gateway.ready); returns the server→client request methods this backend may send.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ClientCapabilitiesParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ClientCapabilitiesResult"
+        }
+      }
+    },
+    {
       "name": "runtime.approval.get",
       "summary": "Read one exact owner/session approval and retained review bytes plus durable decision. Never resolve, consume or dispatch on recovery.",
       "params": [
@@ -399,6 +417,96 @@ export const producerSchema = {
       }
     },
     {
+      "name": "runtime.dots.effect.reconcile",
+      "summary": "",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/DotsReconcileParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DotsEffectResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.dots.page.prepare",
+      "summary": "",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/DotsPagePrepareParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DotsPreparedResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.dots.page.publish",
+      "summary": "",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/DotsPagePublishParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DotsEffectResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.dots.register",
+      "summary": "Register the owned current stdio peer's native adapter; does not provision credentials or replay effects.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/DotsRegistrationParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DotsRegistrationResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.effect.get",
+      "summary": "Inspect one owned effect and its bounded receipt metadata without exposing private input or paths.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeEffectParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeEffectGetResult"
+        }
+      }
+    },
+    {
       "name": "runtime.effects.list",
       "summary": "Read an owned oldest-first bounded effect snapshot, never a claim of complete history.",
       "params": [
@@ -525,6 +633,24 @@ export const producerSchema = {
       }
     },
     {
+      "name": "runtime.project.get",
+      "summary": "",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeProjectParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeProjectResult"
+        }
+      }
+    },
+    {
       "name": "runtime.result.get",
       "summary": "Read bounded digest-checked immutable result bytes without executing or delivering work.",
       "params": [
@@ -561,8 +687,135 @@ export const producerSchema = {
       }
     }
   ],
+  "serverRequests": [
+    {
+      "name": "dots.approval",
+      "summary": "",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/DotsApprovalRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DotsApprovalResult"
+        }
+      }
+    },
+    {
+      "name": "dots.effect.dispatch",
+      "summary": "",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/DotsDispatchRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DotsEffectReceipt"
+        }
+      }
+    },
+    {
+      "name": "dots.effect.inspect",
+      "summary": "",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/DotsInspectRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DotsEffectReceipt"
+        }
+      }
+    },
+    {
+      "name": "dots.page.read",
+      "summary": "",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/DotsPageReadRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DotsPageReadResult"
+        }
+      }
+    }
+  ],
+  "notifications": [
+    {
+      "name": "request.cancel",
+      "summary": "The backend withdrew an open server→client request; clear the matching card only.",
+      "params": [
+        {
+          "name": "payload",
+          "schema": {
+            "$ref": "#/components/schemas/RequestCancelPayload"
+          }
+        }
+      ]
+    }
+  ],
   "components": {
     "schemas": {
+      "ClientCapabilitiesParams": {
+        "additionalProperties": false,
+        "properties": {
+          "server_requests": {
+            "default": false,
+            "title": "Server Requests",
+            "type": "boolean"
+          },
+          "dots_native": {
+            "default": false,
+            "title": "Dots Native",
+            "type": "boolean"
+          }
+        },
+        "title": "ClientCapabilitiesParams",
+        "type": "object"
+      },
+      "ClientCapabilitiesResult": {
+        "additionalProperties": false,
+        "properties": {
+          "server_requests": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Server Requests",
+            "type": "array"
+          },
+          "declines_not_shown": {
+            "default": false,
+            "title": "Declines Not Shown",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "server_requests"
+        ],
+        "title": "ClientCapabilitiesResult",
+        "type": "object"
+      },
       "RuntimeApprovalGetParams": {
         "additionalProperties": false,
         "properties": {
@@ -3326,7 +3579,7 @@ export const producerSchema = {
         "title": "RuntimeDeliveryParams",
         "type": "object"
       },
-      "RuntimeEffectListParams": {
+      "DotsReconcileParams": {
         "additionalProperties": false,
         "properties": {
           "session_id": {
@@ -3340,7 +3593,86 @@ export const producerSchema = {
             "title": "Schema Version",
             "type": "integer"
           },
-          "run_id": {
+          "effect_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Effect Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "effect_id"
+        ],
+        "title": "DotsReconcileParams",
+        "type": "object"
+      },
+      "DotsEffectResult": {
+        "additionalProperties": false,
+        "properties": {
+          "effect_id": {
+            "title": "Effect Id",
+            "type": "string"
+          },
+          "operation_id": {
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "prepared",
+              "dispatched",
+              "confirmed",
+              "failed",
+              "outcome_unknown",
+              "reconciliation_required"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DotsEffectReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "replay_permitted": {
+            "const": false,
+            "default": false,
+            "title": "Replay Permitted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "effect_id",
+          "operation_id",
+          "state",
+          "receipt"
+        ],
+        "title": "DotsEffectResult",
+        "type": "object"
+      },
+      "DotsEffectReceipt": {
+        "additionalProperties": false,
+        "properties": {
+          "identity": {
+            "$ref": "#/components/schemas/DotsEffectIdentity"
+          },
+          "state": {
+            "enum": [
+              "committed",
+              "not_applied",
+              "outcome_unknown"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "receipt_id": {
             "anyOf": [
               {
                 "maxLength": 256,
@@ -3352,59 +3684,651 @@ export const producerSchema = {
               }
             ],
             "default": null,
-            "title": "Run Id"
+            "title": "Receipt Id"
           },
-          "limit": {
-            "default": 100,
-            "maximum": 200,
-            "minimum": 1,
-            "title": "Limit",
+          "content_sha256": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Content Sha256"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Version"
+          },
+          "result_sha256": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Result Sha256"
+          },
+          "reason": {
+            "enum": [
+              "committed",
+              "conflict",
+              "grant_revoked",
+              "takeover",
+              "stale_snapshot",
+              "unavailable",
+              "unknown"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "identity",
+          "state",
+          "reason"
+        ],
+        "title": "DotsEffectReceipt",
+        "type": "object"
+      },
+      "DotsEffectIdentity": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
             "type": "integer"
           },
-          "unresolved_only": {
-            "default": false,
-            "title": "Unresolved Only",
-            "type": "boolean"
+          "principal_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Principal Id",
+            "type": "string"
+          },
+          "profile_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Profile Id",
+            "type": "string"
+          },
+          "agent_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "runtime_session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Runtime Session Id",
+            "type": "string"
+          },
+          "run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Run Id",
+            "type": "string"
+          },
+          "operation_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "effect_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Effect Id",
+            "type": "string"
+          },
+          "approval_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "approval_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Approval Digest",
+            "type": "string"
+          },
+          "action_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Action Digest",
+            "type": "string"
+          },
+          "input_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Input Digest",
+            "type": "string"
+          },
+          "policy_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Policy Digest",
+            "type": "string"
+          },
+          "policy_version": {
+            "title": "Policy Version",
+            "type": "string"
+          },
+          "generation": {
+            "minimum": 0,
+            "title": "Generation",
+            "type": "integer"
+          },
+          "adapter_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Adapter Id",
+            "type": "string"
+          },
+          "adapter_kind": {
+            "enum": [
+              "page",
+              "computer"
+            ],
+            "title": "Adapter Kind",
+            "type": "string"
+          },
+          "grant_revision": {
+            "minimum": 0,
+            "title": "Grant Revision",
+            "type": "integer"
+          },
+          "scope_json": {
+            "maxLength": 8192,
+            "title": "Scope Json",
+            "type": "string"
+          },
+          "content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Sha256",
+            "type": "string"
+          },
+          "content_size": {
+            "minimum": 0,
+            "title": "Content Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "principal_id",
+          "profile_id",
+          "agent_id",
+          "runtime_session_id",
+          "run_id",
+          "operation_id",
+          "effect_id",
+          "approval_id",
+          "approval_digest",
+          "action_digest",
+          "input_digest",
+          "policy_digest",
+          "policy_version",
+          "generation",
+          "adapter_id",
+          "adapter_kind",
+          "grant_revision",
+          "scope_json",
+          "content_sha256",
+          "content_size"
+        ],
+        "title": "DotsEffectIdentity",
+        "type": "object"
+      },
+      "DotsPagePrepareParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "command_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Command Id",
+            "type": "string"
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/DotsPageProposal"
           }
         },
         "required": [
           "session_id",
-          "schema_version"
+          "schema_version",
+          "command_id",
+          "proposal"
         ],
-        "title": "RuntimeEffectListParams",
+        "title": "DotsPagePrepareParams",
         "type": "object"
       },
-      "RuntimeEffectListResult": {
+      "DotsPageProposal": {
         "additionalProperties": false,
         "properties": {
-          "effects": {
-            "items": {
-              "$ref": "#/components/schemas/RuntimeEffectRecord"
-            },
-            "title": "Effects",
-            "type": "array"
+          "kind": {
+            "const": "page",
+            "default": "page",
+            "title": "Kind",
+            "type": "string"
           },
-          "limit": {
-            "title": "Limit",
+          "store_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Store Id",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "space_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Space Id",
+            "type": "string"
+          },
+          "page_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Page Id",
+            "type": "string"
+          },
+          "expected_head_version": {
+            "minimum": 0,
+            "title": "Expected Head Version",
             "type": "integer"
           },
-          "truncated": {
-            "title": "Truncated",
-            "type": "boolean"
+          "expected_grant_revision": {
+            "minimum": 0,
+            "title": "Expected Grant Revision",
+            "type": "integer"
           },
-          "complete": {
-            "const": false,
-            "title": "Complete",
+          "document": {
+            "$ref": "#/components/schemas/DotsPageDocument"
+          }
+        },
+        "required": [
+          "store_id",
+          "project_id",
+          "space_id",
+          "page_id",
+          "expected_head_version",
+          "expected_grant_revision",
+          "document"
+        ],
+        "title": "DotsPageProposal",
+        "type": "object"
+      },
+      "DotsPageDocument": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "content": {
+            "maxLength": 24000,
+            "title": "Content",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "archived": {
+            "title": "Archived",
             "type": "boolean"
           }
         },
         "required": [
-          "effects",
-          "limit",
-          "truncated",
-          "complete"
+          "title",
+          "content",
+          "parent_id",
+          "archived"
         ],
-        "title": "RuntimeEffectListResult",
+        "title": "DotsPageDocument",
+        "type": "object"
+      },
+      "DotsPreparedResult": {
+        "additionalProperties": false,
+        "properties": {
+          "command_id": {
+            "title": "Command Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "operation_id": {
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "action_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Action Digest",
+            "type": "string"
+          },
+          "input_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Input Digest",
+            "type": "string"
+          },
+          "content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Sha256",
+            "type": "string"
+          },
+          "approval_id": {
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "approval_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Approval Digest",
+            "type": "string"
+          },
+          "expires_at": {
+            "title": "Expires At",
+            "type": "number"
+          }
+        },
+        "required": [
+          "command_id",
+          "run_id",
+          "operation_id",
+          "action_digest",
+          "input_digest",
+          "content_sha256",
+          "approval_id",
+          "approval_digest",
+          "expires_at"
+        ],
+        "title": "DotsPreparedResult",
+        "type": "object"
+      },
+      "DotsPagePublishParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "command_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Command Id",
+            "type": "string"
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/DotsPageProposal"
+          },
+          "approval_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "approval_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Approval Digest",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "command_id",
+          "proposal",
+          "approval_id",
+          "approval_digest"
+        ],
+        "title": "DotsPagePublishParams",
+        "type": "object"
+      },
+      "DotsRegistrationParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "adapter_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Adapter Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "page",
+              "computer"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Expected Revision"
+          },
+          "revision": {
+            "minimum": 0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "project_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Project Ids",
+            "type": "array"
+          },
+          "space_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Space Ids",
+            "type": "array"
+          },
+          "actions": {
+            "default": [],
+            "items": {
+              "enum": [
+                "navigate",
+                "read",
+                "snapshot",
+                "screenshot",
+                "click",
+                "type",
+                "key",
+                "scroll",
+                "files_list",
+                "files_read",
+                "files_write",
+                "exec"
+              ],
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Actions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "adapter_id",
+          "kind",
+          "revision",
+          "enabled"
+        ],
+        "title": "DotsRegistrationParams",
+        "type": "object"
+      },
+      "DotsRegistrationResult": {
+        "additionalProperties": false,
+        "properties": {
+          "adapter_id": {
+            "title": "Adapter Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "page",
+              "computer"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "registered": {
+            "const": true,
+            "title": "Registered",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "adapter_id",
+          "kind",
+          "revision",
+          "enabled",
+          "agent_id",
+          "registered"
+        ],
+        "title": "DotsRegistrationResult",
+        "type": "object"
+      },
+      "RuntimeEffectParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "effect_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Effect Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "effect_id"
+        ],
+        "title": "RuntimeEffectParams",
+        "type": "object"
+      },
+      "RuntimeEffectGetResult": {
+        "additionalProperties": false,
+        "properties": {
+          "effect": {
+            "$ref": "#/components/schemas/RuntimeEffectRecord"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeEffectEvidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          }
+        },
+        "required": [
+          "effect",
+          "evidence"
+        ],
+        "title": "RuntimeEffectGetResult",
         "type": "object"
       },
       "RuntimeEffectRecord": {
@@ -3528,6 +4452,154 @@ export const producerSchema = {
           "replay_permitted"
         ],
         "title": "RuntimeEffectRecord",
+        "type": "object"
+      },
+      "RuntimeEffectEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "sequence": {
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "generation": {
+            "title": "Generation",
+            "type": "integer"
+          },
+          "from_state": {
+            "enum": [
+              "prepared",
+              "dispatched",
+              "confirmed",
+              "failed",
+              "outcome_unknown",
+              "reconciliation_required"
+            ],
+            "title": "From State",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "prepared",
+              "dispatched",
+              "confirmed",
+              "failed",
+              "outcome_unknown",
+              "reconciliation_required"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "number"
+          },
+          "receipt_available": {
+            "title": "Receipt Available",
+            "type": "boolean"
+          },
+          "receipt_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receipt Sha256"
+          }
+        },
+        "required": [
+          "sequence",
+          "generation",
+          "from_state",
+          "state",
+          "created_at",
+          "receipt_available",
+          "receipt_sha256"
+        ],
+        "title": "RuntimeEffectEvidence",
+        "type": "object"
+      },
+      "RuntimeEffectListParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Run Id"
+          },
+          "limit": {
+            "default": 100,
+            "maximum": 200,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "unresolved_only": {
+            "default": false,
+            "title": "Unresolved Only",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version"
+        ],
+        "title": "RuntimeEffectListParams",
+        "type": "object"
+      },
+      "RuntimeEffectListResult": {
+        "additionalProperties": false,
+        "properties": {
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeEffectRecord"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          },
+          "complete": {
+            "const": false,
+            "title": "Complete",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "effects",
+          "limit",
+          "truncated",
+          "complete"
+        ],
+        "title": "RuntimeEffectListResult",
         "type": "object"
       },
       "RuntimeEventsSinceParams": {
@@ -6872,6 +7944,344 @@ export const producerSchema = {
         "title": "MissionListResult",
         "type": "object"
       },
+      "RuntimeProjectParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "project_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "project_id"
+        ],
+        "title": "RuntimeProjectParams",
+        "type": "object"
+      },
+      "RuntimeProjectResult": {
+        "additionalProperties": false,
+        "properties": {
+          "project": {
+            "$ref": "#/components/schemas/RuntimeProjectRecord"
+          }
+        },
+        "required": [
+          "project"
+        ],
+        "title": "RuntimeProjectResult",
+        "type": "object"
+      },
+      "RuntimeProjectRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "board_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Board Slug"
+          },
+          "primary_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Path"
+          },
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "integer"
+          },
+          "folders": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeProjectFolder"
+            },
+            "title": "Folders",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "owner_principal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Principal Id"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "source_refs": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectSourceRef"
+            },
+            "title": "Source Refs",
+            "type": "array"
+          },
+          "canonical_artifact_refs": {
+            "items": {
+              "$ref": "#/components/schemas/ArtifactVersionRef"
+            },
+            "title": "Canonical Artifact Refs",
+            "type": "array"
+          },
+          "active_mission_refs": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectMissionRef"
+            },
+            "title": "Active Mission Refs",
+            "type": "array"
+          },
+          "grants": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectGrant"
+            },
+            "title": "Grants",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "slug",
+          "name",
+          "description",
+          "icon",
+          "color",
+          "board_slug",
+          "primary_path",
+          "archived",
+          "created_at",
+          "folders",
+          "revision",
+          "owner_principal_id",
+          "purpose",
+          "source_refs",
+          "canonical_artifact_refs",
+          "active_mission_refs",
+          "grants"
+        ],
+        "title": "RuntimeProjectRecord",
+        "type": "object"
+      },
+      "RuntimeProjectFolder": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "is_primary": {
+            "title": "Is Primary",
+            "type": "boolean"
+          },
+          "added_at": {
+            "title": "Added At",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "path",
+          "label",
+          "is_primary",
+          "added_at"
+        ],
+        "title": "RuntimeProjectFolder",
+        "type": "object"
+      },
+      "ProjectSourceRef": {
+        "additionalProperties": false,
+        "properties": {
+          "capture_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Capture Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "capture_id"
+        ],
+        "title": "ProjectSourceRef",
+        "type": "object"
+      },
+      "ArtifactVersionRef": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Artifact Id",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "artifact_id",
+          "version"
+        ],
+        "title": "ArtifactVersionRef",
+        "type": "object"
+      },
+      "ProjectMissionRef": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "run_id"
+        ],
+        "title": "ProjectMissionRef",
+        "type": "object"
+      },
+      "ProjectGrant": {
+        "additionalProperties": false,
+        "properties": {
+          "principal_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Principal Id",
+            "type": "string"
+          },
+          "agent_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "permissions": {
+            "items": {
+              "enum": [
+                "read",
+                "write",
+                "share"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Permissions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "principal_id",
+          "agent_id",
+          "permissions"
+        ],
+        "title": "ProjectGrant",
+        "type": "object"
+      },
       "RuntimeResultGetParams": {
         "additionalProperties": false,
         "properties": {
@@ -7017,6 +8427,637 @@ export const producerSchema = {
           "schema_version"
         ],
         "title": "RuntimeSessionParams",
+        "type": "object"
+      },
+      "DotsApprovalRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "authority": {
+            "$ref": "#/components/schemas/DotsReadAuthority"
+          },
+          "approval_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "approval_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Approval Digest",
+            "type": "string"
+          },
+          "action_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Action Digest",
+            "type": "string"
+          },
+          "expires_at": {
+            "title": "Expires At",
+            "type": "number"
+          }
+        },
+        "required": [
+          "session_id",
+          "authority",
+          "approval_id",
+          "approval_digest",
+          "action_digest",
+          "expires_at"
+        ],
+        "title": "DotsApprovalRequest",
+        "type": "object"
+      },
+      "DotsReadAuthority": {
+        "additionalProperties": false,
+        "properties": {
+          "principal_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Principal Id",
+            "type": "string"
+          },
+          "profile_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Profile Id",
+            "type": "string"
+          },
+          "agent_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Agent Id",
+            "type": "string"
+          },
+          "runtime_session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Runtime Session Id",
+            "type": "string"
+          },
+          "run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Run Id",
+            "type": "string"
+          },
+          "policy_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Policy Digest",
+            "type": "string"
+          },
+          "generation": {
+            "minimum": 0,
+            "title": "Generation",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "principal_id",
+          "profile_id",
+          "agent_id",
+          "runtime_session_id",
+          "run_id",
+          "policy_digest",
+          "generation"
+        ],
+        "title": "DotsReadAuthority",
+        "type": "object"
+      },
+      "DotsApprovalResult": {
+        "additionalProperties": false,
+        "properties": {
+          "approval_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "approval_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Approval Digest",
+            "type": "string"
+          },
+          "choice": {
+            "enum": [
+              "once",
+              "deny"
+            ],
+            "title": "Choice",
+            "type": "string"
+          }
+        },
+        "required": [
+          "approval_id",
+          "approval_digest",
+          "choice"
+        ],
+        "title": "DotsApprovalResult",
+        "type": "object"
+      },
+      "DotsDispatchRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "identity": {
+            "$ref": "#/components/schemas/DotsEffectIdentity"
+          },
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DotsPageProposal"
+              },
+              {
+                "$ref": "#/components/schemas/DotsComputerProposal"
+              }
+            ],
+            "title": "Proposal"
+          },
+          "content_json": {
+            "maxLength": 65536,
+            "title": "Content Json",
+            "type": "string"
+          },
+          "deadline_at": {
+            "title": "Deadline At",
+            "type": "number"
+          }
+        },
+        "required": [
+          "session_id",
+          "identity",
+          "proposal",
+          "content_json",
+          "deadline_at"
+        ],
+        "title": "DotsDispatchRequest",
+        "type": "object"
+      },
+      "DotsComputerProposal": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "computer",
+            "default": "computer",
+            "title": "Kind",
+            "type": "string"
+          },
+          "executor_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Executor Id",
+            "type": "string"
+          },
+          "expected_grant_revision": {
+            "minimum": 0,
+            "title": "Expected Grant Revision",
+            "type": "integer"
+          },
+          "expected_control_revision": {
+            "minimum": 0,
+            "title": "Expected Control Revision",
+            "type": "integer"
+          },
+          "snapshot_id": {
+            "minimum": 0,
+            "title": "Snapshot Id",
+            "type": "integer"
+          },
+          "snapshot_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Snapshot Sha256",
+            "type": "string"
+          },
+          "action": {
+            "enum": [
+              "navigate",
+              "read",
+              "snapshot",
+              "screenshot",
+              "click",
+              "type",
+              "key",
+              "scroll",
+              "files_list",
+              "files_read",
+              "files_write",
+              "exec"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DotsEmptyInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsNavigateInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsClickInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsTypeInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsKeyInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsScrollInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsFilesListInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsFilesReadInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsFilesWriteInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsExecInput"
+              }
+            ],
+            "title": "Input"
+          }
+        },
+        "required": [
+          "executor_id",
+          "expected_grant_revision",
+          "expected_control_revision",
+          "snapshot_id",
+          "snapshot_sha256",
+          "action",
+          "input"
+        ],
+        "title": "DotsComputerProposal",
+        "type": "object"
+      },
+      "DotsEmptyInput": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "DotsEmptyInput",
+        "type": "object"
+      },
+      "DotsNavigateInput": {
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "DotsNavigateInput",
+        "type": "object"
+      },
+      "DotsClickInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ref": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Ref",
+            "type": "string"
+          },
+          "snapshotId": {
+            "minimum": 0,
+            "title": "Snapshotid",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ref",
+          "snapshotId"
+        ],
+        "title": "DotsClickInput",
+        "type": "object"
+      },
+      "DotsTypeInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ref": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Ref",
+            "type": "string"
+          },
+          "snapshotId": {
+            "minimum": 0,
+            "title": "Snapshotid",
+            "type": "integer"
+          },
+          "text": {
+            "maxLength": 16000,
+            "title": "Text",
+            "type": "string"
+          },
+          "submit": {
+            "default": false,
+            "title": "Submit",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ref",
+          "snapshotId",
+          "text"
+        ],
+        "title": "DotsTypeInput",
+        "type": "object"
+      },
+      "DotsKeyInput": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "title": "DotsKeyInput",
+        "type": "object"
+      },
+      "DotsScrollInput": {
+        "additionalProperties": false,
+        "properties": {
+          "deltaY": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "ge": -10000,
+            "le": 10000,
+            "title": "Deltay"
+          }
+        },
+        "required": [
+          "deltaY"
+        ],
+        "title": "DotsScrollInput",
+        "type": "object"
+      },
+      "DotsFilesListInput": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "default": "",
+            "maxLength": 1024,
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "title": "DotsFilesListInput",
+        "type": "object"
+      },
+      "DotsFilesReadInput": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "DotsFilesReadInput",
+        "type": "object"
+      },
+      "DotsFilesWriteInput": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Path",
+            "type": "string"
+          },
+          "contents": {
+            "maxLength": 24000,
+            "title": "Contents",
+            "type": "string"
+          },
+          "append": {
+            "default": false,
+            "title": "Append",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "path",
+          "contents"
+        ],
+        "title": "DotsFilesWriteInput",
+        "type": "object"
+      },
+      "DotsExecInput": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Command",
+            "type": "string"
+          },
+          "timeoutMs": {
+            "default": 30000,
+            "maximum": 60000,
+            "minimum": 1000,
+            "title": "Timeoutms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "command"
+        ],
+        "title": "DotsExecInput",
+        "type": "object"
+      },
+      "DotsInspectRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "identity": {
+            "$ref": "#/components/schemas/DotsEffectIdentity"
+          },
+          "deadline_at": {
+            "title": "Deadline At",
+            "type": "number"
+          }
+        },
+        "required": [
+          "session_id",
+          "identity",
+          "deadline_at"
+        ],
+        "title": "DotsInspectRequest",
+        "type": "object"
+      },
+      "DotsPageReadRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "authority": {
+            "$ref": "#/components/schemas/DotsReadAuthority"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/DotsPageReadScope"
+          },
+          "deadline_at": {
+            "title": "Deadline At",
+            "type": "number"
+          }
+        },
+        "required": [
+          "session_id",
+          "authority",
+          "scope",
+          "deadline_at"
+        ],
+        "title": "DotsPageReadRequest",
+        "type": "object"
+      },
+      "DotsPageReadScope": {
+        "additionalProperties": false,
+        "properties": {
+          "store_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Store Id",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "space_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Space Id",
+            "type": "string"
+          },
+          "page_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Page Id",
+            "type": "string"
+          },
+          "expected_grant_revision": {
+            "minimum": 0,
+            "title": "Expected Grant Revision",
+            "type": "integer"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Version"
+          }
+        },
+        "required": [
+          "store_id",
+          "project_id",
+          "space_id",
+          "page_id",
+          "expected_grant_revision"
+        ],
+        "title": "DotsPageReadScope",
+        "type": "object"
+      },
+      "DotsPageReadResult": {
+        "additionalProperties": false,
+        "properties": {
+          "authority": {
+            "$ref": "#/components/schemas/DotsReadAuthority"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/DotsPageReadScope"
+          },
+          "version": {
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          },
+          "content_json": {
+            "maxLength": 65536,
+            "title": "Content Json",
+            "type": "string"
+          },
+          "content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "authority",
+          "scope",
+          "version",
+          "content_json",
+          "content_sha256"
+        ],
+        "title": "DotsPageReadResult",
+        "type": "object"
+      },
+      "RequestCancelPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "method",
+          "reason"
+        ],
+        "title": "RequestCancelPayload",
         "type": "object"
       }
     }

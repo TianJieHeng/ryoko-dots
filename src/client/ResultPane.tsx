@@ -70,7 +70,7 @@ export function ResultPane({
         </button>
       </div>
       {resultTab === 'Artifacts' ? (
-        <ArtifactLibrary connection={runtime} />
+        <ArtifactLibrary connection={runtime} dotId={computerDot?.id} />
       ) : resultTab === 'Computer' ? (
         <>
           <label className="computer-dot-picker">
