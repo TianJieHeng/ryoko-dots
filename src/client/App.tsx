@@ -1,3 +1,5 @@
+import { useConversations } from './runtime/use-conversations';
+import { createConversation } from './runtime/conversations';
 import { useRuntime } from './runtime/use-runtime';
 import { RuntimeStatus } from './runtime/RuntimeStatus';
 import { subscribeAuthentication } from './api';
@@ -5,7 +7,6 @@ import { openPageLink } from './page-navigation';
 import { SpaceNav } from './SpaceNav';
 import { SpaceWorkspace } from './SpaceWorkspace';
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { CopilotKitProvider } from '@copilotkit/react-core/v2';
 import {
   ArrowUp,
   ArrowUpRight,
@@ -27,14 +28,13 @@ import {
   X,
 } from 'lucide-react';
 import type {
-  Conversation,
   Detail,
   Dot,
   Result,
   State,
   WorkspaceState,
 } from '../shared/types';
-import { api, ApiError, authHeaders, setToken } from './api';
+import { api, ApiError, setToken } from './api';
 import { Mascot } from './Mascot';
 import { Chat } from './Chat';
 import { ThreadList } from './ThreadList';
@@ -48,6 +48,7 @@ export function App() {
   const [workspace, setWorkspace] = useState<WorkspaceState>();
   const [selectedDot, setSelectedDot] = useState('');
   const runtime = useRuntime(selectedDot);
+  const conversationList = useConversations(selectedDot, runtime);
   const [selectedThread, setSelectedThread] = useState<string>();
   const [view, rawSetView] = useState<'chat' | 'tasks' | 'memories' | 'space'>(
     'chat',
@@ -187,7 +188,7 @@ export function App() {
   const dot =
     workspace?.dots.find((item) => item.id === selectedDot) ??
     workspace?.dots[0];
-  const thread = workspace?.conversations.find(
+  const thread = conversationList.conversations.find(
     (item) => item.id === selectedThread && item.dotId === dot?.id,
   );
   const configured =
@@ -195,7 +196,7 @@ export function App() {
   const chooseDot = (next: Dot) => {
     setSelectedDot(next.id);
     setSelectedThread(
-      workspace?.conversations.find((item) => item.dotId === next.id)?.id,
+      conversationList.conversations.find((item) => item.dotId === next.id)?.id,
     );
     setView('chat');
     setMobile(false);
@@ -206,10 +207,13 @@ export function App() {
     setBusy(true);
     setError('');
     try {
-      const next = await api<Conversation>('/conversations', 'POST', {
-        dotId: dot.id,
-        title: text?.slice(0, 80) || 'A new thought',
-      });
+      if (!runtime.setup?.scope) return;
+      const next = await createConversation(
+        runtime.setup.scope,
+        dot.id,
+        text?.slice(0, 80) || 'A new thought',
+      );
+      await conversationList.reload();
       await refresh();
       setSelectedThread(next.id);
       setPendingPrompt(text);
@@ -430,10 +434,14 @@ export function App() {
           <ThreadList
             dotId={dot.id}
             dots={workspace.dots}
-            local={workspace.conversations}
+            local={conversationList.conversations}
+            hasMore={conversationList.hasMore}
+            loading={conversationList.busy}
+            error={conversationList.error}
+            onLoadMore={conversationList.loadMore}
             selected={view === 'chat' ? selectedThread : undefined}
             onSelect={(id) => {
-              const conversation = workspace.conversations.find(
+              const conversation = conversationList.conversations.find(
                 (item) => item.id === id,
               );
               if (conversation) setSelectedDot(conversation.dotId);
@@ -581,7 +589,9 @@ export function App() {
             onRefresh={refresh}
             onSchedule={(threadId) => setDialog({ type: 'schedule', threadId })}
             onThread={(id) => {
-              const target = workspace.conversations.find((t) => t.id === id);
+              const target = conversationList.conversations.find(
+                (t) => t.id === id,
+              );
               if (target) {
                 setView('chat');
                 setSelectedDot(target.dotId);
@@ -907,11 +917,5 @@ export function App() {
       )}
     </div>
   );
-  return configured ? (
-    <CopilotKitProvider runtimeUrl="/api/copilotkit" headers={authHeaders()}>
-      {content}
-    </CopilotKitProvider>
-  ) : (
-    content
-  );
+  return content;
 }

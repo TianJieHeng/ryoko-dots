@@ -4,7 +4,8 @@ import type { Conversation, WorkspaceState } from '../shared/types';
 import type { Page } from '../server/pages';
 import { Chat } from './Chat';
 import { PageChatRequests } from './page-chat-requests';
-import { api } from './api';
+import { useRuntime } from './runtime/use-runtime';
+import { createConversation } from './runtime/conversations';
 export function PageConversation({
   page,
   workspace,
@@ -31,6 +32,7 @@ export function PageConversation({
   );
   const [dotId, setDotId] = useState('');
   const dot = dots.find((dot) => dot.id === dotId) ?? dots[0];
+  const runtime = useRuntime(dot?.id);
   const [thread, setThread] = useState<Conversation>();
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<string>();
@@ -50,7 +52,13 @@ export function PageConversation({
     return () => current.select('');
   }, []);
   const open = async () => {
-    if (!dot || busy) return;
+    if (
+      !dot ||
+      busy ||
+      !runtime.available('conversations') ||
+      !runtime.setup?.scope
+    )
+      return;
     setBusy(true);
     setError('');
     const prompt = draft.trim();
@@ -61,11 +69,10 @@ export function PageConversation({
           throw new Error(
             'Save or resolve your document changes before starting page chat.',
           );
-        return api<Conversation>(
-          `/spaces/${page.spaceId}/pages/${page.id}/conversation`,
-          'POST',
-          { dotId: dot.id },
-        );
+        return createConversation(runtime.setup!.scope!, dot.id, page.title, {
+          id: page.id,
+          spaceId: page.spaceId,
+        });
       },
       {
         success: (next) => {
@@ -122,7 +129,7 @@ export function PageConversation({
         <button onClick={onCreateDot}>Create specialist</button>
       </div>
     );
-  if (workspace.setup.missing.length)
+  if (!runtime.available('conversations'))
     return (
       <div className="document-chat-setup">
         <span>Connect your assistant to chat about this page.</span>
