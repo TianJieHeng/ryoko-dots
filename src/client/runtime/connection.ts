@@ -1,4 +1,10 @@
-import { setupSchema, type RuntimeSetup } from '../../shared/runtime/contracts';
+import { api } from '../api';
+import {
+  sameScope,
+  setupSchema,
+  type RuntimeScope,
+  type RuntimeSetup,
+} from '../../shared/runtime/contracts';
 
 /** Local request fences do not grant authority; the gateway still validates scope. */
 export class RequestGeneration {
@@ -33,4 +39,21 @@ export function connectionState(setup: RuntimeSetup): ConnectionState {
   if (states.includes('disconnected')) return 'disconnected';
   if (states.includes('degraded')) return 'degraded';
   return 'ready';
+}
+
+/** Explicit user action only. Reading setup/history never initializes execution. */
+export async function connectConversation(
+  conversationId: string,
+  scope: RuntimeScope,
+) {
+  const setup = parseSetup(
+    await api<unknown>(
+      `/runtime/conversations/${encodeURIComponent(conversationId)}/connect`,
+      'POST',
+      {},
+    ),
+  );
+  if (!sameScope(scope, setup.scope))
+    throw new Error('Connected runtime belongs to another binding.');
+  return setup;
 }

@@ -24,7 +24,7 @@ interface Pending {
   reject: (error: Error) => void;
   timer: ReturnType<typeof setTimeout>;
 }
-/** Server-only canonical conversation adapter. No generic RPC or execution route. */
+/** Server-only, schema-pinned canonical and command adapter. No arbitrary RPC proxy. */
 export class ConversationRpc {
   private buffer = Buffer.alloc(0);
   private pending = new Map<string, Pending>();
@@ -65,7 +65,25 @@ export class ConversationRpc {
         frame.jsonrpc !== '2.0'
       )
         return this.close();
-      // Drop every notification, including private/in-memory output.
+      // Private live output is never projected. Server requests fail closed.
+      if ('method' in frame && 'id' in frame) {
+        if (
+          (typeof frame.id !== 'string' && typeof frame.id !== 'number') ||
+          this.output.writableLength > this.limits.bytes
+        )
+          return this.close();
+        this.output.write(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: frame.id,
+            error: {
+              code: -32601,
+              message: 'Unsupported client method; no approval granted.',
+            },
+          }) + '\n',
+        );
+        continue;
+      }
       if (!('id' in frame)) continue;
       if (typeof frame.id !== 'string') return this.close();
       const pending = this.pending.get(frame.id);
@@ -132,6 +150,13 @@ export class ConversationRpc {
   };
 }
 export const conversationMethods: ConversationMethod[] = [
+  'runtime.capabilities',
+  'runtime.snapshot',
+  'runtime.events.since',
+  'runtime.command',
+  'runtime.command.receipt',
+  'runtime.conversation.command.receipt',
+  'runtime.conversation.bind',
   'runtime.conversation.capabilities',
   'runtime.conversation.create',
   'runtime.conversation.operation.get',

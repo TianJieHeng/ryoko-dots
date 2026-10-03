@@ -121,6 +121,7 @@ export const messageSchema = z.strictObject({
   internal: z.boolean(),
   committed: z.boolean(),
   chunk: transcriptChunkSchema.optional(),
+  commandId: id.nullable().optional(),
 });
 export type TranscriptMessage = z.infer<typeof messageSchema>;
 export const historySchema = z.strictObject({
@@ -153,6 +154,19 @@ export const receiptSchema = z.strictObject({
     'cancelled',
   ]),
   missionId: id.nullable(),
+  runId: id.nullable().default(null),
+  durableRevision: revision.default(0),
+  executionStatus: z
+    .enum([
+      'accepted',
+      'claimed',
+      'completed',
+      'failed',
+      'blocked',
+      'cancelled',
+    ])
+    .nullable()
+    .default(null),
   messageId: id.nullable(),
   reason: z.string().max(1000),
 });
@@ -203,6 +217,7 @@ export const commandIntentSchema = z.discriminatedUnion('operation', [
     text: z.string().trim().min(1).max(16000),
     sourceUrl: z
       .url()
+      .max(4096)
       .refine((value) => {
         const url = new URL(value);
         return (
@@ -216,13 +231,15 @@ export const commandIntentSchema = z.discriminatedUnion('operation', [
   z.strictObject({
     operation: z.literal('steer'),
     conversationId: id,
-    missionId: id,
+    runId: id,
+    expectedRevision: revision,
     text: z.string().trim().min(1).max(16000),
   }),
   z.strictObject({
     operation: z.literal('cancel'),
     conversationId: id,
-    missionId: id,
+    runId: id,
+    expectedRevision: revision,
   }),
 ]);
 export type CommandIntent = z.infer<typeof commandIntentSchema>;

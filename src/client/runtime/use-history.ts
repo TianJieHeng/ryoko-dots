@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  historySchema,
-  sameScope,
-  type RuntimeHistory,
-} from '../../shared/runtime/contracts';
+import type { RuntimeHistory } from '../../shared/runtime/contracts';
 import { api } from '../api';
-import { HistoryLimitError, mergeHistoryPage } from './projection';
+import { HistoryLimitError } from './projection';
+import {
+  HistoryTraversalError,
+  readHistoryTail,
+  reconcileHistory,
+} from './history-loader';
 import type { RuntimeConnection } from './use-runtime';
 
 type HistoryState = {
@@ -14,7 +15,6 @@ type HistoryState = {
   error: string;
   limitReached: boolean;
 };
-
 export function useHistory(
   conversationId: string,
   connection: RuntimeConnection,
@@ -30,72 +30,79 @@ export function useHistory(
   const currentValue = useRef(value);
   const [loading, setLoading] = useState(false);
   const generation = useRef(0);
-  const busy = useRef(false);
+  const inFlight = useRef<Promise<void> | undefined>(undefined);
+  const controller = useRef<AbortController | undefined>(undefined);
   const load = useCallback(
-    async (cursor?: string) => {
-      if (!scope || !ready || busy.current) return;
-      const previous = currentValue.current;
-      if (
-        cursor &&
-        (previous.key !== key ||
-          previous.limitReached ||
-          previous.history?.nextCursor !== cursor)
-      )
-        return;
+    (more = false): Promise<void> => {
+      if (!scope || !ready) return Promise.resolve();
+      if (inFlight.current) return inFlight.current;
+      const previous =
+        currentValue.current.key === key
+          ? currentValue.current
+          : { key, error: '', limitReached: false };
+      if (more && !previous.history?.nextCursor) return Promise.resolve();
       const current = generation.current;
-      busy.current = true;
+      const abort = new AbortController();
+      controller.current = abort;
       setLoading(true);
-      try {
-        const parsed = historySchema.parse(
-          await api(
-            `/runtime/conversations/${encodeURIComponent(conversationId)}/history${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`,
-          ),
-        );
-        if (generation.current !== current) return;
-        if (
-          !sameScope(scope, parsed.scope) ||
-          parsed.conversationId !== conversationId
-        )
-          throw new Error(
-            'History belongs to another conversation or binding.',
+      const task = (async () => {
+        try {
+          const fresh = await readHistoryTail(
+            scope,
+            conversationId,
+            (cursor) =>
+              api(
+                `/runtime/conversations/${encodeURIComponent(conversationId)}/history${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`,
+                'GET',
+                undefined,
+                abort.signal,
+              ),
+            more ? previous.history : undefined,
           );
-        if (cursor && parsed.nextCursor === cursor)
-          throw new Error('History cursor did not advance.');
-        // Validate and merge before setting React state so conflicting pages
-        // are caught here and leave the last good history/cursor untouched.
-        const history = mergeHistoryPage(
-          cursor ? previous.history : undefined,
-          parsed,
-        );
-        const next = { key, history, error: '', limitReached: false };
-        currentValue.current = next;
-        setValue(next);
-      } catch (cause) {
-        if (generation.current === current) {
+          if (generation.current !== current) return;
           const next = {
-            ...(previous.key === key ? previous : { key }),
             key,
+            history: reconcileHistory(previous.history, fresh),
+            error: '',
+            limitReached: false,
+          };
+          currentValue.current = next;
+          setValue(next);
+        } catch (cause) {
+          if (generation.current !== current || abort.signal.aborted) return;
+          // Keep the old loaded transcript intact on refresh failure. On initial
+          // traversal expose only validated contiguous pages, with a visible error.
+          const partial =
+            cause instanceof HistoryTraversalError ? cause.partial : undefined;
+          const next = {
+            ...previous,
+            history: more && partial ? partial : (previous.history ?? partial),
             error:
               cause instanceof Error
                 ? cause.message
                 : 'Conversation history unavailable.',
-            limitReached: cause instanceof HistoryLimitError,
+            limitReached:
+              cause instanceof HistoryLimitError ||
+              (cause instanceof HistoryTraversalError && cause.limitReached),
           };
           currentValue.current = next;
           setValue(next);
+        } finally {
+          if (generation.current === current) {
+            inFlight.current = undefined;
+            setLoading(false);
+          }
         }
-      } finally {
-        if (generation.current === current) {
-          busy.current = false;
-          setLoading(false);
-        }
-      }
+      })();
+      inFlight.current = task;
+      return task;
     },
     [key, ready, conversationId],
   );
   useEffect(() => {
     generation.current++;
-    busy.current = false;
+    controller.current?.abort();
+    inFlight.current = undefined;
     const next = { key, error: '', limitReached: false };
     currentValue.current = next;
     setValue(next);
@@ -103,7 +110,8 @@ export function useHistory(
     void load();
     return () => {
       generation.current++;
-      busy.current = false;
+      controller.current?.abort();
+      inFlight.current = undefined;
     };
   }, [key, ready, load]);
   const current =
@@ -114,9 +122,6 @@ export function useHistory(
     ...current,
     loading,
     reload: () => load(),
-    loadMore: () => {
-      const cursor = current.history?.nextCursor;
-      return cursor && !current.limitReached ? load(cursor) : Promise.resolve();
-    },
+    loadMore: () => load(true),
   };
 }

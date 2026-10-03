@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { api } from '../api';
 import {
   commandIntentSchema,
@@ -43,15 +44,11 @@ export async function prepareCommand(
   const validatedScope = scopeSchema.parse(scope);
   const validatedIntent = commandIntentSchema.parse(intent);
   const intentDigest = await digestIntent(validatedIntent);
-  const key = `ryoko-command:${JSON.stringify([
-    validatedScope.owner,
-    validatedScope.gateway,
-    validatedScope.agent,
-    validatedScope.project,
-    validatedScope.generation,
+  const key = preparedCommandKey(
+    validatedScope,
     validatedIntent.conversationId,
     intentDigest,
-  ])}`;
+  );
   const stored = storage.getItem(key);
   if (stored !== null) {
     const pending = pendingCommandSchema.parse(JSON.parse(stored));
@@ -82,7 +79,7 @@ async function validatePending(value: PendingCommand): Promise<PendingCommand> {
     throw new Error('Command intent does not match its persisted digest.');
   return pending;
 }
-function validateReceipt(
+export function validateReceipt(
   value: unknown,
   pending: PendingCommand,
 ): CommandReceipt {
@@ -90,7 +87,10 @@ function validateReceipt(
   if (
     !sameScope(receipt.scope, pending.scope) ||
     receipt.operationId !== pending.operationId ||
-    receipt.intentDigest !== pending.intentDigest
+    receipt.intentDigest !== pending.intentDigest ||
+    (pending.intent.operation !== 'submit' &&
+      receipt.runId !== null &&
+      receipt.runId !== pending.intent.runId)
   )
     throw new Error('Command receipt does not match this binding and intent.');
   return receipt;
@@ -122,4 +122,81 @@ export async function inspectCommand(
     `/runtime/commands/${encodeURIComponent(pending.operationId)}`,
   );
   return validateReceipt(result, pending);
+}
+
+function preparedCommandKey(
+  scope: RuntimeScope,
+  conversationId: string,
+  digest: string,
+) {
+  return `ryoko-command:${JSON.stringify([scope.owner, scope.gateway, scope.agent, scope.project, scope.generation, conversationId, digest])}`;
+}
+
+/** A confirmed admission may be intentionally submitted again with a new identity. */
+export function releasePreparedCommand(
+  pending: PendingCommand,
+  storage: Pick<Storage, 'getItem' | 'removeItem'> = sessionStorage,
+) {
+  const key = preparedCommandKey(
+    pending.scope,
+    pending.intent.conversationId,
+    pending.intentDigest,
+  );
+  const raw = storage.getItem(key);
+  if (
+    raw !== null &&
+    pendingCommandSchema.parse(JSON.parse(raw)).operationId ===
+      pending.operationId
+  )
+    storage.removeItem(key);
+}
+
+const recoveryPageSchema = z.strictObject({
+  version: z.literal(contractVersion),
+  scope: scopeSchema,
+  conversationId: z.string().min(1).max(256),
+  commands: z.array(pendingCommandSchema).max(10),
+  nextCursor: z.string().min(1).max(2048).nullable(),
+});
+/** Server-owned recovery survives browser storage loss. It never binds or dispatches. */
+export async function recoverCommandPage(
+  scope: RuntimeScope,
+  conversationId: string,
+  cursor?: string,
+) {
+  const page = recoveryPageSchema.parse(
+    await api<unknown>(
+      `/runtime/conversations/${encodeURIComponent(conversationId)}/commands${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`,
+    ),
+  );
+  if (
+    !sameScope(scope, page.scope) ||
+    page.conversationId !== conversationId ||
+    (cursor && page.nextCursor === cursor)
+  )
+    throw new Error(
+      'Command recovery does not match this conversation or cursor.',
+    );
+  for (const pending of page.commands) {
+    if (
+      !sameScope(scope, pending.scope) ||
+      pending.intent.conversationId !== conversationId
+    )
+      throw new Error('Recovered command belongs to another binding.');
+    await validatePending(pending);
+  }
+  return page;
+}
+/** Preserve the newest unresolved identity when importing a server recovery page. */
+export function retainPreparedCommand(
+  pending: PendingCommand,
+  storage: Pick<Storage, 'getItem' | 'setItem'> = sessionStorage,
+) {
+  const key = preparedCommandKey(
+    pending.scope,
+    pending.intent.conversationId,
+    pending.intentDigest,
+  );
+  if (storage.getItem(key) === null)
+    storage.setItem(key, JSON.stringify(pending));
 }

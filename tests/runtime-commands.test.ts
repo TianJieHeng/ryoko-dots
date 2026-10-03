@@ -44,6 +44,9 @@ function receipt(pending: PendingCommand) {
     intentDigest: pending.intentDigest,
     status: 'accepted',
     missionId: null,
+    runId: null,
+    durableRevision: 0,
+    executionStatus: null,
     messageId: null,
     reason: '',
   };

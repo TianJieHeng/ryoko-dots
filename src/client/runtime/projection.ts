@@ -198,6 +198,10 @@ export function mergeHistoryPage(
   }
   return {
     ...page,
+    // Journal watermark belongs to the start of this traversal, not a later
+    // transcript page. Otherwise events concurrent with pagination disappear.
+    sessionSequence: previous?.sessionSequence ?? page.sessionSequence,
+    runtimeCursor: previous ? previous.runtimeCursor : page.runtimeCursor,
     messages,
     truncated: !!previous?.truncated || page.truncated,
     interruption: page.interruption ?? previous?.interruption ?? null,

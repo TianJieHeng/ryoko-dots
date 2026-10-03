@@ -27,6 +27,7 @@ import {
   ConversationLedger,
   type Operation,
 } from './runtime/conversation-ledger.js';
+import { CommandService } from './runtime/command-service.js';
 import { RuntimeFailure } from './runtime/conversation-rpc.js';
 export type Guard = () => void;
 interface CreateIntent {
@@ -46,12 +47,33 @@ export const browserScope = (scope: VerifiedRuntimeScope): RuntimeScope => ({
 export class SelfHostedPlatform {
   private starting?: Promise<void>;
   readonly ledger: ConversationLedger;
+  readonly commands?: CommandService;
+
   constructor(
     readonly workspace: WorkspaceStore,
     database: string,
     readonly transport?: ConversationTransport,
   ) {
     this.ledger = new ConversationLedger(database, workspace.ownerId);
+    if (transport)
+      this.commands = new CommandService(
+        workspace,
+        database,
+        transport,
+        (id, auth, access) => this.conversation(id, auth, access),
+        (scope, auth, access) => this.guard(scope, auth, access),
+        (id) => {
+          const meta = this.ledger.metadata(id);
+          if (!meta?.pageId) return '';
+          const page = workspace.pages.get(meta.spaceId!, meta.pageId);
+          return JSON.stringify({
+            id: page.id,
+            title: page.title.slice(0, 500),
+            revision: page.revision,
+            content: page.content.slice(0, 12000),
+          });
+        },
+      );
   }
   async start() {
     if (!this.transport) return;
@@ -88,9 +110,14 @@ export class SelfHostedPlatform {
             'Stored runtime identity does not match the verified producer.',
             403,
           );
-    })());
+      this.commands?.startRecovery();
+    })().catch((error) => {
+      this.starting = undefined;
+      throw error;
+    }));
   }
   async stop() {
+    await this.commands?.stop();
     await this.transport?.stop();
     this.ledger.close();
   }
@@ -113,11 +140,17 @@ export class SelfHostedPlatform {
         features: {
           ...base.features,
           conversations: ready,
-          commands: {
-            state: 'unsupported',
-            reason:
-              'Command admission and live transcript projection are pending BE03 qualification.',
-          },
+          commands: this.commands?.ready()
+            ? {
+                state: 'ready',
+                reason:
+                  'Bound agent has an executable durable provider adapter. Live model/service qualification remains separate.',
+              }
+            : {
+                state: 'unconfigured',
+                reason:
+                  'Connect a conversation to verify its configured provider adapter before sending.',
+              },
         },
       });
     } catch {
@@ -133,6 +166,7 @@ export class SelfHostedPlatform {
   }
   async scope(dotId: string): Promise<VerifiedRuntimeScope> {
     await this.start();
+    if (this.transport?.connected) await this.transport.start();
     if (
       !this.transport ||
       !this.transport.connected ||
@@ -168,6 +202,11 @@ export class SelfHostedPlatform {
     spaceId: string | null = null,
     pageId: string | null = null,
   ): RuntimeConversation {
+    if (raw.agent_id !== scope.agentId)
+      throw new ConversationError(
+        'Canonical conversation agent does not match this Dot.',
+        403,
+      );
     const prior = this.ledger.metadata(raw.conversation_id);
     if (prior && prior.dotId !== scope.dotId)
       throw new ConversationError('Conversation is bound to another Dot.', 403);
@@ -487,6 +526,8 @@ export class SelfHostedPlatform {
           message.message_id.length > 256 ||
           !Number.isSafeInteger(message.text_offset) ||
           message.text_offset < 0 ||
+          !Number.isSafeInteger(message.next_text_offset) ||
+          message.next_text_offset < message.text_offset ||
           !raw.lineage.includes(message.physical_session_id) ||
           Buffer.byteLength(message.text, 'utf8') > 16384,
       ) ||
@@ -503,6 +544,9 @@ export class SelfHostedPlatform {
   }
   async history(id: string, cursor: string | undefined, auth: Guard) {
     const bound = await this.conversation(id, auth);
+    // Watermark precedes transcript read: commits during the read trigger another refresh.
+    const state = await this.commands?.state(id, auth);
+    this.guard(bound, auth);
     const raw = await this.transport!.call('runtime.conversation.history', {
       schema_version: 1,
       conversation_id: id,
@@ -523,12 +567,14 @@ export class SelfHostedPlatform {
       messages: raw.messages.map((message) => ({
         id: message.message_id,
         revision: 0,
+        commandId: message.command_id,
         role: message.role,
         parts: [{ kind: 'text', text: message.text }],
         internal: false,
         committed: true,
         chunk: {
           offset: message.text_offset,
+          nextOffset: message.next_text_offset,
           complete: message.text_complete,
           sanitized: message.text_sanitized,
           nonTextOmitted: message.non_text_omitted,
@@ -544,11 +590,11 @@ export class SelfHostedPlatform {
           }
         : null,
       nextCursor: raw.next_cursor,
-      sessionSequence: 0,
-      runtimeCursor: null,
+      sessionSequence: state?.sequence ?? 0,
+      runtimeCursor: state?.cursor ?? null,
       truncated: false,
       interruption:
-        'Safe text only. Tool details, non-text blocks and live uncommitted output are omitted; command linkage and live events are not yet available.',
+        'Safe committed text only. Private tool details and uncommitted provider output are omitted; accepted input appears only after canonical commit.',
     });
   }
   async *export(id: string, auth: Guard, signal: AbortSignal) {
@@ -579,9 +625,11 @@ export class SelfHostedPlatform {
         messages: raw.messages.map((message) => ({
           id: message.message_id,
           physicalSessionId: message.physical_session_id,
+          commandId: message.command_id,
           role: message.role,
           text: message.text,
           offset: message.text_offset,
+          nextOffset: message.next_text_offset,
           complete: message.text_complete,
           sanitized: message.text_sanitized,
           nonTextOmitted: message.non_text_omitted,

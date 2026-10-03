@@ -1,5 +1,9 @@
 import { verifyGitCheckout } from './source-pin.js';
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import {
+  spawn,
+  spawnSync,
+  type ChildProcessWithoutNullStreams,
+} from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
@@ -10,6 +14,19 @@ import type { RuntimeConversationCapabilities } from '../../shared/runtime/produ
 const id = z.string().min(1).max(256);
 const path = z.string().max(4096).refine(isAbsolute);
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
+const endpoint = z
+  .url()
+  .max(4096)
+  .refine((value) => {
+    const url = new URL(value);
+    return (
+      ['https:', 'http:'].includes(url.protocol) &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash
+    );
+  });
 export const launchConfigSchema = z.strictObject({
   checkout: path,
   python: path,
@@ -18,6 +35,12 @@ export const launchConfigSchema = z.strictObject({
   ownerId: id,
   dotId: id,
   gatewayId: id,
+  providerEnvironment: z
+    .strictObject({
+      OPENAI_API_KEY: z.string().min(1).max(8192).optional(),
+      OPENAI_BASE_URL: endpoint.optional(),
+    })
+    .optional(),
   identity: z.strictObject({
     principal_id: id,
     profile_id: id,
@@ -29,7 +52,10 @@ export const launchConfigSchema = z.strictObject({
 export type LaunchConfig = z.infer<typeof launchConfigSchema>;
 export function identityMatches(
   expected: LaunchConfig['identity'],
-  actual: RuntimeConversationCapabilities['identity'],
+  actual: Pick<
+    RuntimeConversationCapabilities['identity'],
+    keyof LaunchConfig['identity']
+  >,
 ): boolean {
   return (
     [
@@ -54,11 +80,11 @@ const sha = (bytes: string | Buffer) =>
 const pins = [
   [
     'apps/shared/src/gateway-contract.generated.ts',
-    'd29c02608340ab65cb5b5f7b1b66bb8bb253a5c27bf89bab0ee4c4a193740f64',
+    '418386827d1d1a12e8c20c1b8e7d3081a6f317aea270da52262cec5f52fc12ca',
   ],
   [
     'apps/shared/src/gateway-contract.openrpc.json',
-    'c81c3c53e0bee325d172617551adb2350f463a4383a744b67fe29347c339ee29',
+    '1bf4ab3a304834538db5e379a06ce7e3b37acd53c8e0b193808d10a4fd5b447a',
   ],
 ];
 /** No shell, inherited provider secrets, Python injection flags, or browser-selected paths. */
@@ -72,11 +98,29 @@ export function childEnvironment(config: LaunchConfig): NodeJS.ProcessEnv {
     PYTHONNOUSERSITE: '1',
     PYTHONDONTWRITEBYTECODE: '1',
     PYTHONUNBUFFERED: '1',
+    ...config.providerEnvironment,
   };
+}
+export function verifyProviderScope(config: LaunchConfig) {
+  // Strict Ryoko identities resolve credentials from their profile scope, not
+  // process environment. Admit only an exact server-configured scope file;
+  // never import arbitrary dotenv settings or write credentials ourselves.
+  if (existsSync(join(config.checkout, '.env')))
+    throw new Error('Checkout dotenv configuration is not permitted.');
+  const scopeFile = join(config.home, '.env');
+  const scoped = Object.entries(config.providerEnvironment ?? {})
+    .map(([key, value]) => `${key}=${JSON.stringify(value)}\n`)
+    .join('');
+  const actual = existsSync(scopeFile) ? readFileSync(scopeFile, 'utf8') : '';
+  if (actual !== scoped)
+    throw new Error(
+      'Profile credential scope must exactly match the reviewed provider configuration.',
+    );
 }
 export interface ConversationTransport {
   readonly config: LaunchConfig;
   readonly connected: boolean;
+  readonly epoch?: number;
   start(): Promise<RuntimeConversationCapabilities>;
   call<M extends ConversationMethod>(
     method: M,
@@ -91,6 +135,7 @@ export class StdioConversationTransport implements ConversationTransport {
   private proof?: RuntimeConversationCapabilities;
   private starting?: Promise<RuntimeConversationCapabilities>;
   private profileHash = '';
+  epoch = 0;
   constructor(config: LaunchConfig) {
     this.config = launchConfigSchema.parse(config);
   }
@@ -112,20 +157,52 @@ export class StdioConversationTransport implements ConversationTransport {
       throw new Error(
         'Ryoko profile changed; restart and verify the owner mapping.',
       );
-    // BE02 is passive conversation storage. Other startup config, MCP discovery,
-    // provider credentials and managed secrets require later adapter qualification.
+    verifyProviderScope(this.config);
+    // BE03 permits a reviewed provider configuration, never arbitrary inherited secrets.
+    if (this.profileHash) return;
+    const parsed = spawnSync(
+      this.config.python,
+      [
+        '-I',
+        '-c',
+        'import json,sys,yaml; print(json.dumps(yaml.safe_load(sys.stdin.read())))',
+      ],
+      {
+        input: raw,
+        encoding: 'utf8',
+        env: childEnvironment(this.config),
+        timeout: 5000,
+        maxBuffer: 262144,
+      },
+    );
+    if (parsed.status !== 0) throw new Error('Invalid trusted YAML profile.');
+    // Unknown startup integrations remain unavailable until their typed adapters are qualified.
     const profile = z
       .strictObject({
         agent_identity: z.record(z.string(), z.unknown()),
         mcp_servers: z.strictObject({}).optional(),
+        onboarding: z
+          .strictObject({
+            seen: z.strictObject({ profile_build_offered: z.boolean() }),
+          })
+          .optional(),
         model: z
           .strictObject({
             default: z.string().max(256),
-            provider: z.literal('openai'),
+            provider: z.enum(['openai', 'custom']),
+            base_url: endpoint.optional(),
+            api_mode: z.literal('chat_completions').optional(),
           })
           .optional(),
       })
-      .parse(JSON.parse(raw));
+      .parse(JSON.parse(parsed.stdout));
+    if (
+      this.config.providerEnvironment &&
+      profile.onboarding?.seen.profile_build_offered !== true
+    )
+      throw new Error(
+        'Reviewed command profiles must explicitly disable the interactive profile-build prompt.',
+      );
     const identity = profile.agent_identity;
     if (
       identity.principal_id !== this.config.identity.principal_id ||
@@ -137,18 +214,24 @@ export class StdioConversationTransport implements ConversationTransport {
     const agents = identity.agents as
       Record<string, { role?: string }> | undefined;
     if (agents?.[this.config.identity.agent_id]?.role !== 'primary')
-      throw new Error('Only the verified primary agent is qualified in BE02.');
-    for (const root of [this.config.home, this.config.checkout])
-      if (existsSync(join(root, '.env')))
-        throw new Error(
-          'BE02 requires an isolated profile and checkout without dotenv credentials.',
-        );
+      throw new Error(
+        'Only the verified primary agent is qualified for this command adapter.',
+      );
+
     this.profileHash = sha(raw);
   }
   start(): Promise<RuntimeConversationCapabilities> {
-    return (this.starting ??= this.launch());
+    if (this.connected) {
+      this.checkProfile();
+      return Promise.resolve(this.proof!);
+    }
+    return (this.starting ??= this.launch().finally(() => {
+      this.starting = undefined;
+    }));
   }
   private async launch() {
+    // A failed pipe cannot leave a second owning stdio process running.
+    await this.stop();
     try {
       for (const name of ['checkout', 'home', 'runtimeDirectory'] as const) {
         if (realpathSync(this.config[name]) !== this.config[name])
@@ -156,7 +239,7 @@ export class StdioConversationTransport implements ConversationTransport {
       }
       verifyGitCheckout(
         this.config.checkout,
-        '44eec9a9650414aef3e95ef6bf78eebedbb92265',
+        '9c39b3cbc7d23c65782e0f73f8c8102d07955e2e',
       );
       for (const [file, expected] of pins)
         if (sha(readFileSync(join(this.config.checkout, file))) !== expected)
@@ -173,9 +256,10 @@ export class StdioConversationTransport implements ConversationTransport {
         },
       );
       this.process = child;
-      this.rpc = new ConversationRpc(child.stdout, child.stdin);
-      child.once('error', () => this.rpc?.close());
-      child.once('exit', () => this.rpc?.close());
+      const rpc = new ConversationRpc(child.stdout, child.stdin);
+      this.rpc = rpc;
+      child.once('error', rpc.close);
+      child.once('exit', rpc.close);
       // Drain but never retain or log producer diagnostics (they may contain secrets).
       child.stderr.on('data', () => {});
       const proof = await this.rpc.call('runtime.conversation.capabilities', {
@@ -183,15 +267,24 @@ export class StdioConversationTransport implements ConversationTransport {
       });
       if (
         !identityMatches(this.config.identity, proof.identity) ||
+        proof.identity.role !== 'primary' ||
+        proof.identity.memory_backend !== 'personal_mcp' ||
         proof.authority !== 'trusted_stdio_owner' ||
         proof.owner_scope !== 'principal_profile_agent_home' ||
         proof.transcript_format !== 'safe_transcript_v1' ||
         proof.max_page !== 100 ||
         proof.max_page_text_bytes !== 262144 ||
-        conversationMethods.some((method) => !proof.methods.includes(method))
+        conversationMethods
+          .filter(
+            (method) =>
+              method.startsWith('runtime.conversation.') ||
+              method === 'runtime.command.receipt',
+          )
+          .some((method) => !proof.methods.includes(method))
       )
         throw new Error('Ryoko capability identity or bounds mismatch.');
       this.proof = proof;
+      this.epoch++;
       return proof;
     } catch {
       await this.stop();
@@ -207,7 +300,7 @@ export class StdioConversationTransport implements ConversationTransport {
     await this.start();
     this.checkProfile();
     if (!this.connected)
-      throw new Error('Ryoko disconnected. Restart the service to reconnect.');
+      throw new Error('Ryoko disconnected. Recovery remains read-only.');
     return this.rpc!.call(method, params);
   }
   async stop() {

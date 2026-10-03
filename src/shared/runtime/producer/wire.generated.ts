@@ -1,6 +1,5 @@
 // GENERATED exact subset of pinned producer. DO NOT EDIT.
 // Regenerate: node scripts/pin-producer-contract.mjs /path/to/ryoko-agent
-/* eslint-disable */
 export interface RuntimeCapabilitiesParams {
   session_id: string
 }
@@ -60,18 +59,25 @@ export interface RuntimeToolView {
   selected_tool_ids: string[]
   unavailable_reasons: Record<string, string>
 }
-export interface RuntimeCommandReceiptParams {
+export interface RuntimeCommandParams {
   session_id: string
   schema_version: 1
   command_id: string
+  idempotency_key: string
+  expected_revision: number | null
+  operation: 'submit' | 'steer' | 'cancel' | 'approval'
+  target_run_id?: string
+  payload: RuntimeTextPayload | RuntimeCancelPayload | RuntimeApprovalPayload
 }
-export interface RuntimeCommandReceiptResult {
-  schema_version: 1
-  command_id: string
-  found: boolean
-  receipt: CommandReceipt | null
-  status: 'accepted' | 'claimed' | 'completed' | 'failed' | 'blocked' | 'cancelled' | null
-  durable_revision: number
+export interface RuntimeTextPayload {
+  text: string
+}
+export interface RuntimeCancelPayload {
+  reason?: string
+}
+export interface RuntimeApprovalPayload {
+  approval_id: string
+  decision: 'approve' | 'deny'
 }
 export interface CommandReceipt {
   schema_version: 1
@@ -84,6 +90,35 @@ export interface CommandReceipt {
 export interface RuntimeConflict {
   code: string
   message: string
+}
+export interface RuntimeCommandReceiptParams {
+  session_id: string
+  schema_version: 1
+  command_id: string
+  message_limit?: number
+  message_cursor?: string | null
+}
+export interface RuntimeCommandReceiptResult {
+  schema_version: 1
+  command_id: string
+  found: boolean
+  receipt: CommandReceipt | null
+  status: 'accepted' | 'claimed' | 'completed' | 'failed' | 'blocked' | 'cancelled' | null
+  durable_revision: number
+  accepted_input: RuntimeAcceptedInput | null
+  messages: RuntimeCommandMessage[]
+  messages_has_more: boolean
+  next_message_cursor: string | null
+}
+export interface RuntimeAcceptedInput {
+  state: 'accepted' | 'committed'
+  message_id: string | null
+}
+export interface RuntimeCommandMessage {
+  message_id: string
+  role: 'user' | 'assistant' | 'tool'
+  kind: 'input' | 'output'
+  committed: true
 }
 export interface RuntimeConversationArchiveParams {
   schema_version: 1
@@ -98,12 +133,24 @@ export interface RuntimeConversationResult {
 }
 export interface RuntimeConversation {
   conversation_id: string
+  agent_id: string
   title: string
   archived: boolean
   revision: number
   created_at: number
   updated_at: number
   source: 'web'
+}
+export interface RuntimeConversationRefParams {
+  schema_version: 1
+  conversation_id: string
+}
+export interface RuntimeConversationBindResult {
+  schema_version: 1
+  conversation: RuntimeConversation
+  session_id: string
+  readiness: 'building' | 'ready' | 'failed'
+  failure_code: 'agent_build_failed' | 'identity_mismatch' | null
 }
 export interface RuntimeConversationParams {
   schema_version: 1
@@ -118,7 +165,7 @@ export interface RuntimeConversationCapabilities {
   max_text_chunk_chars: number
   max_page_text_bytes: number
   transcript_format: 'safe_transcript_v1'
-  command_message_linkage: 'unavailable'
+  command_message_linkage: 'explicit'
   restore_supported: false
 }
 export interface RuntimeConversationIdentity {
@@ -127,9 +174,19 @@ export interface RuntimeConversationIdentity {
   agent_id: string
   policy_digest: string
   config_digest: string
+  role: 'primary' | 'specialist'
+  memory_backend: 'personal_mcp' | 'builtin'
+}
+export interface RuntimeConversationCommandReceiptParams {
+  schema_version: 1
+  conversation_id: string
+  command_id: string
+  message_limit?: number
+  message_cursor?: string | null
 }
 export interface RuntimeConversationCreateParams {
   schema_version: 1
+  agent_id?: string | null
   idempotency_key: string
   title?: string
 }
@@ -160,15 +217,17 @@ export interface RuntimeConversationTextChunk {
   role: 'user' | 'assistant'
   text: string
   text_offset: number
+  next_text_offset: number
   text_complete: boolean
   text_sanitized: boolean
   non_text_omitted: boolean
   timestamp: number
   committed: true
-  command_id: null
+  command_id: string | null
 }
 export interface RuntimeConversationListParams {
   schema_version: 1
+  agent_id?: string | null
   limit?: number
   cursor?: string | null
   archived?: boolean
@@ -182,6 +241,7 @@ export interface RuntimeConversationListResult {
 }
 export interface RuntimeConversationOperationParams {
   schema_version: 1
+  agent_id?: string | null
   idempotency_key: string
 }
 export interface RuntimeConversationOperationResult {

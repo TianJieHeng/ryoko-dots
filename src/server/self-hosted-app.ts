@@ -2,6 +2,7 @@ import { Hono, type Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { stream } from 'hono/streaming';
 import { z } from 'zod';
+import { commandIntentSchema } from '../shared/runtime/contracts.js';
 import { OwnerAuth, requireOwner } from './owner-auth.js';
 import { SelfHostedPlatform } from './self-hosted-platform.js';
 import { ConversationError } from './runtime/conversation-ledger.js';
@@ -124,6 +125,107 @@ export function createSelfHostedApp({
     return c.json(
       await platform.recover(
         z.uuid().parse(c.req.param('id')),
+        guard(c, platform),
+      ),
+    );
+  });
+  app.post('/api/runtime/conversations/:id/connect', async (c) => {
+    z.strictObject({}).parse(await c.req.json());
+    if (!platform.commands)
+      throw new ConversationError(
+        'Runtime command adapter is unavailable.',
+        503,
+      );
+    const executable = await platform.commands.connect(
+      id.parse(c.req.param('id')),
+      guard(c, platform),
+    );
+    const bound = platform.workspace.runtimeBindings.resolveConversation(
+      c.req.param('id'),
+    );
+    const setup = await platform.setup(bound.dotId);
+    if (!executable)
+      setup.features.commands = {
+        state: 'unsupported',
+        reason:
+          'This selected conversation provider does not support durable execution.',
+      };
+    return c.json(setup);
+  });
+  app.get('/api/runtime/conversations/:id/commands', async (c) => {
+    const input = z
+      .strictObject({
+        cursor: z
+          .string()
+          .regex(/^[1-9][0-9]{0,15}$/)
+          .refine((value) => Number.isSafeInteger(Number(value)))
+          .optional(),
+      })
+      .parse(query(c));
+    if (!platform.commands)
+      throw new ConversationError(
+        'Runtime command adapter is unavailable.',
+        503,
+      );
+    return c.json(
+      await platform.commands.list(
+        id.parse(c.req.param('id')),
+        input.cursor,
+        guard(c, platform),
+      ),
+    );
+  });
+  app.post('/api/runtime/conversations/:id/commands', async (c) => {
+    const input = z
+      .strictObject({
+        operationId: z.uuid(),
+        intentDigest: z.string().regex(/^[a-f0-9]{64}$/),
+        intent: commandIntentSchema,
+        expectedGeneration: z.number().int().nonnegative(),
+      })
+      .parse(await c.req.json());
+    if (input.intent.conversationId !== id.parse(c.req.param('id')))
+      throw new ConversationError('Command conversation mismatch.', 400);
+    if (!platform.commands)
+      throw new ConversationError(
+        'Runtime command adapter is unavailable.',
+        503,
+      );
+    return c.json(
+      await platform.commands.admit(
+        input.operationId,
+        input.intentDigest,
+        input.intent,
+        input.expectedGeneration,
+        guard(c, platform),
+      ),
+    );
+  });
+  app.get('/api/runtime/commands/:id', async (c) => {
+    z.strictObject({}).parse(query(c));
+    if (!platform.commands)
+      throw new ConversationError(
+        'Runtime command adapter is unavailable.',
+        503,
+      );
+    return c.json(
+      await platform.commands.inspect(
+        z.uuid().parse(c.req.param('id')),
+        guard(c, platform),
+      ),
+    );
+  });
+  app.get('/api/runtime/conversations/:id/events', async (c) => {
+    const input = readQuery.parse(query(c));
+    if (!platform.commands)
+      throw new ConversationError(
+        'Runtime command adapter is unavailable.',
+        503,
+      );
+    return c.json(
+      await platform.commands.events(
+        id.parse(c.req.param('id')),
+        input.cursor,
         guard(c, platform),
       ),
     );

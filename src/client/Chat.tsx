@@ -3,7 +3,7 @@ import {
   restoreDraft,
   mayClearSubmittedDraft,
 } from './runtime/drafts';
-import { pendingCommandSchema, sameScope } from '../shared/runtime/contracts';
+import { canUse } from '../shared/runtime/contracts';
 import { ConversationOrigins } from './runtime/ChannelsPanel';
 import { useVoice } from './useVoice';
 import { CallView } from './CallView';
@@ -14,16 +14,14 @@ import {
   voiceCallsSchema,
 } from '../shared/runtime/voice';
 import { runtimeAction } from './runtime/actions';
+import { useCommands } from './runtime/use-commands';
 import {
-  prepareCommand,
-  sendCommand,
-  inspectCommand,
-} from './runtime/commands';
+  commandIsAdmitted,
+  hasCommittedInput,
+  controllableRuns,
+  type RecoveredCommand,
+} from './runtime/command-recovery';
 import { useLiveHistory } from './runtime/use-live-history';
-import type {
-  CommandReceipt,
-  PendingCommand,
-} from '../shared/runtime/contracts';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowUp,
@@ -105,27 +103,30 @@ export function Chat({
     }
   };
   const [sourceOpen, setSourceOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const sending = useRef(false);
+  const [localBusy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [receipt, setReceipt] = useState<CommandReceipt>();
-  const pending = useRef<PendingCommand | undefined>(undefined);
-  const [pendingId, setPendingId] = useState<string>();
-  const consumed = useRef(false);
+  const [connectedKey, setConnectedKey] = useState('');
+  const connecting = useRef(false);
+  const contextGeneration = useRef(0);
+  const [steerRun, setSteerRun] = useState('');
+  const commands = useCommands(thread.id, runtime);
+  const busy = localBusy || commands.busy;
   const liveError = useLiveHistory(
     thread.id,
     runtime,
     history.history,
     history.reload,
+    history.limitReached || !!history.error,
   );
   const contextReady =
     history.history !== undefined &&
     !history.error &&
     'pageContext' in history.history;
   const scope = runtime.setup?.scope;
-  const scopeKey = JSON.stringify(scope);
+  const scopeKey = JSON.stringify([scope, thread.id]);
   const activeScope = useRef(scopeKey);
   activeScope.current = scopeKey;
+  const connected = connectedKey === scopeKey && runtime.available('commands');
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -136,47 +137,42 @@ export function Chat({
   const draftKey = scope
     ? `ryoko-draft:v1:${JSON.stringify([scope.owner, scope.gateway, scope.agent, scope.project, thread.id])}`
     : '';
-  const pendingKey = scope
-    ? `ryoko-pending:${JSON.stringify([scope, thread.id])}`
-    : '';
+  const previousDraftKey = useRef('');
   useEffect(() => {
-    setReceipt(undefined);
-    pending.current = undefined;
-    setPendingId(undefined);
-    if (draftKey) {
-      try {
-        const saved = restoreDraft(sessionStorage.getItem(draftKey));
-        if (saved && draftGeneration.current === 0) {
-          setDraft(saved.text);
-          setSource(saved.source);
-          setSourceOpen(!!saved.source);
-        }
-      } catch {
-        setError(
-          'Draft recovery is unavailable or invalid. Do not resend an uncertain request blindly.',
-        );
+    contextGeneration.current++;
+    connecting.current = false;
+    setConnectedKey('');
+    setBusy(false);
+    setSteerRun('');
+    setError('');
+  }, [scopeKey]);
+  useEffect(() => {
+    const previous = previousDraftKey.current;
+    previousDraftKey.current = draftKey;
+    if (!draftKey) {
+      if (previous) {
+        draftGeneration.current++;
+        setDraft('');
+        setSource('');
       }
+      return;
     }
-    if (pendingKey && scope) {
-      try {
-        const raw = sessionStorage.getItem(pendingKey);
-        if (raw) {
-          const saved = pendingCommandSchema.parse(JSON.parse(raw));
-          if (
-            !sameScope(scope, saved.scope) ||
-            saved.intent.conversationId !== thread.id
-          )
-            throw new Error();
-          pending.current = saved;
-          setPendingId(saved.operationId);
-        }
-      } catch {
-        setError(
-          'Pending request identity does not match this binding. Inspect canonical Activity before sending.',
-        );
+    try {
+      const saved = restoreDraft(sessionStorage.getItem(draftKey));
+      if (saved || previous) {
+        draftGeneration.current++;
+        setDraft(saved?.text ?? '');
+        setSource(saved?.source ?? '');
+        setSourceOpen(!!saved?.source);
+      } else if (initialPrompt) {
+        storeDraft(draftKey, initialPrompt, '');
       }
+    } catch {
+      setError(
+        'Draft recovery is unavailable or invalid. Keep a copy and inspect uncertain work before resending.',
+      );
     }
-  }, [draftKey, pendingKey, scopeKey]);
+  }, [draftKey]);
   const changeDraft = (text: string) => {
     draftGeneration.current++;
     setDraft(text);
@@ -188,114 +184,113 @@ export function Chat({
       }
     }
   };
-  const send = async (text: string) => {
-    if (
-      !scope ||
-      !runtime.available('commands') ||
-      !contextReady ||
-      paused ||
-      sending.current ||
-      !text.trim()
-    )
-      return;
-    sending.current = true;
+  const connect = async () => {
+    if (!scope || busy || connecting.current) return;
+    const current = contextGeneration.current;
+    const valid = () =>
+      mounted.current &&
+      activeScope.current === scopeKey &&
+      contextGeneration.current === current;
+    connecting.current = true;
     setBusy(true);
     setError('');
-    pending.current = undefined;
-    const submittedDraftGeneration = draftGeneration.current;
     try {
-      const prepared = await prepareCommand(scope, {
-        operation: 'submit',
-        conversationId: thread.id,
-        text,
-        sourceUrl: source.trim() || null,
-      });
-      if (!mounted.current || activeScope.current !== scopeKey) return;
-      if (pendingKey)
-        sessionStorage.setItem(pendingKey, JSON.stringify(prepared.pending));
-      pending.current = prepared.pending;
-      setPendingId(prepared.pending.operationId);
-      const next = await (prepared.existing
-        ? inspectCommand(prepared.pending)
-        : sendCommand(prepared.pending));
-      if (!mounted.current || activeScope.current !== scopeKey) return;
-      setReceipt(next);
-      if (next.status === 'accepted') {
-        if (
-          mayClearSubmittedDraft(
-            submittedDraftGeneration,
-            draftGeneration.current,
-            text,
-            draft,
-          )
-        ) {
-          setDraft('');
-          draftGeneration.current++;
-          if (draftKey) storeDraft(draftKey, '', '');
-          setSource('');
-          setSourceOpen(false);
-        }
-        if (pendingKey) sessionStorage.removeItem(pendingKey);
-        pending.current = undefined;
-        setPendingId(undefined);
-        onConsumed();
-        onSaved();
-        await history.reload();
-      } else
+      const setup = await runtime.connect(thread.id);
+      if (!valid()) return;
+      if (canUse(setup, 'commands')) setConnectedKey(scopeKey);
+      else
         setError(
-          next.reason || 'Admission was not confirmed. Your draft is retained.',
+          setup.features.commands.reason ||
+            'This runtime is not ready to execute commands.',
         );
-    } catch {
-      if (!mounted.current || activeScope.current !== scopeKey) return;
-      setError(
-        pending.current
-          ? 'Admission could not be confirmed. Your draft and operation ID are retained. Send again to inspect the same operation, not repeat it.'
-          : 'The request could not be safely prepared or stored. No command was sent; check the source URL and browser storage.',
-      );
+      void commands.refreshRecovery();
+      commands.resumeInspection();
+      await history.reload();
+    } catch (cause) {
+      if (valid())
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : 'Runtime connection could not be verified.',
+        );
     } finally {
-      sending.current = false;
-      setBusy(false);
+      if (valid()) {
+        connecting.current = false;
+        setBusy(false);
+      }
     }
   };
-  const cancel = async () => {
-    if (!scope || !receipt?.missionId || sending.current) return;
-    sending.current = true;
-    setBusy(true);
+  const runs = controllableRuns(commands.records);
+  const selectedRun = runs.find((record) => record.receipt?.runId === steerRun);
+  const send = async (text: string) => {
+    if (!scope || !connected || !contextReady || paused || busy || !text.trim())
+      return;
+    if (steerRun && (!selectedRun?.receipt?.runId || source.trim())) {
+      setError(
+        'Refresh the target run before steering. Source links are supported on new messages only.',
+      );
+      return;
+    }
+    const submittedDraftGeneration = draftGeneration.current;
     setError('');
-    try {
-      const prepared = await prepareCommand(scope, {
-        operation: 'cancel',
-        conversationId: thread.id,
-        missionId: receipt.missionId,
-      });
-      if (!mounted.current || activeScope.current !== scopeKey) return;
-      const next = await (prepared.existing
-        ? inspectCommand(prepared.pending)
-        : sendCommand(prepared.pending));
-      if (!mounted.current || activeScope.current !== scopeKey) return;
-      setReceipt(next);
-    } catch {
-      if (!mounted.current || activeScope.current !== scopeKey) return;
-      setError(
-        'Cancellation outcome is unknown. Inspect again; closing this view does not cancel accepted work.',
-      );
-    } finally {
-      sending.current = false;
-      setBusy(false);
+    const next = await commands.submit(
+      selectedRun?.receipt?.runId
+        ? {
+            operation: 'steer',
+            conversationId: thread.id,
+            runId: selectedRun.receipt.runId,
+            expectedRevision: selectedRun.receipt.durableRevision,
+            text,
+          }
+        : {
+            operation: 'submit',
+            conversationId: thread.id,
+            text,
+            sourceUrl: source.trim() || null,
+          },
+    );
+    if (!mounted.current || activeScope.current !== scopeKey || !next) return;
+    if (commandIsAdmitted(next)) {
+      if (
+        mayClearSubmittedDraft(
+          submittedDraftGeneration,
+          draftGeneration.current,
+          text,
+          draft,
+        )
+      ) {
+        setDraft('');
+        draftGeneration.current++;
+        setSource('');
+        setSourceOpen(false);
+        if (draftKey) {
+          try {
+            storeDraft(draftKey, '', '');
+            commands.acknowledge(next);
+          } catch {
+            setError(
+              'Work was accepted, but clearing the saved draft failed. Inspect its operation before resending.',
+            );
+          }
+        }
+      }
+      setSteerRun('');
+      onConsumed();
+      onSaved();
+      await history.reload();
     }
   };
-  useEffect(() => {
-    if (
-      !consumed.current &&
-      initialPrompt &&
-      contextReady &&
-      runtime.available('commands') &&
-      !paused
-    ) {
-      consumed.current = true;
-      void send(initialPrompt);
-    }
-  }, [initialPrompt, contextReady, scopeKey, paused]);
+  const cancel = async (record: RecoveredCommand) => {
+    const receipt = record.receipt;
+    if (!scope || !connected || !receipt?.runId || busy) return;
+    setError('');
+    await commands.submit({
+      operation: 'cancel',
+      conversationId: thread.id,
+      runId: receipt.runId,
+      expectedRevision: receipt.durableRevision,
+    });
+  };
   const bottom = useRef<HTMLDivElement>(null);
   const messages: Message[] = (history.history?.messages ?? [])
     .filter((message) => !message.internal)
@@ -534,59 +529,86 @@ export function Chat({
         dot={dot}
         voice={voice}
       />
-      {pendingId && (
+      <div className="notice" role="status">
+        {connected
+          ? 'Runtime execution is connected for this conversation.'
+          : 'Saved history is available separately from runtime execution. Connect intentionally to send or control work.'}
+        <button
+          type="button"
+          disabled={busy || !scope || !runtime.available('conversations')}
+          onClick={() => void connect()}
+        >
+          {localBusy
+            ? 'Connecting runtime…'
+            : connected
+              ? 'Reconnect runtime'
+              : 'Connect runtime'}
+        </button>
         <button
           type="button"
           disabled={busy}
-          onClick={async () => {
-            const original = pending.current;
-            if (!original) return;
-            setBusy(true);
-            try {
-              const next = await inspectCommand(original);
-              if (!mounted.current || activeScope.current !== scopeKey) return;
-              setReceipt(next);
-              if (next.status === 'accepted' || next.status === 'rejected') {
-                if (pendingKey) sessionStorage.removeItem(pendingKey);
-                pending.current = undefined;
-                setPendingId(undefined);
-                await history.reload();
-              }
-            } catch {
-              setError(
-                'Original admission is still unknown. No new command was sent.',
-              );
-            } finally {
-              if (mounted.current) setBusy(false);
-            }
+          onClick={() => {
+            runtime.reload();
+            void commands.refreshRecovery();
+            commands.resumeInspection();
+            void history.reload();
           }}
         >
-          Inspect pending request {pendingId}
+          Refresh saved state
+        </button>
+      </div>
+      {commands.records.map((record) => {
+        const receipt = record.receipt;
+        const linked = hasCommittedInput(
+          record,
+          history.history?.messages ?? [],
+        );
+        return (
+          <div className="notice" key={record.pending.operationId}>
+            <p role="status">
+              {record.pending.intent.operation} ·{' '}
+              {receipt?.executionStatus ??
+                receipt?.status ??
+                'admission unknown'}
+              {receipt?.runId ? ` · Run ${receipt.runId}` : ''}
+            </p>
+            {commandIsAdmitted(receipt) &&
+              !linked &&
+              record.pending.intent.operation !== 'cancel' && (
+                <p>
+                  Accepted input, awaiting committed transcript:{' '}
+                  {record.pending.intent.text}
+                </p>
+              )}
+            {receipt?.reason && <small>{receipt.reason}</small>}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                const result = await commands.inspect(record.pending);
+                if (result) await history.reload();
+                commands.resumeInspection();
+              }}
+            >
+              Inspect {record.pending.intent.operation}{' '}
+              {record.pending.operationId}
+            </button>
+          </div>
+        );
+      })}
+      {commands.recoveryCursor && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void commands.recoverMore()}
+        >
+          Load more saved commands
         </button>
       )}
-      {(error || liveError) && (
+      {(error || commands.error || liveError) && (
         <div className="chat-error" role="alert">
-          {error || liveError}
-          <button
-            onClick={() => {
-              runtime.reload();
-              void history.reload();
-            }}
-          >
-            Reconnect and inspect
-          </button>
+          {error || commands.error || liveError}
         </div>
-      )}
-      {receipt && (
-        <p className="notice" role="status">
-          {receipt.status === 'accepted'
-            ? 'Work accepted. Execution and delivery are tracked separately in Activity.'
-            : receipt.status === 'cancelled'
-              ? 'Cancellation acknowledged. Any unresolved effects remain inspectable.'
-              : receipt.status === 'cancel_requested'
-                ? 'Cancellation requested; awaiting runtime acknowledgment.'
-                : receipt.reason || receipt.status.replaceAll('_', ' ')}
-        </p>
       )}
       {history.history?.pageContext && (
         <div className="page-chat-context">
@@ -605,6 +627,26 @@ export function Chat({
           void send(draft);
         }}
       >
+        {runs.length > 0 && (
+          <label className="chat-compose-note">
+            Message target
+            <select
+              value={steerRun}
+              onChange={(event) => setSteerRun(event.target.value)}
+              disabled={busy || !connected}
+            >
+              <option value="">New message</option>
+              {runs.map((record) => (
+                <option
+                  key={record.receipt!.runId}
+                  value={record.receipt!.runId!}
+                >
+                  Steer run {record.receipt!.runId}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {sourceOpen && (
           <div className="source-input">
             <Link2 size={15} />
@@ -655,27 +697,28 @@ export function Chat({
               }
             }}
           />
-          {receipt?.missionId &&
-            !['cancelled', 'rejected'].includes(receipt.status) && (
-              <button
-                type="button"
-                className="icon-button"
-                aria-label="Request cancellation"
-                disabled={busy || !runtime.available('commands')}
-                onClick={() => void cancel()}
-              >
-                <Square size={16} />
-              </button>
-            )}
+          {runs.map((record) => (
+            <button
+              key={record.receipt!.runId}
+              type="button"
+              className="icon-button"
+              aria-label={`Request cancellation of run ${record.receipt!.runId}`}
+              title={`Cancel run ${record.receipt!.runId}; closing this view only detaches`}
+              disabled={
+                busy ||
+                !connected ||
+                record.receipt!.status === 'cancel_requested'
+              }
+              onClick={() => void cancel(record)}
+            >
+              <Square size={16} />
+            </button>
+          ))}
           <button
             className="send-button"
-            aria-label="Send message"
+            aria-label={steerRun ? 'Send steering input' : 'Send message'}
             disabled={
-              !draft.trim() ||
-              busy ||
-              !contextReady ||
-              !runtime.available('commands') ||
-              paused
+              !draft.trim() || busy || !contextReady || !connected || paused
             }
           >
             <ArrowUp size={19} />
@@ -686,7 +729,9 @@ export function Chat({
             ? 'Waiting for a durable receipt…'
             : !contextReady
               ? 'Waiting for authoritative conversation context.'
-              : 'Closing this view detaches. Accepted work continues.'}
+              : !connected
+                ? 'Connect runtime to send. Your draft stays here.'
+                : 'Closing this view detaches. Accepted work continues.'}
         </div>
       </form>
     </div>

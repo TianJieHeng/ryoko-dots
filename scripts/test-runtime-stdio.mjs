@@ -10,6 +10,7 @@ const result = spawnSync(
     'node_modules/vitest/vitest.mjs',
     'run',
     'tests/self-hosted-conversations.test.ts',
+    'tests/self-hosted-commands.test.ts',
   ],
   { stdio: 'inherit', env: process.env },
 );

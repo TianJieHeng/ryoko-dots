@@ -2,12 +2,14 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Chat } from '../src/client/Chat';
 import { useHistory } from '../src/client/runtime/use-history';
+import { useCommands } from '../src/client/runtime/use-commands';
 import { historyLimitNotice } from '../src/client/runtime/projection';
 import {
   contractVersion,
   type RuntimeHistory,
 } from '../src/shared/runtime/contracts';
 
+vi.mock('../src/client/runtime/use-commands', () => ({ useCommands: vi.fn() }));
 vi.mock('../src/client/runtime/use-history', () => ({ useHistory: vi.fn() }));
 vi.mock('../src/client/runtime/use-runtime', () => ({
   useRuntime: () => ({
@@ -100,7 +102,22 @@ function render() {
     />,
   );
 }
-beforeEach(() => vi.mocked(useHistory).mockReturnValue(state()));
+beforeEach(() => {
+  vi.mocked(useHistory).mockReturnValue(state());
+  vi.mocked(useCommands).mockReturnValue({
+    key: 'test',
+    records: [],
+    busy: false,
+    error: '',
+    submit: vi.fn(),
+    inspect: vi.fn(),
+    acknowledge: vi.fn(),
+    recoveryCursor: null,
+    refreshRecovery: vi.fn(),
+    recoverMore: vi.fn(),
+    resumeInspection: vi.fn(),
+  });
+});
 
 it('places the oldest-first load-more control after messages and shows text-only limitations', () => {
   const html = render();
@@ -152,4 +169,80 @@ it('keeps internal-message omission flags out of the visible transcript', () => 
   expect(html).not.toContain('sanitized by the server');
   expect(html).not.toContain('omits non-text content');
   expect(html).not.toContain('only partially loaded');
+});
+
+it('requires intentional connection while canonical storage is already readable', () => {
+  const html = render();
+  expect(html).toContain('Connect runtime');
+  expect(html).toContain('Refresh saved state');
+  expect(html).toContain(
+    'Saved history is available separately from runtime execution.',
+  );
+  expect(html).toContain('aria-label="Send message" disabled=""');
+  expect(html).not.toContain('Reconnect and inspect');
+});
+
+it('renders accepted inputs separately until stable canonical identity arrives and uses actual run controls', () => {
+  const record = {
+    pending: {
+      version: contractVersion,
+      scope: history.scope,
+      operationId: '00000000-0000-4000-8000-000000000000',
+      intentDigest: 'a'.repeat(64),
+      intent: {
+        operation: 'submit' as const,
+        conversationId: 'conversation',
+        text: 'Accepted separate input',
+        sourceUrl: null,
+      },
+      createdAt: 0,
+    },
+    receipt: {
+      version: contractVersion,
+      scope: history.scope,
+      operationId: '00000000-0000-4000-8000-000000000000',
+      intentDigest: 'a'.repeat(64),
+      status: 'accepted' as const,
+      missionId: 'mission-never-a-run',
+      runId: 'run-actual',
+      durableRevision: 9,
+      executionStatus: 'claimed' as const,
+      messageId: null,
+      reason: '',
+    },
+  };
+  vi.mocked(useCommands).mockReturnValue({
+    key: 'test',
+    records: [record],
+    busy: false,
+    error: '',
+    submit: vi.fn(),
+    inspect: vi.fn(),
+    acknowledge: vi.fn(),
+    recoveryCursor: null,
+    refreshRecovery: vi.fn(),
+    recoverMore: vi.fn(),
+    resumeInspection: vi.fn(),
+  });
+  let html = render();
+  expect(html).toContain(
+    'Accepted input, awaiting committed transcript: Accepted separate input',
+  );
+  expect(html).toContain('Request cancellation of run run-actual');
+  expect(html).toContain('Steer run run-actual');
+  expect(html).not.toContain('mission-never-a-run');
+  vi.mocked(useHistory).mockReturnValue(
+    state({
+      history: {
+        ...history,
+        messages: history.messages.map((message) => ({
+          ...message,
+          commandId: record.pending.operationId,
+        })),
+      },
+    }),
+  );
+  html = render();
+  expect(html).not.toContain('Accepted input, awaiting committed transcript:');
+  expect(html).toContain('First visible text');
 });

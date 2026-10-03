@@ -1,4 +1,8 @@
 import { DatabaseSync } from 'node:sqlite';
+import {
+  initializeOperationRegistry,
+  claimOperation,
+} from './operation-registry.js';
 import { createHash } from 'node:crypto';
 import type { RuntimeConversation } from '../../shared/runtime/contracts.js';
 export class ConversationError extends Error {
@@ -35,6 +39,7 @@ export class ConversationLedger {
       CREATE TABLE IF NOT EXISTS conversation_operations(operationId TEXT PRIMARY KEY, ownerId TEXT NOT NULL, dotId TEXT NOT NULL, binding TEXT NOT NULL, kind TEXT NOT NULL, intent TEXT NOT NULL, digest TEXT NOT NULL, producerKey TEXT NOT NULL, state TEXT NOT NULL, result TEXT);
       CREATE TABLE IF NOT EXISTS canonical_conversations(id TEXT PRIMARY KEY, ownerId TEXT NOT NULL, dotId TEXT NOT NULL, value TEXT NOT NULL, spaceId TEXT, pageId TEXT);
       CREATE TABLE IF NOT EXISTS canonical_page_reservations(pageId TEXT NOT NULL, dotId TEXT NOT NULL, ownerId TEXT NOT NULL, producerKey TEXT NOT NULL UNIQUE, PRIMARY KEY(pageId,dotId));`);
+    initializeOperationRegistry(this.db, 'conversation');
   }
   close() {
     this.db.close();
@@ -53,6 +58,20 @@ export class ConversationLedger {
     this.db.exec('BEGIN IMMEDIATE');
     try {
       const digest = intentDigest(input.intent);
+      if (
+        !claimOperation(
+          this.db,
+          input.operationId,
+          this.ownerId,
+          'conversation',
+          digest,
+          input.binding,
+        )
+      )
+        throw new ConversationError(
+          'Operation ID conflicts with another original intent or operation family.',
+          409,
+        );
       const existing = this.operation(input.operationId);
       if (existing) {
         if (

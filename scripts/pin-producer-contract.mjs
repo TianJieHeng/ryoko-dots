@@ -17,9 +17,9 @@ const raw = readFileSync(
 );
 if (
   hash(source) !==
-    'd29c02608340ab65cb5b5f7b1b66bb8bb253a5c27bf89bab0ee4c4a193740f64' ||
+    '418386827d1d1a12e8c20c1b8e7d3081a6f317aea270da52262cec5f52fc12ca' ||
   hash(raw) !==
-    'c81c3c53e0bee325d172617551adb2350f463a4383a744b67fe29347c339ee29'
+    '1bf4ab3a304834538db5e379a06ce7e3b37acd53c8e0b193808d10a4fd5b447a'
 )
   throw new Error('Producer pin changed; explicit review required.');
 const rpc = JSON.parse(raw);
@@ -30,7 +30,9 @@ const names = [
   ...[
     'capabilities',
     'create',
+    'bind',
     'operation.get',
+    'command.receipt',
     'list',
     'rename',
     'archive',
@@ -38,8 +40,11 @@ const names = [
     'export',
   ].map((name) => `runtime.conversation.${name}`),
   'runtime.command.receipt',
+  'runtime.command',
 ];
 const methods = rpc.methods.filter((m) => names.includes(m.name));
+if (names.some((name) => !methods.some((method) => method.name === name)))
+  throw new Error('A required qualified producer method is absent.');
 const schemas = {};
 function collect(value) {
   if (!value || typeof value !== 'object') return;
@@ -83,7 +88,7 @@ function type(name) {
 }
 Object.keys(schemas).forEach(type);
 const header =
-  '// GENERATED exact subset of pinned producer. DO NOT EDIT.\n// Regenerate: node scripts/pin-producer-contract.mjs /path/to/ryoko-agent\n/* eslint-disable */\n';
+  '// GENERATED exact subset of pinned producer. DO NOT EDIT.\n// Regenerate: node scripts/pin-producer-contract.mjs /path/to/ryoko-agent\n';
 writeFileSync(
   'src/shared/runtime/producer/wire.generated.ts',
   header + [...selected.values()].join('\n') + '\n',
@@ -98,11 +103,11 @@ writeFileSync(
   JSON.stringify(
     {
       repository: 'TianJieHeng/ryoko-agent',
-      commit: '44eec9a9650414aef3e95ef6bf78eebedbb92265',
+      commit: '9c39b3cbc7d23c65782e0f73f8c8102d07955e2e',
       typescriptSha256: hash(source),
       openrpcSha256: hash(raw),
       methods: names,
-      status: 'canonical_conversation_stdio_subset',
+      status: 'canonical_command_stdio_subset',
     },
     null,
     2,

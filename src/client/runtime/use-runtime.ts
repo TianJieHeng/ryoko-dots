@@ -6,6 +6,7 @@ import {
 } from '../../shared/runtime/contracts';
 import { api, ApiError, subscribeAuthentication } from '../api';
 import {
+  connectConversation,
   connectionState,
   parseSetup,
   RequestGeneration,
@@ -21,6 +22,8 @@ export function useRuntime(dotId = '') {
   }>({ selector: dotId, state: 'loading', error: '' });
   const [attempt, setAttempt] = useState(0);
   const fence = useRef(new RequestGeneration());
+  const selector = useRef(dotId);
+  selector.current = dotId;
   const reload = useCallback(() => setAttempt((value) => value + 1), []);
   useEffect(
     () =>
@@ -90,6 +93,26 @@ export function useRuntime(dotId = '') {
   return {
     ...current,
     reload,
+    connect: async (conversationId: string) => {
+      if (!current.setup?.scope)
+        throw new Error(
+          'Runtime authority is unavailable. Reload access before connecting.',
+        );
+      const generation = fence.current.advance();
+      const setup = await connectConversation(
+        conversationId,
+        current.setup.scope,
+      );
+      if (!fence.current.current(generation) || selector.current !== dotId)
+        throw new Error('Runtime binding changed while connecting.');
+      setValue({
+        selector: dotId,
+        setup,
+        state: connectionState(setup),
+        error: '',
+      });
+      return setup;
+    },
     available: (feature: Feature) => canUse(current.setup, feature),
   };
 }

@@ -25,6 +25,7 @@ export function useLiveHistory(
   connection: RuntimeConnection,
   history: RuntimeHistory | undefined,
   reload: () => Promise<void>,
+  blocked = false,
 ) {
   const projection = useRef<RuntimeProjection | undefined>(undefined);
   const refresh = useRef(reload);
@@ -35,11 +36,12 @@ export function useLiveHistory(
   }, [history]);
   const scope = connection.setup?.scope;
   const key = JSON.stringify([conversationId, scope]);
-  const ready = connection.available('commands');
+  const ready = connection.available('conversations') && !blocked;
   useEffect(() => {
     let active = true;
     let timer: ReturnType<typeof setTimeout>;
     const controller = new AbortController();
+    let failures = 0;
     setError('');
     const poll = async () => {
       try {
@@ -65,15 +67,25 @@ export function useLiveHistory(
           projection.current = next;
           if (next.needsHistoryRefresh || next.snapshotRequired)
             await refresh.current();
-          if (active) setError('');
+          if (active) {
+            failures = 0;
+            setError('');
+          }
         }
       } catch {
+        failures++;
         if (active && !controller.signal.aborted)
           setError(
-            'Live connection interrupted. Accepted work continues; reconnect reads its saved state.',
+            failures >= 3
+              ? 'Live updates paused after repeated failures. Refresh saved state to try again; accepted work is not cancelled.'
+              : 'Live connection interrupted. Accepted work continues; saved-state reads never resend it.',
           );
       } finally {
-        if (active) timer = setTimeout(() => void poll(), 2500);
+        if (active && failures < 3)
+          timer = setTimeout(
+            () => void poll(),
+            Math.min(2500 * 2 ** failures, 10000),
+          );
       }
     };
     void poll();
@@ -82,6 +94,6 @@ export function useLiveHistory(
       clearTimeout(timer);
       controller.abort();
     };
-  }, [key, ready, conversationId]);
+  }, [key, ready, conversationId, connection.setup]);
   return error;
 }

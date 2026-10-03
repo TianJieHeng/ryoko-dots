@@ -10,6 +10,9 @@ import type {
   RuntimeConversationListResult,
   RuntimeConversationHistoryResult,
   RuntimeConversationResult,
+  RuntimeConversationBindResult,
+  CommandReceipt,
+  RuntimeCommandReceiptResult,
 } from '../../shared/runtime/producer/wire.generated.js';
 export interface ReadResults {
   'runtime.capabilities': RuntimeCapabilities;
@@ -17,7 +20,11 @@ export interface ReadResults {
   'runtime.events.since': RuntimeEventsSinceResult;
 }
 export type ReadMethod = keyof ReadResults;
-export interface ConversationResults {
+export interface ConversationResults extends ReadResults {
+  'runtime.command': CommandReceipt;
+  'runtime.command.receipt': RuntimeCommandReceiptResult;
+  'runtime.conversation.command.receipt': RuntimeCommandReceiptResult;
+  'runtime.conversation.bind': RuntimeConversationBindResult;
   'runtime.conversation.capabilities': RuntimeConversationCapabilities;
   'runtime.conversation.create': RuntimeConversationCreateResult;
   'runtime.conversation.operation.get': RuntimeConversationOperationResult;

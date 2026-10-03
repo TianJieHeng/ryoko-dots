@@ -1,6 +1,5 @@
 // GENERATED exact subset of pinned producer. DO NOT EDIT.
 // Regenerate: node scripts/pin-producer-contract.mjs /path/to/ryoko-agent
-/* eslint-disable */
 export const producerSchema = {
   "methods": [
     {
@@ -18,6 +17,24 @@ export const producerSchema = {
         "name": "result",
         "schema": {
           "$ref": "#/components/schemas/RuntimeCapabilities"
+        }
+      }
+    },
+    {
+      "name": "runtime.command",
+      "summary": "Accept one idempotent command. Retries return the original durable receipt.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeCommandParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/CommandReceipt"
         }
       }
     },
@@ -58,6 +75,24 @@ export const producerSchema = {
       }
     },
     {
+      "name": "runtime.conversation.bind",
+      "summary": "Authorize before initializing/reusing a live session; poll readiness without resubmitting commands.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeConversationRefParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeConversationBindResult"
+        }
+      }
+    },
+    {
       "name": "runtime.conversation.capabilities",
       "summary": "Discover the owner-scoped API. Only the server-owned launch-profile stdio pipe is supported.",
       "params": [
@@ -72,6 +107,24 @@ export const producerSchema = {
         "name": "result",
         "schema": {
           "$ref": "#/components/schemas/RuntimeConversationCapabilities"
+        }
+      }
+    },
+    {
+      "name": "runtime.conversation.command.receipt",
+      "summary": "Read an owned canonical conversation's durable command receipt and bounded message links without binding a live session or constructing a provider. Never requeue or claim work.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RuntimeConversationCommandReceiptParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RuntimeCommandReceiptResult"
         }
       }
     },
@@ -612,8 +665,9 @@ export const producerSchema = {
         "title": "RuntimeToolView",
         "type": "object"
       },
-      "RuntimeCommandReceiptParams": {
+      "RuntimeCommandParams": {
         "additionalProperties": false,
+        "description": "Operation selects the payload: text for submit/steer, reason for cancel,\napproval_id/decision for approval. Accepted is a durable receipt, not proof\nof execution; consult capabilities and replay for execution status.\ntarget_run_id pins cancel/steer to one run; omission preserves legacy controls.",
         "properties": {
           "session_id": {
             "maxLength": 256,
@@ -631,76 +685,121 @@ export const producerSchema = {
             "minLength": 1,
             "title": "Command Id",
             "type": "string"
-          }
-        },
-        "required": [
-          "session_id",
-          "schema_version",
-          "command_id"
-        ],
-        "title": "RuntimeCommandReceiptParams",
-        "type": "object"
-      },
-      "RuntimeCommandReceiptResult": {
-        "additionalProperties": false,
-        "description": "Read-only recovery of an original receipt and its latest recorded state.",
-        "properties": {
-          "schema_version": {
-            "const": 1,
-            "title": "Schema Version",
-            "type": "integer"
           },
-          "command_id": {
-            "title": "Command Id",
+          "idempotency_key": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Idempotency Key",
             "type": "string"
           },
-          "found": {
-            "title": "Found",
-            "type": "boolean"
-          },
-          "receipt": {
+          "expected_revision": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/CommandReceipt"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "status": {
-            "anyOf": [
-              {
-                "enum": [
-                  "accepted",
-                  "claimed",
-                  "completed",
-                  "failed",
-                  "blocked",
-                  "cancelled"
-                ],
-                "type": "string"
+                "minimum": 0,
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Status"
+            "title": "Expected Revision"
           },
-          "durable_revision": {
-            "title": "Durable Revision",
-            "type": "integer"
+          "operation": {
+            "enum": [
+              "submit",
+              "steer",
+              "cancel",
+              "approval"
+            ],
+            "title": "Operation",
+            "type": "string"
+          },
+          "target_run_id": {
+            "default": null,
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Target Run Id",
+            "type": "string"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuntimeTextPayload"
+              },
+              {
+                "$ref": "#/components/schemas/RuntimeCancelPayload"
+              },
+              {
+                "$ref": "#/components/schemas/RuntimeApprovalPayload"
+              }
+            ],
+            "title": "Payload"
           }
         },
         "required": [
+          "session_id",
           "schema_version",
           "command_id",
-          "found",
-          "receipt",
-          "status",
-          "durable_revision"
+          "idempotency_key",
+          "expected_revision",
+          "operation",
+          "payload"
         ],
-        "title": "RuntimeCommandReceiptResult",
+        "title": "RuntimeCommandParams",
+        "type": "object"
+      },
+      "RuntimeTextPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "maxLength": 65536,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "RuntimeTextPayload",
+        "type": "object"
+      },
+      "RuntimeCancelPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "default": "",
+            "maxLength": 1024,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "RuntimeCancelPayload",
+        "type": "object"
+      },
+      "RuntimeApprovalPayload": {
+        "additionalProperties": false,
+        "properties": {
+          "approval_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "approve",
+              "deny"
+            ],
+            "title": "Decision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "approval_id",
+          "decision"
+        ],
+        "title": "RuntimeApprovalPayload",
         "type": "object"
       },
       "CommandReceipt": {
@@ -780,6 +879,222 @@ export const producerSchema = {
         "title": "RuntimeConflict",
         "type": "object"
       },
+      "RuntimeCommandReceiptParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "command_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Command Id",
+            "type": "string"
+          },
+          "message_limit": {
+            "default": 100,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Message Limit",
+            "type": "integer"
+          },
+          "message_cursor": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message Cursor"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "command_id"
+        ],
+        "title": "RuntimeCommandReceiptParams",
+        "type": "object"
+      },
+      "RuntimeCommandReceiptResult": {
+        "additionalProperties": false,
+        "description": "Read-only recovery of an original receipt and its latest recorded state.",
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "command_id": {
+            "title": "Command Id",
+            "type": "string"
+          },
+          "found": {
+            "title": "Found",
+            "type": "boolean"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommandReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "accepted",
+                  "claimed",
+                  "completed",
+                  "failed",
+                  "blocked",
+                  "cancelled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "durable_revision": {
+            "title": "Durable Revision",
+            "type": "integer"
+          },
+          "accepted_input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RuntimeAcceptedInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeCommandMessage"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "messages_has_more": {
+            "title": "Messages Has More",
+            "type": "boolean"
+          },
+          "next_message_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Message Cursor"
+          }
+        },
+        "required": [
+          "schema_version",
+          "command_id",
+          "found",
+          "receipt",
+          "status",
+          "durable_revision",
+          "accepted_input",
+          "messages",
+          "messages_has_more",
+          "next_message_cursor"
+        ],
+        "title": "RuntimeCommandReceiptResult",
+        "type": "object"
+      },
+      "RuntimeAcceptedInput": {
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "enum": [
+              "accepted",
+              "committed"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id"
+          }
+        },
+        "required": [
+          "state",
+          "message_id"
+        ],
+        "title": "RuntimeAcceptedInput",
+        "type": "object"
+      },
+      "RuntimeCommandMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "message_id": {
+            "title": "Message Id",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant",
+              "tool"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "input",
+              "output"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "committed": {
+            "const": true,
+            "title": "Committed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "message_id",
+          "role",
+          "kind",
+          "committed"
+        ],
+        "title": "RuntimeCommandMessage",
+        "type": "object"
+      },
       "RuntimeConversationArchiveParams": {
         "additionalProperties": false,
         "properties": {
@@ -846,6 +1161,12 @@ export const producerSchema = {
             "title": "Conversation Id",
             "type": "string"
           },
+          "agent_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Agent Id",
+            "type": "string"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -874,6 +1195,7 @@ export const producerSchema = {
         },
         "required": [
           "conversation_id",
+          "agent_id",
           "title",
           "archived",
           "revision",
@@ -882,6 +1204,78 @@ export const producerSchema = {
           "source"
         ],
         "title": "RuntimeConversation",
+        "type": "object"
+      },
+      "RuntimeConversationRefParams": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "conversation_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Conversation Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "conversation_id"
+        ],
+        "title": "RuntimeConversationRefParams",
+        "type": "object"
+      },
+      "RuntimeConversationBindResult": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "conversation": {
+            "$ref": "#/components/schemas/RuntimeConversation"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "readiness": {
+            "enum": [
+              "building",
+              "ready",
+              "failed"
+            ],
+            "title": "Readiness",
+            "type": "string"
+          },
+          "failure_code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "agent_build_failed",
+                  "identity_mismatch"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Code"
+          }
+        },
+        "required": [
+          "schema_version",
+          "conversation",
+          "session_id",
+          "readiness",
+          "failure_code"
+        ],
+        "title": "RuntimeConversationBindResult",
         "type": "object"
       },
       "RuntimeConversationParams": {
@@ -945,7 +1339,7 @@ export const producerSchema = {
             "type": "string"
           },
           "command_message_linkage": {
-            "const": "unavailable",
+            "const": "explicit",
             "title": "Command Message Linkage",
             "type": "string"
           },
@@ -999,6 +1393,22 @@ export const producerSchema = {
           "config_digest": {
             "title": "Config Digest",
             "type": "string"
+          },
+          "role": {
+            "enum": [
+              "primary",
+              "specialist"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "memory_backend": {
+            "enum": [
+              "personal_mcp",
+              "builtin"
+            ],
+            "title": "Memory Backend",
+            "type": "string"
           }
         },
         "required": [
@@ -1006,9 +1416,60 @@ export const producerSchema = {
           "profile_id",
           "agent_id",
           "policy_digest",
-          "config_digest"
+          "config_digest",
+          "role",
+          "memory_backend"
         ],
         "title": "RuntimeConversationIdentity",
+        "type": "object"
+      },
+      "RuntimeConversationCommandReceiptParams": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "conversation_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Conversation Id",
+            "type": "string"
+          },
+          "command_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Command Id",
+            "type": "string"
+          },
+          "message_limit": {
+            "default": 100,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Message Limit",
+            "type": "integer"
+          },
+          "message_cursor": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message Cursor"
+          }
+        },
+        "required": [
+          "schema_version",
+          "conversation_id",
+          "command_id"
+        ],
+        "title": "RuntimeConversationCommandReceiptParams",
         "type": "object"
       },
       "RuntimeConversationCreateParams": {
@@ -1018,6 +1479,20 @@ export const producerSchema = {
             "const": 1,
             "title": "Schema Version",
             "type": "integer"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Agent Id"
           },
           "idempotency_key": {
             "maxLength": 256,
@@ -1197,6 +1672,11 @@ export const producerSchema = {
             "title": "Text Offset",
             "type": "integer"
           },
+          "next_text_offset": {
+            "description": "Exclusive UTF-8 source byte end offset before control-character sanitization",
+            "title": "Next Text Offset",
+            "type": "integer"
+          },
           "text_complete": {
             "title": "Text Complete",
             "type": "boolean"
@@ -1219,8 +1699,15 @@ export const producerSchema = {
             "type": "boolean"
           },
           "command_id": {
-            "title": "Command Id",
-            "type": "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Command Id"
           }
         },
         "required": [
@@ -1229,6 +1716,7 @@ export const producerSchema = {
           "role",
           "text",
           "text_offset",
+          "next_text_offset",
           "text_complete",
           "text_sanitized",
           "non_text_omitted",
@@ -1246,6 +1734,20 @@ export const producerSchema = {
             "const": 1,
             "title": "Schema Version",
             "type": "integer"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Agent Id"
           },
           "limit": {
             "default": 50,
@@ -1332,6 +1834,20 @@ export const producerSchema = {
             "const": 1,
             "title": "Schema Version",
             "type": "integer"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Agent Id"
           },
           "idempotency_key": {
             "maxLength": 256,

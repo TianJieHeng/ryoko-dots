@@ -177,7 +177,7 @@ describe('self-hosted canonical conversation BFF', () => {
           await request(`/runtime/setup?dotId=${config.dotId}`)
         ).json();
         expect(setup.features.conversations.state).toBe('ready');
-        expect(setup.features.commands.state).toBe('unsupported');
+        expect(setup.features.commands.state).toBe('unconfigured');
         const operationId = randomUUID();
         const create = {
           operationId,
