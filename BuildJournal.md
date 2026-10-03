@@ -72,3 +72,18 @@ Checks:
 Limits: polling is a consumer candidate, not evidence that redacted durable Hermes events contain token output. Real BE03 live transcript adaptation, slow consumer/restart/lost-receipt recovery and service ownership remain unqualified. Page-context data must be explicitly present in authoritative history before send. Browser pending storage is a recovery aid, not the server's durable command registry. Next FE04 replaces task authority with mission/review projections.
 
 Publication: FE03 source and this journal are one checkpoint. No backend deployment, provider activation or PR.
+
+## FE04 — Missions, exact reviews and independent recovery — 2026-10-03
+
+Status: frontend mission/control/review slice implemented; **BE04 durable effects, exact-review payload and control semantics remain blocked**. Previous FE03 `c423954a9c8d546199de863541dca76c97a721e5` verified on main with identical tree/journal.
+
+Changes: Activity now shows scoped mission state, output verification, delivery, event history and unresolved effects separately. Allowed controls distinguish resume, new run, delivery-only recovery, pause and cancellation; a new run warns it can repeat work. Existing SQLite tasks remain an explicitly read-only archive with their event/run history. Global Pause now requires the runtime control contract and shows admission/schedule/in-flight semantics rather than claiming active compute stopped. Exact review cards display escaped target/content, hashes, revision, expiry and binding; stale/foreign/expired/decided reviews cannot submit. Synchronous click lock, changed-review isolation and explicit inspect-only receipt recovery prevent blind review replay. The canonical action is approval.resolve, not unsupported generic command approval. Shared bounded resource readers and operation/digest clients preserve scoped read and recovery behavior.
+
+Checks:
+- `npx --no-install vitest run tests/runtime-actions.test.ts tests/runtime-review.test.tsx tests/controls.test.tsx tests/page-review.test.tsx tests/runner.test.ts tests/shutdown.test.ts`: PASS, 6 files / 21 tests, including inspect-only missing receipt, lost response, exact receipt binding, delivery-only intent, escaped review and expiry/generation gates.
+- `npx --no-install tsc --noEmit`: PASS.
+- Targeted ESLint for runtime client/shared modules, App and new tests: PASS. Changed files formatted; `git diff --check`: PASS.
+
+Limits: only a qualified backend can supply full exact approval bytes, validate live grants and bind policy/effects. UI receipt acceptance is not execution or delivery. Old task execution controls are frozen, not migrated. Backend/policy/provider race and crash acceptance remain BE04/FE12 gates. Next FE05 retains editor parity and adds independently verified artifact retrieval/conflict recovery.
+
+Publication: journal and FE04 implementation are the same main checkpoint, verified before next phase. No PR or deployment.
