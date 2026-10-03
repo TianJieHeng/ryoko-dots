@@ -1,3 +1,4 @@
+import { runtimeAction } from './runtime/actions';
 import {
   prepareCommand,
   sendCommand,
@@ -226,8 +227,42 @@ export function Chat({
           <button
             className="icon-button"
             aria-label="Save conversation as page"
-            disabled
-            title="Artifact adapter qualification required"
+            disabled={
+              busy ||
+              !runtime.available('artifacts') ||
+              !history.history?.messages.some(
+                (message) => message.committed && !message.internal,
+              )
+            }
+            title="Save eligible committed transcript text to the authorized default Space"
+            onClick={async () => {
+              if (!scope || !history.history) return;
+              const title = window.prompt('Page title', thread.title);
+              if (!title) return;
+              setBusy(true);
+              setError('');
+              try {
+                await runtimeAction(
+                  scope,
+                  `/runtime/conversations/${encodeURIComponent(thread.id)}/page`,
+                  'save_transcript',
+                  { title, destinationSpaceId: dot.spaceId },
+                  history.history.sessionSequence,
+                );
+                onSaved();
+                setError(
+                  'Save admitted. Inspect Artifacts for committed, verified bytes.',
+                );
+              } catch (cause) {
+                setError(
+                  cause instanceof Error
+                    ? cause.message
+                    : 'Save outcome unknown. Inspect the original operation.',
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
           >
             <FilePlus size={18} />
           </button>

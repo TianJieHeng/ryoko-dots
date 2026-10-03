@@ -59,3 +59,22 @@ it('ignores stale errors and completion without clearing a newer request busy st
   expect(success).toHaveBeenCalledWith('thread-b');
   expect(settled).toHaveBeenCalledTimes(1);
 });
+it('exposes a pre-admission guard after asynchronous save/context preparation', async () => {
+  const requests = new PageChatRequests();
+  requests.select('page-a:dot-a');
+  const saved = deferred<void>();
+  const admit = vi.fn();
+  const pending = requests.run(
+    'page-a:dot-a',
+    async (isCurrent) => {
+      await saved.promise;
+      if (!isCurrent()) return;
+      admit();
+    },
+    { success: vi.fn(), failure: vi.fn(), settled: vi.fn() },
+  );
+  requests.select('page-b:dot-a');
+  saved.resolve();
+  await pending;
+  expect(admit).not.toHaveBeenCalled();
+});

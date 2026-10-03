@@ -154,3 +154,29 @@ it('keeps navigation guarded when typing reverts to the old content during a sav
   expect(autosave.getSnapshot().status).toBe('saved');
   autosave.dispose();
 });
+it('recovers exact committed bytes after a lost save response without another write', async () => {
+  const save = vi.fn().mockRejectedValue(new Error('Receipt lost'));
+  const autosave = new PageAutosave(save);
+  autosave.receive(page);
+  autosave.edit({ content: 'Committed bytes' });
+  expect(await autosave.flush()).toBe(false);
+  autosave.receive({ ...page, content: 'Committed bytes', revision: 2 });
+  expect(autosave.getSnapshot().status).toBe('saved');
+  expect(autosave.dirty).toBe(false);
+  await autosave.flush(true);
+  expect(save).toHaveBeenCalledTimes(1);
+  autosave.dispose();
+});
+it('never recovers a different remote document over a retained draft', async () => {
+  const save = vi.fn().mockRejectedValue(new Error('Receipt lost'));
+  const autosave = new PageAutosave(save);
+  autosave.receive(page);
+  autosave.edit({ content: 'My edits' });
+  await autosave.flush();
+  autosave.receive({ ...page, content: 'Other edit', revision: 2 });
+  expect(autosave.getSnapshot()).toMatchObject({
+    status: 'conflict',
+    draft: { content: 'My edits' },
+  });
+  autosave.dispose();
+});

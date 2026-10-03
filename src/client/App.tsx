@@ -83,7 +83,22 @@ export function App() {
       const match = location.hash.match(
         /^#\/spaces\/([^/]+)(?:\/pages\/([^/]+))?$/,
       );
-      if (!match) return;
+      if (!match) {
+        if (acceptedHash && location.hash !== acceptedHash) {
+          if (
+            dirtyPage.current &&
+            !window.confirm('Leave your unsaved page draft?')
+          ) {
+            history.replaceState(null, '', acceptedHash);
+            return;
+          }
+          dirtyPage.current = false;
+          acceptedHash = location.hash;
+          setPageId(undefined);
+          rawSetView('chat');
+        }
+        return;
+      }
       if (dirtyPage.current && location.hash === acceptedHash) return;
       if (
         dirtyPage.current &&

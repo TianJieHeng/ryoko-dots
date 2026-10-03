@@ -10,7 +10,7 @@ export class PageChatRequests {
   }
   async run<T>(
     scope: string,
-    load: () => Promise<T>,
+    load: (isCurrent: () => boolean) => Promise<T>,
     callbacks: {
       success: (value: T) => void;
       failure: (error: unknown) => void;
@@ -22,7 +22,7 @@ export class PageChatRequests {
     const current = () =>
       this.scope === scope && this.generation === generation;
     try {
-      const value = await load();
+      const value = await load(current);
       if (current()) callbacks.success(value);
     } catch (error) {
       if (current()) callbacks.failure(error);

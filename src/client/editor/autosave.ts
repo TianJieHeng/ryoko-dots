@@ -72,6 +72,19 @@ export class PageAutosave {
       this.publish({ remote: page });
       return;
     }
+    // A lost write response can be reconciled by an authoritative read of the
+    // exact desired bytes. This proves the saved document, not effect identity.
+    if (this.state.draft && equal(fields(page), this.state.draft)) {
+      clearTimeout(this.timer);
+      this.publish({
+        page,
+        remote: page,
+        draft: fields(page),
+        status: 'saved',
+        error: undefined,
+      });
+      return;
+    }
     if (this.changed || this.state.status === 'conflict') {
       clearTimeout(this.timer);
       this.publish({

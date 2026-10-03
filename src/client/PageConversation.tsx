@@ -64,10 +64,14 @@ export function PageConversation({
     const prompt = draft.trim();
     await requests.current.run(
       scope,
-      async () => {
+      async (isCurrent) => {
         if (!(await beforeChat()))
           throw new Error(
             'Save or resolve your document changes before starting page chat.',
+          );
+        if (!isCurrent())
+          throw new Error(
+            'Page or specialist changed before conversation admission.',
           );
         return createConversation(runtime.setup!.scope!, dot.id, page.title, {
           id: page.id,

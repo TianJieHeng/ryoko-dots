@@ -1,3 +1,5 @@
+import { ArtifactLibrary } from './runtime/ArtifactLibrary';
+import { useRuntime } from './runtime/use-runtime';
 import { useState } from 'react';
 import {
   ArrowDownToLine,
@@ -26,16 +28,25 @@ export function ResultPane({
   dotState: string;
   onClose: () => void;
 }) {
-  const [resultTab, setResultTab] = useState<'Brief' | 'Computer'>('Computer');
+  const [resultTab, setResultTab] = useState<
+    'Brief' | 'Computer' | 'Artifacts'
+  >('Computer');
   const [computerDotId, setComputerDotId] = useState(defaultDotId);
   const computerDot =
     dots.find((dot) => dot.id === computerDotId) ??
     dots.find((dot) => dot.id === defaultDotId) ??
     dots[0];
+  const runtime = useRuntime(computerDot?.id);
   return (
     <aside className="result-pane">
       <div className="pane-header">
         <div className="pane-tabs">
+          <button
+            className={resultTab === 'Artifacts' ? 'selected' : ''}
+            onClick={() => setResultTab('Artifacts')}
+          >
+            Artifacts
+          </button>
           <button
             className={resultTab === 'Brief' ? 'selected' : ''}
             onClick={() => setResultTab('Brief')}
@@ -58,7 +69,9 @@ export function ResultPane({
           <X size={16} />
         </button>
       </div>
-      {resultTab === 'Computer' ? (
+      {resultTab === 'Artifacts' ? (
+        <ArtifactLibrary connection={runtime} />
+      ) : resultTab === 'Computer' ? (
         <>
           <label className="computer-dot-picker">
             Computer for

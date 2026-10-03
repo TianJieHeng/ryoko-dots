@@ -87,3 +87,20 @@ Checks:
 Limits: only a qualified backend can supply full exact approval bytes, validate live grants and bind policy/effects. UI receipt acceptance is not execution or delivery. Old task execution controls are frozen, not migrated. Backend/policy/provider race and crash acceptance remain BE04/FE12 gates. Next FE05 retains editor parity and adds independently verified artifact retrieval/conflict recovery.
 
 Publication: journal and FE04 implementation are the same main checkpoint, verified before next phase. No PR or deployment.
+
+## FE05 — Editor fidelity and verified artifact bytes — 2026-10-03
+
+Status: frontend editor/artifact slice implemented; **BE05 artifact registration, immutable store/version receipts and server permission gates blocked**. FE04 remote checkpoint `eaf507b29166d7828668c816ce7362da5ae48195` was verified with matching tree/journal.
+
+Changes: existing Spaces tree, library, title/rich/source editor, slash/formatting, outline, autosave, move/subpage/download/Load latest/source links and keyboard Save remain intact. Autosave now recovers a lost-response save only when an authoritative read contains the exact desired bytes; different remote edits preserve the draft/conflict. This proves present page bytes, not a fabricated effect receipt. Page chat rechecks its page/specialist generation after asynchronous save and before conversation admission. Hash Back/Forward to a non-page view now respects dirty-draft protection. Save-to-page submits an operation over committed eligible transcript/destination rather than browser-authored history.
+
+New Artifacts tab declares native-page vs registered runtime byte authority. Complete authorized content is bounded, same-origin streamed and verified against exact size, MIME and SHA256 before “verified” or download. Redirects, inaccessible/uncommitted files, mismatched bytes and authentication/scope changes invalidate retrieval. Preview is inert escaped source text; no generated HTML runs. Sharing/publication is explicitly separate.
+
+Checks:
+- Focused artifact/autosave/page-chat/pages/page-routes/page-service/Markdown/library/page-snapshots suites: PASS, 9 files / 45 tests. Includes 7 artifact tests plus lost-save exact-byte recovery, conflicting byte preservation and wrong-page pre-admission guard.
+- `npx --no-install tsc --noEmit`: PASS.
+- Targeted ESLint, changed-file formatting and `git diff --check`: PASS.
+
+Limits: native manual edits still use the existing revision-checked Dots page authority. BE05 must register that store and qualify operation receipts/immutable versions, full grant rechecks and imported source links. UI tests are not real browser interruption or live artifact-store qualification; those remain FE12 gates. Next FE06 scopes specialists, memory and reviewed Learning.
+
+Publication: this journal and source changes share FE05 checkpoint. No deployment, migration or sharing performed.
