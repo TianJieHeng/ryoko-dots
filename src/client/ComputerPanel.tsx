@@ -1,21 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Dot } from '../shared/types';
-import type { ComputerAction, ComputerStatus } from '../shared/computer-types';
+import type { ComputerAction } from '../shared/computer-types';
+import {
+  computerStatusSchema,
+  screenSchema,
+  assertFreshScreen,
+  type RuntimeComputerStatus,
+} from '../shared/runtime/computers';
+import { runComputerOperation } from './runtime/computers';
+import { sameScope } from '../shared/runtime/contracts';
+import { useRuntime } from './runtime/use-runtime';
+import { RuntimeStatus } from './runtime/RuntimeStatus';
+import type { z } from 'zod';
 import { api } from './api';
 
-type Screen = {
-  base64: string;
-  width: number;
-  height: number;
-  url: string;
-  capturedAt: number;
-};
+type Screen = z.infer<typeof screenSchema>;
 
 export function ComputerPanel({ dot }: { dot: Dot }) {
   const [tab, setTab] = useState<'Browser' | 'Files' | 'Terminal' | 'Activity'>(
     'Browser',
   );
-  const [status, setStatus] = useState<ComputerStatus>();
+  const runtime = useRuntime(dot.id);
+  const [status, setStatus] = useState<RuntimeComputerStatus>();
+  const [effectNotice, setEffectNotice] = useState('');
+  const [pendingEffect, setPendingEffect] = useState(false);
+  const unresolved = useRef<
+    | { status: RuntimeComputerStatus; action: string; input: unknown }
+    | undefined
+  >(undefined);
   const [screen, setScreen] = useState<Screen>();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -28,6 +40,17 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
   const [command, setCommand] = useState('');
   const [output, setOutput] = useState('');
   const [screenError, setScreenError] = useState('');
+  useEffect(() => {
+    if (!screen) return;
+    const timer = setTimeout(
+      () => {
+        setScreen(undefined);
+        setScreenError('Snapshot expired. Refresh before interacting.');
+      },
+      Math.max(0, 15000 - (Date.now() - screen.capturedAt)),
+    );
+    return () => clearTimeout(timer);
+  }, [screen]);
   const lifecycle = useRef({
     active: false,
     revision: 0,
@@ -36,35 +59,50 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
     running: false,
   });
   const controller = useRef<AbortController | null>(null);
-  const base = `/dots/${encodeURIComponent(dot.id)}/computer`;
+  const base = `/runtime/computers?dotId=${encodeURIComponent(dot.id)}`;
+  const runtimeScopeKey = JSON.stringify(runtime.setup?.scope);
+  const runtimeReady = runtime.available('computer');
+  useEffect(() => {
+    unresolved.current = undefined;
+    setPendingEffect(false);
+    setEffectNotice('');
+  }, [runtimeScopeKey]);
   const refresh = useCallback(async () => {
     const revision = lifecycle.current.revision;
     const current = () =>
       lifecycle.current.active && revision === lifecycle.current.revision;
     try {
-      const next = await api<ComputerStatus>(
-        base,
-        'GET',
-        undefined,
-        controller.current?.signal,
+      if (!runtimeReady || !runtime.setup?.scope) {
+        setStatus(undefined);
+        setScreen(undefined);
+        return;
+      }
+      const next = computerStatusSchema.parse(
+        await api<unknown>(base, 'GET', undefined, controller.current?.signal),
       );
+      if (!sameScope(runtime.setup.scope, next.scope))
+        throw new Error('Computer belongs to another binding.');
       if (!current()) return;
       setStatus(next);
       lifecycle.current.loaded = true;
       lifecycle.current.running = next.state === 'running';
       setError('');
       if (
+        tab === 'Browser' &&
         next.state === 'running' &&
         next.permissions.browser &&
         next.permissions.enabled
       ) {
         try {
-          const capture = await api<Screen>(
-            `${base}/actions`,
-            'POST',
-            { action: 'screenshot', input: {} },
-            controller.current?.signal,
+          const capture = screenSchema.parse(
+            await api<unknown>(
+              `/runtime/computers/${encodeURIComponent(next.executorId)}/screen`,
+              'GET',
+              undefined,
+              controller.current?.signal,
+            ),
           );
+          assertFreshScreen(capture, next, Date.now());
           if (current()) {
             setScreen(capture);
             setScreenError('');
@@ -85,6 +123,7 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
       }
     } catch (cause) {
       if (current()) {
+        setStatus(undefined);
         setError(
           cause instanceof Error
             ? cause.message
@@ -93,9 +132,12 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
         setScreen(undefined);
       }
     }
-  }, [base]);
+  }, [base, runtimeScopeKey, runtimeReady, tab]);
   useEffect(() => {
     lifecycle.current.active = true;
+    setScreen(undefined);
+    setStatus(undefined);
+    setOutput('');
     controller.current = new AbortController();
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
@@ -118,44 +160,132 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
       clearTimeout(timer);
     };
   }, [refresh]);
+  const inspectEffect = async () => {
+    const saved = unresolved.current;
+    const revision = lifecycle.current.revision;
+    if (!saved || lifecycle.current.busy) return;
+    lifecycle.current.busy = true;
+    setBusy(true);
+    try {
+      const receipt = await runComputerOperation(
+        saved.status,
+        saved.action,
+        saved.input,
+      );
+      if (!lifecycle.current.active || revision !== lifecycle.current.revision)
+        return;
+      setEffectNotice(
+        `${receipt.state} · effect ${receipt.effectId ?? 'not assigned'} · operation ${receipt.operationId}`,
+      );
+      if (['reconciled', 'failed'].includes(receipt.state)) {
+        unresolved.current = undefined;
+        setPendingEffect(false);
+        if (receipt.output) setOutput(JSON.stringify(receipt.output, null, 2));
+      }
+      await refresh();
+    } catch {
+      if (lifecycle.current.active)
+        setError(
+          'Effect outcome remains unknown. Do not repeat the original action.',
+        );
+    } finally {
+      if (revision === lifecycle.current.revision) {
+        lifecycle.current.busy = false;
+        if (lifecycle.current.active) setBusy(false);
+      }
+    }
+  };
   const run = async (
     endpoint: string,
     body: unknown = {},
-    method = 'POST',
+    _method = 'POST',
     showOutput = false,
   ) => {
-    if (lifecycle.current.busy) return;
+    if (
+      !status ||
+      !runtimeReady ||
+      lifecycle.current.busy ||
+      unresolved.current
+    )
+      return;
+    const input = body as { action?: string; input?: unknown };
+    const action = endpoint === '/actions' ? input.action! : endpoint.slice(1);
+    const payload = endpoint === '/actions' ? input.input : body;
+    const request = { status, action, input: payload };
+    unresolved.current = request;
+    setPendingEffect(true);
     lifecycle.current.busy = true;
     lifecycle.current.revision++;
+    const revision = lifecycle.current.revision;
     setBusy(true);
     setError('');
     try {
-      const result = await api<unknown>(
-        `${base}${endpoint}`,
-        method,
-        body,
-        controller.current?.signal,
+      const receipt = await runComputerOperation(status, action, payload);
+      if (!lifecycle.current.active || revision !== lifecycle.current.revision)
+        return;
+      setEffectNotice(
+        `${receipt.state} · effect ${receipt.effectId ?? 'not assigned'} · operation ${receipt.operationId}`,
       );
-      if (!lifecycle.current.active) return;
+      if (['reconciled', 'failed'].includes(receipt.state)) {
+        unresolved.current = undefined;
+        setPendingEffect(false);
+      }
       if (showOutput)
         setOutput(
-          typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+          receipt.output
+            ? JSON.stringify(receipt.output, null, 2)
+            : receipt.state,
         );
       await refresh();
-      return result;
-    } catch (cause) {
+      return receipt.state === 'reconciled' ? receipt.output : undefined;
+    } catch {
       if (lifecycle.current.active)
         setError(
-          cause instanceof Error ? cause.message : 'Computer action failed.',
+          'Computer outcome is unknown. Inspect the original effect; remote execution may have occurred.',
         );
     } finally {
-      lifecycle.current.busy = false;
-      if (lifecycle.current.active) setBusy(false);
+      if (revision === lifecycle.current.revision) {
+        lifecycle.current.busy = false;
+        if (lifecycle.current.active) setBusy(false);
+      }
     }
   };
-  const action = (action: ComputerAction, input: unknown, showOutput = false) =>
-    run('/actions', { action, input }, 'POST', showOutput);
-  const running = status?.state === 'running' && status.permissions.enabled;
+  const safetyAction = async (action: 'take' | 'emergency_stop') => {
+    if (!status || !runtimeReady) return;
+    const revision = lifecycle.current.revision;
+    try {
+      const receipt = await runComputerOperation(status, action, {});
+      if (lifecycle.current.active && revision === lifecycle.current.revision) {
+        setEffectNotice(
+          `Safety control ${receipt.state} · ${receipt.operationId}`,
+        );
+        await refresh();
+      }
+    } catch {
+      if (lifecycle.current.active)
+        setError(
+          'Safety control acknowledgment is unknown. Inspect the executor directly; do not assume it stopped.',
+        );
+    }
+  };
+  const action = (
+    action: ComputerAction,
+    input: unknown,
+    showOutput = false,
+  ) => {
+    if (action.startsWith('human_')) {
+      try {
+        if (!screen || !status) throw new Error();
+        assertFreshScreen(screen, status, Date.now());
+      } catch {
+        setError('Refresh a fresh executor snapshot before interacting.');
+        return Promise.resolve(undefined);
+      }
+    }
+    return run('/actions', { action, input }, 'POST', showOutput);
+  };
+  const running =
+    status?.state === 'running' && status.permissions.enabled && !pendingEffect;
   const human =
     status?.control?.holder === 'human' && !status.control.transitioning;
   const browser = !!running && !!status?.permissions.browser;
@@ -165,6 +295,27 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
       aria-label={`${dot.name}'s computer`}
       aria-busy={busy}
     >
+      {!runtimeReady && <RuntimeStatus connection={runtime} compact />}
+      {effectNotice && <p role="status">{effectNotice}</p>}
+      {pendingEffect && (
+        <button disabled={busy} onClick={() => void inspectEffect()}>
+          Inspect original effect
+        </button>
+      )}
+      {status && (
+        <div className="computer-actions">
+          <span>
+            Executor {status.executorId} · revision {status.revision} · state
+            refreshed {new Date(status.refreshedAt).toLocaleTimeString()}
+          </span>
+          <button onClick={() => void safetyAction('take')}>
+            Take control now
+          </button>
+          <button onClick={() => void safetyAction('emergency_stop')}>
+            Emergency stop
+          </button>
+        </div>
+      )}
       {error && (
         <p className="computer-error" role="alert">
           {error}
@@ -303,7 +454,7 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
                     >
                       <img
                         src={`data:image/png;base64,${screen.base64}`}
-                        alt={`Live browser screen for ${dot.name}`}
+                        alt={`Last verified browser screen for ${dot.name}`}
                       />
                     </button>
                     <small>
@@ -341,9 +492,9 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
                   <details className="computer-human">
                     <summary>Keyboard & precise controls</summary>
                     <p>
-                      Click the screen or enter coordinates below. Text goes
-                      directly to this browser, outside chat. Return control
-                      when finished.
+                      Click the screen or enter coordinates below. Text is sent
+                      through the scoped executor broker, outside chat. Return
+                      control when finished.
                     </p>
                     <form
                       className="computer-row"
@@ -596,7 +747,8 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
                     <li key={entry.id}>
                       <strong>{entry.action.replaceAll('_', ' ')}</strong>
                       <span>
-                        {entry.actor} · {entry.outcome} ·{' '}
+                        {entry.actor} · {entry.outcome} · effect{' '}
+                        {entry.effectId ?? 'unassigned'} ·{' '}
                         {new Date(entry.createdAt).toLocaleTimeString()}
                       </span>
                     </li>
@@ -622,7 +774,7 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
                     <input
                       type="checkbox"
                       checked={status.permissions[permission]}
-                      disabled={busy || !status.configured}
+                      disabled={busy || pendingEffect || !status.configured}
                       onChange={(event) =>
                         void run(
                           '/permissions',

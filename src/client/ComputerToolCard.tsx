@@ -1,3 +1,6 @@
+import { useRuntime } from './runtime/use-runtime';
+import { sameScope } from '../shared/runtime/contracts';
+import { screenSchema as runtimeScreenSchema } from '../shared/runtime/computers';
 import { useEffect, useState } from 'react';
 import { ArrowUpRight, FileText, Monitor, Terminal } from 'lucide-react';
 import { z } from 'zod';
@@ -60,6 +63,9 @@ export function ComputerToolCard({
   running: boolean;
   onExpand?: () => void;
 }) {
+  const runtime = useRuntime(dotId);
+  const scopeKey = JSON.stringify(runtime.setup?.scope);
+  const ready = runtime.available('computer');
   const [screen, setScreen] = useState<z.infer<typeof screenSchema>>();
   const [screenError, setScreenError] = useState('');
   const action = name.replace(/^computer_/, '');
@@ -96,7 +102,7 @@ export function ComputerToolCard({
         ? parameters.path
         : '';
   useEffect(() => {
-    if (!showScreen) return;
+    if (!showScreen || !ready) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     setScreen(undefined);
@@ -105,12 +111,18 @@ export function ComputerToolCard({
       if (!document.hidden) {
         try {
           const value = await api<unknown>(
-            `/dots/${encodeURIComponent(dotId)}/computer/actions`,
-            'POST',
-            { action: 'screenshot', input: {} },
+            `/runtime/computers/by-dot/${encodeURIComponent(dotId)}/screen`,
+            'GET',
+            undefined,
             controller.signal,
           );
-          const next = screenSchema.parse(value);
+          const verified = runtimeScreenSchema.parse(value);
+          if (
+            !sameScope(runtime.setup?.scope ?? null, verified.scope) ||
+            Date.now() - verified.capturedAt > 15000
+          )
+            throw new Error('Preview is stale or belongs to another scope.');
+          const next = screenSchema.parse(verified);
           if (!controller.signal.aborted) {
             setScreen(next);
             setScreenError('');
@@ -134,7 +146,7 @@ export function ComputerToolCard({
       controller.abort();
       clearTimeout(timer);
     };
-  }, [dotId, showScreen]);
+  }, [scopeKey, ready, dotId, showScreen]);
   const Icon =
     action === 'exec'
       ? Terminal

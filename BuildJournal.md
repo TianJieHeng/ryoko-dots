@@ -138,3 +138,18 @@ Checks:
 Limits: server scheduler ownership, timezone recurrence rules, restart/overlap/missed-run execution, actual authority rechecks and notice outbox receipts remain BE07/FE12 obligations. No legacy schedule migrated or activated; no browser scheduler added. Next FE08 qualifies presentation/control boundaries for computers and research.
 
 Publication: FE07 and this journal are one main checkpoint. No deployed schedule, external notification or channel activation performed.
+
+## FE08 — Broker-scoped computers and research presentation — 2026-10-03
+
+Status: frontend executor/broker slice implemented; **BE08 actual executor, takeover and broker-effect gates blocked**. FE07 remote `a2c0739c6fd6fa236dde63422a9cb1ea0027cc78` verified with matching tree/journal.
+
+Changes: retained Browser/Files/Terminal/Activity tabs, per-Dot controls, permission fields, screenshots, start/stop, take/release and inline computer links. Browser control now reads strict authenticated executor identity/revision/status, accepts only fresh matching screenshots, expires old screenshots, polls screens only in the Browser tab, and fences late scope/tab responses. User actions use validated broker input and persisted operation identity; uncertain effects disable ordinary replay and offer original-effect inspection. Prepared/dispatched/unknown/reconciled/failed remain distinct. Take control/emergency stop use a separate control path and remain independent of the ordinary busy lock. No raw typed text, commands or file bytes are persisted in operation storage. Existing grounded source excerpts, sample/live distinction and read-only research defenses remain intact.
+
+Checks:
+- Combined focused run: runtime-computers/computer/computer-card/computer-deployment/research/transport/security — **44 PASS, 2 FAIL across 7 files**. Five new broker tests pass.
+- Two existing `transport.test.ts` cases expected a controlled local200/redirect but observed HTTP502. Initial execution was auto-review denied for synthetic public.example; inspected test source proves mocked DNS pins127.0.0.1, local fixture server, static GET headers and no private body. One exact retry was allowed after that evidence; its two502 failures remain visible. No proxy/security bypass or production transport weakening occurred. Deterministic offline/host qualification remains FE12 work.
+- `npx --no-install tsc --noEmit`: PASS; targeted ESLint/formatting/`git diff --check`: PASS.
+
+Limits: frontend endpoint/control declarations do not prove an isolated live executor, stalled-agent out-of-band takeover, restart fencing or effect recovery. Live browser/shell acceptance remains blocked. Single-URL research is not general web search. Next FE09 preserves media UX behind explicit adapter qualification and durable call/compute identities.
+
+Publication: FE08 source and this journal share the checkpoint, with the two failed focused cases disclosed. No live executor actions, deployment or activation performed.

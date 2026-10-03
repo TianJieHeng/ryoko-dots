@@ -35,6 +35,7 @@ export function Chat({
   onSchedule,
   onConsumed,
   onSaved,
+  onComputer,
 }: {
   thread: Conversation;
   dot: Dot;
@@ -333,6 +334,11 @@ export function Chat({
                         {part.name} · {part.state}
                       </strong>
                       <p>{part.summary}</p>
+                      {part.name.startsWith('computer_') && onComputer && (
+                        <button onClick={onComputer}>
+                          Open scoped computer
+                        </button>
+                      )}
                     </div>
                   ) : part.kind === 'source' ? (
                     <div key={index} className="source-card">
