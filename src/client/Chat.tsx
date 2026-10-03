@@ -1,3 +1,9 @@
+import {
+  storeDraft,
+  restoreDraft,
+  mayClearSubmittedDraft,
+} from './runtime/drafts';
+import { pendingCommandSchema, sameScope } from '../shared/runtime/contracts';
 import { ConversationOrigins } from './runtime/ChannelsPanel';
 import { useVoice } from './useVoice';
 import { CallView } from './CallView';
@@ -84,12 +90,27 @@ export function Chat({
     canStartRealtime(media.data, runtime.setup.scope);
   const [draft, setDraft] = useState(initialPrompt ?? '');
   const [source, setSource] = useState('');
+  const draftGeneration = useRef(0);
+  const editSource = (value: string) => {
+    draftGeneration.current++;
+    setSource(value);
+    if (draftKey) {
+      try {
+        storeDraft(draftKey, draft, value);
+      } catch {
+        setError(
+          'Source draft must be a credential-free HTTP(S) URL before it can be saved.',
+        );
+      }
+    }
+  };
   const [sourceOpen, setSourceOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const sending = useRef(false);
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<CommandReceipt>();
   const pending = useRef<PendingCommand | undefined>(undefined);
+  const [pendingId, setPendingId] = useState<string>();
   const consumed = useRef(false);
   const liveError = useLiveHistory(
     thread.id,
@@ -113,25 +134,55 @@ export function Chat({
     };
   }, []);
   const draftKey = scope
-    ? `ryoko-draft:${scope.owner}:${scope.gateway}:${scope.agent}:${scope.project ?? ''}:${thread.id}`
+    ? `ryoko-draft:v1:${JSON.stringify([scope.owner, scope.gateway, scope.agent, scope.project, thread.id])}`
+    : '';
+  const pendingKey = scope
+    ? `ryoko-pending:${JSON.stringify([scope, thread.id])}`
     : '';
   useEffect(() => {
     setReceipt(undefined);
     pending.current = undefined;
+    setPendingId(undefined);
     if (draftKey) {
       try {
-        const saved = sessionStorage.getItem(draftKey);
-        if (saved !== null) setDraft(saved);
+        const saved = restoreDraft(sessionStorage.getItem(draftKey));
+        if (saved && draftGeneration.current === 0) {
+          setDraft(saved.text);
+          setSource(saved.source);
+          setSourceOpen(!!saved.source);
+        }
       } catch {
-        setError('Draft recovery is unavailable in this browser.');
+        setError(
+          'Draft recovery is unavailable or invalid. Do not resend an uncertain request blindly.',
+        );
       }
     }
-  }, [draftKey, scopeKey]);
+    if (pendingKey && scope) {
+      try {
+        const raw = sessionStorage.getItem(pendingKey);
+        if (raw) {
+          const saved = pendingCommandSchema.parse(JSON.parse(raw));
+          if (
+            !sameScope(scope, saved.scope) ||
+            saved.intent.conversationId !== thread.id
+          )
+            throw new Error();
+          pending.current = saved;
+          setPendingId(saved.operationId);
+        }
+      } catch {
+        setError(
+          'Pending request identity does not match this binding. Inspect canonical Activity before sending.',
+        );
+      }
+    }
+  }, [draftKey, pendingKey, scopeKey]);
   const changeDraft = (text: string) => {
+    draftGeneration.current++;
     setDraft(text);
     if (draftKey) {
       try {
-        sessionStorage.setItem(draftKey, text);
+        storeDraft(draftKey, text, source);
       } catch {
         setError('Draft storage is unavailable. Keep a copy before leaving.');
       }
@@ -151,6 +202,7 @@ export function Chat({
     setBusy(true);
     setError('');
     pending.current = undefined;
+    const submittedDraftGeneration = draftGeneration.current;
     try {
       const prepared = await prepareCommand(scope, {
         operation: 'submit',
@@ -159,16 +211,33 @@ export function Chat({
         sourceUrl: source.trim() || null,
       });
       if (!mounted.current || activeScope.current !== scopeKey) return;
+      if (pendingKey)
+        sessionStorage.setItem(pendingKey, JSON.stringify(prepared.pending));
       pending.current = prepared.pending;
+      setPendingId(prepared.pending.operationId);
       const next = await (prepared.existing
         ? inspectCommand(prepared.pending)
         : sendCommand(prepared.pending));
       if (!mounted.current || activeScope.current !== scopeKey) return;
       setReceipt(next);
       if (next.status === 'accepted') {
-        changeDraft('');
-        setSource('');
-        setSourceOpen(false);
+        if (
+          mayClearSubmittedDraft(
+            submittedDraftGeneration,
+            draftGeneration.current,
+            text,
+            draft,
+          )
+        ) {
+          setDraft('');
+          draftGeneration.current++;
+          if (draftKey) storeDraft(draftKey, '', '');
+          setSource('');
+          setSourceOpen(false);
+        }
+        if (pendingKey) sessionStorage.removeItem(pendingKey);
+        pending.current = undefined;
+        setPendingId(undefined);
         onConsumed();
         onSaved();
         await history.reload();
@@ -437,6 +506,36 @@ export function Chat({
         dot={dot}
         voice={voice}
       />
+      {pendingId && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            const original = pending.current;
+            if (!original) return;
+            setBusy(true);
+            try {
+              const next = await inspectCommand(original);
+              if (!mounted.current || activeScope.current !== scopeKey) return;
+              setReceipt(next);
+              if (next.status === 'accepted' || next.status === 'rejected') {
+                if (pendingKey) sessionStorage.removeItem(pendingKey);
+                pending.current = undefined;
+                setPendingId(undefined);
+                await history.reload();
+              }
+            } catch {
+              setError(
+                'Original admission is still unknown. No new command was sent.',
+              );
+            } finally {
+              if (mounted.current) setBusy(false);
+            }
+          }}
+        >
+          Inspect pending request {pendingId}
+        </button>
+      )}
       {(error || liveError) && (
         <div className="chat-error" role="alert">
           {error || liveError}
@@ -485,7 +584,7 @@ export function Chat({
               aria-label="Source page URL"
               type="url"
               value={source}
-              onChange={(event) => setSource(event.target.value)}
+              onChange={(event) => editSource(event.target.value)}
               placeholder="https://example.com/page"
             />
             <button
@@ -494,7 +593,7 @@ export function Chat({
               aria-label="Remove source"
               onClick={() => {
                 setSourceOpen(false);
-                setSource('');
+                editSource('');
               }}
             >
               <X size={14} />

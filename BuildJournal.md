@@ -204,3 +204,25 @@ Checks:
 Limits: this is explicitly frontend-only packaging, not a functioning full self-hosted deployment. Existing `npm start`/combined `npm run dev` still start the legacy backend and are not the migration path. BE11 must replace/retire that owner, qualify no-hosted-network startup, imported IDs, backup/restore and rollback with accepted work. No provider credentials configured, migration performed or deployment started. Next FE12 runs the consolidated workflow, browser/fault checks and exact-source readiness report.
 
 Publication: FE11 source, dependency changes and journal share one main checkpoint. Full-parity cutover remains blocked and requires separate approval after backend qualification.
+
+## FE12 — Consolidated local qualification and explicit blocked acceptance — 2026-10-03
+
+Status: **frontend implementation/checkpoint complete; integrated/visual/live acceptance BLOCKED**, not production-ready. FE11 `ac8061458c1cd220071d320bad0d06e2165c69a3` verified on main. Exact final consumer SHA/tree is verified after this checkpoint; pinned producer/source hashes remain the FE00 values.
+
+Consolidated Node24 workflow:
+- `npm ci` with `npm_config_cache=/tmp/ryoko-dots-npm-cache`: PASS, clean711-package install with scripts enabled.
+- `npm run check-format`, `npm run lint`, `npm run typecheck`: PASS.
+- `npm test`: PASS, **50 files / 244 tests**, zero failed/skipped reported.
+- `npm run build`: PASS (browser bundle and NodeNext server compile). Explicit `.js` import extensions fixed after the full build uncovered them. Nonfatal main-bundle size warning retained (~1.07MB minified/~330KB gzip).
+- `npm run check:runtime-contract -- ../ryoko-agent`: PASS fixture integrity and exact generated/provenance source hashes; replay/live transport/integration explicitly NOT RUN.
+- Current checkpoint remote Actions/status reads returned no runs/statuses. This is not a remote CI pass. Final exact main/tree/journal verification follows publication separately.
+
+Final regression fixes: immutable submitted draft generation now protects newer text/source; complete draft/source and pending command identity survive lost receipt/remount. A second exact review cannot falsely report sent while another operation holds the lock. Computer tab changes preserve pending effects/status/emergency controls; binding changes fence late errors/file reads. Expired auth clears projections once without a401 loop. Settings now has a non-input initial-focus fallback, and long review IDs wrap on narrow panes (source fixes, not browser-proven layout).
+
+The FE08 two transport failures were resolved without changing production networking or bypassing security: the real socket fixture uses explicit127.0.0.1, and the Node24 lookup callback's all/single shapes are asserted in a separate no-socket unit test. Redirect and cancellation tests remain. The initial full test run was denied on the old synthetic-host request; it stopped and was not hidden. All final tests run against the revised deterministic fixture.
+
+Browser qualification is blocked on both permitted routes: Chromium local singleton `socket()` EPERM (including approved retry), and existing cloud browser loopback navigation ERR_BLOCKED_BY_CLIENT. **No UI loaded, zero screenshots, zero browser assertions passed, 21 scenarios NOT RUN.** The reproducible synthetic harness/fixture is committed; it includes lost receipt/source remount, newer draft, exact review, modal/dirty navigation, computer tab/effect and narrow-screen scenarios. No OS/proxy permission changed, tunnel or external QA service used. Temporary QA servers/processes were stopped.
+
+`docs/runtime/frontend-release.md` and `tests/fixtures/runtime/frontend-release-evidence.json` summarize exact source pins, build asset hashes, local outcomes and the BE00–BE12 handoff. Browser/provider/hardware/real backend fault-injection, backup/restore/migration/rollback and full no-hosted-server startup remain unqualified. Frontend-only preview is not a migrated production package. No deployment/cutover requested while these gates remain open; separate backend implementation and then explicit deployment approval are required.
+
+Publication: all FE12 fixes, reproducible evidence and this root journal are one main checkpoint. No PR, backend activation, credentials, external delivery, live media/executor use, migration or LAYA activation.

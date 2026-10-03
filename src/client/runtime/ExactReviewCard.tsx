@@ -15,6 +15,7 @@ type Props = {
     inspectOnly?: boolean,
   ) => Promise<void>;
   refresh: () => void;
+  disabled?: boolean;
 };
 
 export function ExactReviewCard(props: Props) {
@@ -35,7 +36,7 @@ export function ExactReviewCard(props: Props) {
   return <ReviewBody key={identity} {...props} review={parsed.data} />;
 }
 
-function ReviewBody({ review, scope, decide, refresh }: Props) {
+function ReviewBody({ review, scope, decide, refresh, disabled }: Props) {
   const locked = useRef(false);
   const choiceRef = useRef<'once' | 'deny' | undefined>(undefined);
   const active = useRef(true);
@@ -56,6 +57,7 @@ function ReviewBody({ review, scope, decide, refresh }: Props) {
   const choose = async (choice: 'once' | 'deny') => {
     if (
       !active.current ||
+      disabled ||
       locked.current ||
       !canDecideReview(review, scope, Date.now())
     ) {
@@ -72,11 +74,17 @@ function ReviewBody({ review, scope, decide, refresh }: Props) {
       if (!active.current) return;
       setPhase('sent');
       refresh();
-    } catch {
-      if (active.current) setPhase('unknown');
+    } catch (cause) {
+      if (active.current) {
+        if (cause instanceof Error && cause.name === 'OperationNotDispatched') {
+          locked.current = false;
+          setPhase('idle');
+        } else setPhase('unknown');
+      }
     }
   };
-  const enabled = phase === 'idle' && canDecideReview(review, scope, now);
+  const enabled =
+    !disabled && phase === 'idle' && canDecideReview(review, scope, now);
   return (
     <section
       id={`review-${review.id}`}

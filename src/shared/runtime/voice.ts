@@ -4,7 +4,7 @@ import {
   sameScope,
   scopeSchema,
   type RuntimeScope,
-} from './contracts';
+} from './contracts.js';
 
 const id = z.string().min(1).max(256);
 const timestamp = z.number().int().nonnegative().max(8640000000000000);

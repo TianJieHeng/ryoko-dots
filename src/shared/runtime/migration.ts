@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { contractVersion, scopeSchema } from './contracts';
+import { contractVersion, scopeSchema } from './contracts.js';
 
 export const migrationCategories = [
   'conversations',

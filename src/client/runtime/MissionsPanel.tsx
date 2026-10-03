@@ -57,7 +57,13 @@ export function MissionsPanel({
     revision: number,
     inspectOnly = false,
   ) => {
-    if (!scope || pending.current) return;
+    if (!scope || pending.current) {
+      const error = new Error(
+        'No decision was sent because another operation is pending or the binding changed.',
+      );
+      error.name = 'OperationNotDispatched';
+      throw error;
+    }
     pending.current = true;
     setBusy(true);
     setError('');
@@ -180,6 +186,7 @@ export function MissionsPanel({
               <ExactReviewCard
                 key={`${review.id}:${review.revision}`}
                 review={review}
+                disabled={busy}
                 scope={scope}
                 refresh={() => void data.reload()}
                 decide={(current, choice, inspectOnly) =>

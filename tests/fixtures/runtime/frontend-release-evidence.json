@@ -1,0 +1,94 @@
+{
+  "evidenceKind": "frontend_local_checks_not_live_qualification",
+  "node": "v24.19.0",
+  "npm": "11.9.0",
+  "sourceCheckpoint": "the Git commit containing this receipt; verify remote SHA separately",
+  "producerPublishedCommit": "124931a916c8aa6beeaf60d08dd55ca5d20f6e3c",
+  "producerFixtureCommit": "eb6b89fd554bb29cc295732a9b9cba9c3a50a489",
+  "localChecks": {
+    "npmCi": "passed",
+    "format": "passed",
+    "lint": "passed",
+    "typecheck": "passed",
+    "testFiles": 50,
+    "testsPassed": 244,
+    "testsFailed": 0,
+    "build": "passed",
+    "contractHashes": "passed"
+  },
+  "browser": {
+    "status": "blocked",
+    "passed": 0,
+    "screenshots": 0,
+    "scenariosNotRun": 21,
+    "blockers": [
+      "Chromium singleton socket EPERM",
+      "Existing cloud browser ERR_BLOCKED_BY_CLIENT on loopback fixture"
+    ]
+  },
+  "liveIntegration": "not_run",
+  "backendGates": [
+    "BE00",
+    "BE01",
+    "BE02",
+    "BE03",
+    "BE04",
+    "BE05",
+    "BE06",
+    "BE07",
+    "BE08",
+    "BE09",
+    "BE10",
+    "BE11",
+    "BE12"
+  ],
+  "productionReady": false,
+  "deployed": false,
+  "builtAssets": [
+    {
+      "path": "dist/client/assets/RichEditor-Bw-q48LT.js",
+      "sha256": "ebab2277085c55c867123e778c40662a2934bfaeae7959890407a9f74c72934d",
+      "bytes": 48858
+    },
+    {
+      "path": "dist/client/assets/index-BlcnrbQj.css",
+      "sha256": "b9aa50857c4f57946bb87eacfab3a2a8113b94e7ebcc3a4e1be8fda1c64ec5d5",
+      "bytes": 72790
+    },
+    {
+      "path": "dist/client/assets/index-D11t-ec1.js",
+      "sha256": "0f5e493576c0f96f5ddf712afa23a76f82ced9d7fa0432b92c063d92e45f3e59",
+      "bytes": 1073660
+    },
+    {
+      "path": "dist/client/dots/blue.png",
+      "sha256": "bf8ef19c7b7d753c11ba05e411f15a0733bcb810541bc88fb34c38427c6a6040",
+      "bytes": 415250
+    },
+    {
+      "path": "dist/client/dots/mint.png",
+      "sha256": "aebbd4a27e346b7a2f41976bcdae4b144e42219cce77182053cfe4140bb6486f",
+      "bytes": 320726
+    },
+    {
+      "path": "dist/client/dots/orange.png",
+      "sha256": "bf9a2f9f6859c2931b9a4062117deb7d06fba77b190b5ad52a90587f368b34a7",
+      "bytes": 343513
+    },
+    {
+      "path": "dist/client/dots/purple.png",
+      "sha256": "9fb3e53fc90b4fe881e1c1f8121dd32fbe9882dbc989156c40b0a8fadc348441",
+      "bytes": 380879
+    },
+    {
+      "path": "dist/client/favicon.svg",
+      "sha256": "bfc6ad0b36568b964d73d6c3a1214915291418fd7164ffd9608d481305fca15d",
+      "bytes": 416
+    },
+    {
+      "path": "dist/client/index.html",
+      "sha256": "cf07a818de9f8b8629b6cfc7cd30fdabf7611ed9fc65a0a85d328e14799a5c57",
+      "bytes": 645
+    }
+  ]
+}

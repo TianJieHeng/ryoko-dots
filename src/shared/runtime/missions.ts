@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { contractVersion, scopeSchema } from './contracts';
-import { reviewSchema } from './reviews';
+import { contractVersion, scopeSchema } from './contracts.js';
+import { reviewSchema } from './reviews.js';
 export const missionSchema = z.strictObject({
   id: z.string().min(1).max(256),
   conversationId: z.string().min(1).max(256),

@@ -83,3 +83,27 @@ describe('connection and authentication fencing', () => {
     unsubscribe();
   });
 });
+it('expires protected authentication once without an unauthorized-response loop', async () => {
+  vi.stubGlobal('sessionStorage', {
+    getItem: () => null,
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify({ error: 'Expired' }), { status: 401 }),
+    ),
+  );
+  const { api, setToken, subscribeAuthentication, authHeaders } =
+    await import('../src/client/api');
+  setToken('expired-owner-token');
+  const listener = vi.fn();
+  const remove = subscribeAuthentication(listener);
+  await expect(api('/runtime/setup')).rejects.toMatchObject({ status: 401 });
+  await expect(api('/runtime/setup')).rejects.toMatchObject({ status: 401 });
+  expect(listener).toHaveBeenCalledOnce();
+  expect(authHeaders()).toEqual({});
+  remove();
+});

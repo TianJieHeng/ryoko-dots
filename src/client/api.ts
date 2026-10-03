@@ -3,6 +3,7 @@ let token =
     ? ''
     : (sessionStorage.getItem('opendots-token') ?? '');
 let authenticationGeneration = 0;
+let authenticationRejected = false;
 const authenticationListeners = new Set<() => void>();
 export function subscribeAuthentication(listener: () => void) {
   authenticationListeners.add(listener);
@@ -15,6 +16,7 @@ export function getAuthenticationGeneration() {
 }
 export function setToken(value: string) {
   token = value;
+  authenticationRejected = false;
   authenticationGeneration++;
   authenticationListeners.forEach((listener) => listener());
   if (value) sessionStorage.setItem('opendots-token', value);
@@ -57,6 +59,13 @@ export async function api<T>(
       'Authentication changed while the request was in flight.',
       409,
     );
+  if (response.status === 401 && !authenticationRejected) {
+    authenticationRejected = true;
+    token = '';
+    sessionStorage.removeItem('opendots-token');
+    authenticationGeneration++;
+    authenticationListeners.forEach((listener) => listener());
+  }
   if (!response.ok)
     throw new ApiError(
       data.error ?? `Request failed (${response.status}).`,

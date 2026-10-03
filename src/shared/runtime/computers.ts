@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { computerPermissionsSchema } from '../computer-types';
-import { contractVersion, sameScope, scopeSchema } from './contracts';
+import { computerPermissionsSchema } from '../computer-types.js';
+import { contractVersion, sameScope, scopeSchema } from './contracts.js';
 
 const id = z.string().min(1).max(256);
 const revision = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);

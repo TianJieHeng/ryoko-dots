@@ -20,6 +20,9 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
   const [tab, setTab] = useState<'Browser' | 'Files' | 'Terminal' | 'Activity'>(
     'Browser',
   );
+  // Presentation changes must not invalidate an in-flight executor operation.
+  const activeTab = useRef(tab);
+  activeTab.current = tab;
   const runtime = useRuntime(dot.id);
   const [status, setStatus] = useState<RuntimeComputerStatus>();
   const [effectNotice, setEffectNotice] = useState('');
@@ -88,7 +91,7 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
       lifecycle.current.running = next.state === 'running';
       setError('');
       if (
-        tab === 'Browser' &&
+        activeTab.current === 'Browser' &&
         next.state === 'running' &&
         next.permissions.browser &&
         next.permissions.enabled
@@ -103,7 +106,7 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
             ),
           );
           assertFreshScreen(capture, next, Date.now());
-          if (current()) {
+          if (current() && activeTab.current === 'Browser') {
             setScreen(capture);
             setScreenError('');
           }
@@ -132,12 +135,17 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
         setScreen(undefined);
       }
     }
-  }, [base, runtimeScopeKey, runtimeReady, tab]);
+  }, [base, runtimeScopeKey, runtimeReady]);
   useEffect(() => {
     lifecycle.current.active = true;
+    lifecycle.current.busy = false;
+    lifecycle.current.loaded = false;
+    lifecycle.current.running = false;
+    setBusy(false);
     setScreen(undefined);
     setStatus(undefined);
     setOutput('');
+    setContents('');
     controller.current = new AbortController();
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
@@ -184,7 +192,7 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
       }
       await refresh();
     } catch {
-      if (lifecycle.current.active)
+      if (lifecycle.current.active && revision === lifecycle.current.revision)
         setError(
           'Effect outcome remains unknown. Do not repeat the original action.',
         );
@@ -237,9 +245,11 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
             : receipt.state,
         );
       await refresh();
+      if (!lifecycle.current.active || revision !== lifecycle.current.revision)
+        return;
       return receipt.state === 'reconciled' ? receipt.output : undefined;
     } catch {
-      if (lifecycle.current.active)
+      if (lifecycle.current.active && revision === lifecycle.current.revision)
         setError(
           'Computer outcome is unknown. Inspect the original effect; remote execution may have occurred.',
         );
@@ -262,7 +272,7 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
         await refresh();
       }
     } catch {
-      if (lifecycle.current.active)
+      if (lifecycle.current.active && revision === lifecycle.current.revision)
         setError(
           'Safety control acknowledgment is unknown. Inspect the executor directly; do not assume it stopped.',
         );

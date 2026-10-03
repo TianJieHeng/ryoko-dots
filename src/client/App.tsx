@@ -318,6 +318,7 @@ export function App() {
           onSubmit={async (e) => {
             e.preventDefault();
             setToken(auth);
+            setAuth('');
             try {
               await api('/state');
               setError('');

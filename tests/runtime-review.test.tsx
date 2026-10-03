@@ -102,3 +102,17 @@ it('strictly bounds review fields and rejects unapproved runtime material', () =
       .success,
   ).toBe(false);
 });
+it('disables a second exact review while the shared operation is pending', () => {
+  const html = renderToStaticMarkup(
+    <ExactReviewCard
+      review={review}
+      scope={scope}
+      disabled
+      decide={async () => {
+        throw new Error('Must not dispatch while disabled');
+      }}
+      refresh={() => {}}
+    />,
+  );
+  expect(html.match(/disabled=""/g)).toHaveLength(2);
+});

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { sameScope, scopeSchema, type RuntimeScope } from './contracts';
+import { sameScope, scopeSchema, type RuntimeScope } from './contracts.js';
 
 /** Browser-safe, exact review material. Never trim or interpret reviewed text. */
 export const reviewSchema = z.strictObject({

@@ -1,0 +1,322 @@
+{
+  "evidenceKind": "synthetic_browser_ui_only",
+  "limitations": [
+    "No real backend, providers, authentication, user data, or producer compatibility tested",
+    "Ready capabilities exist only inside intercepted loopback requests"
+  ],
+  "version": "ryoko-dots/1",
+  "scopes": {
+    "a": {
+      "owner": "synthetic-owner",
+      "gateway": "synthetic-gateway",
+      "agent": "synthetic-agent-a",
+      "project": null,
+      "generation": 1
+    },
+    "b": {
+      "owner": "synthetic-owner",
+      "gateway": "synthetic-gateway",
+      "agent": "synthetic-agent-b",
+      "project": null,
+      "generation": 2
+    }
+  },
+  "state": {
+    "settings": {
+      "name": "Synthetic workspace",
+      "paused": false,
+      "researchAllowed": false,
+      "memoryAllowed": false
+    },
+    "tasks": [],
+    "memories": [],
+    "mode": "live",
+    "configured": true
+  },
+  "workspace": {
+    "spaces": [
+      {
+        "id": "space-a",
+        "name": "Synthetic Space",
+        "description": "Browser QA only",
+        "createdAt": 1791033600000
+      }
+    ],
+    "dots": [
+      {
+        "id": "dot-a",
+        "spaceId": "space-a",
+        "spaceIds": ["space-a"],
+        "name": "Synthetic A",
+        "instructions": "Synthetic fixture. No provider executes.",
+        "researchAllowed": false,
+        "memoryAllowed": false,
+        "createdAt": 1791033600000
+      },
+      {
+        "id": "dot-b",
+        "spaceId": "space-a",
+        "spaceIds": ["space-a"],
+        "name": "Synthetic B",
+        "instructions": "Synthetic fixture. No provider executes.",
+        "researchAllowed": false,
+        "memoryAllowed": false,
+        "createdAt": 1791033600000
+      }
+    ],
+    "conversations": [],
+    "setup": {
+      "intelligence": false,
+      "model": false,
+      "browser": false,
+      "voice": false,
+      "slack": "unconfigured",
+      "missing": []
+    },
+    "calls": []
+  },
+  "setup": {
+    "a": {
+      "version": "ryoko-dots/1",
+      "runtimeOwner": "ryoko",
+      "scope": {
+        "owner": "synthetic-owner",
+        "gateway": "synthetic-gateway",
+        "agent": "synthetic-agent-a",
+        "project": null,
+        "generation": 1
+      },
+      "controlPlane": {
+        "state": "ready",
+        "reason": "Synthetic UI fixture only; not producer qualification"
+      },
+      "binding": {
+        "state": "ready",
+        "reason": "Synthetic UI fixture only; not producer qualification"
+      },
+      "compatibility": {
+        "state": "ready",
+        "reason": "Synthetic UI fixture only; not producer qualification"
+      },
+      "features": {
+        "conversations": {
+          "state": "ready",
+          "reason": "Synthetic UI fixture only; not producer qualification"
+        },
+        "commands": {
+          "state": "ready",
+          "reason": "Synthetic UI fixture only; not producer qualification"
+        },
+        "missions": {
+          "state": "ready",
+          "reason": "Synthetic UI fixture only; not producer qualification"
+        },
+        "reviews": {
+          "state": "ready",
+          "reason": "Synthetic UI fixture only; not producer qualification"
+        },
+        "artifacts": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "specialists": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "memory": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "learning": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "schedules": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "computer": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "research": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "voice": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "slack": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "migration": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        }
+      },
+      "qualified": true
+    },
+    "b": {
+      "version": "ryoko-dots/1",
+      "runtimeOwner": "ryoko",
+      "scope": {
+        "owner": "synthetic-owner",
+        "gateway": "synthetic-gateway",
+        "agent": "synthetic-agent-b",
+        "project": null,
+        "generation": 2
+      },
+      "controlPlane": {
+        "state": "ready",
+        "reason": "Synthetic UI fixture only; not producer qualification"
+      },
+      "binding": {
+        "state": "ready",
+        "reason": "Synthetic UI fixture only; not producer qualification"
+      },
+      "compatibility": {
+        "state": "ready",
+        "reason": "Synthetic UI fixture only; not producer qualification"
+      },
+      "features": {
+        "conversations": {
+          "state": "ready",
+          "reason": "Synthetic UI fixture only; not producer qualification"
+        },
+        "commands": {
+          "state": "ready",
+          "reason": "Synthetic UI fixture only; not producer qualification"
+        },
+        "missions": {
+          "state": "ready",
+          "reason": "Synthetic UI fixture only; not producer qualification"
+        },
+        "reviews": {
+          "state": "ready",
+          "reason": "Synthetic UI fixture only; not producer qualification"
+        },
+        "artifacts": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "specialists": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "memory": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "learning": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "schedules": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "computer": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "research": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "voice": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "slack": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        },
+        "migration": {
+          "state": "unsupported",
+          "reason": "Synthetic optional capability unavailable"
+        }
+      },
+      "qualified": true
+    }
+  },
+  "conversations": {
+    "a": [
+      {
+        "id": "chat-a",
+        "dotId": "dot-a",
+        "title": "Synthetic A current",
+        "createdAt": 1791033600000,
+        "lineageId": "lineage-chat-a",
+        "revision": 1,
+        "archived": false,
+        "origin": "web"
+      },
+      {
+        "id": "chat-a-older",
+        "dotId": "dot-a",
+        "title": "Synthetic A older",
+        "createdAt": 1791033600000,
+        "lineageId": "lineage-chat-a-older",
+        "revision": 1,
+        "archived": false,
+        "origin": "web"
+      }
+    ],
+    "b": [
+      {
+        "id": "chat-b",
+        "dotId": "dot-b",
+        "title": "Synthetic B current",
+        "createdAt": 1791033600000,
+        "lineageId": "lineage-chat-b",
+        "revision": 1,
+        "archived": false,
+        "origin": "web"
+      }
+    ]
+  },
+  "pages": [
+    {
+      "id": "page-a",
+      "spaceId": "space-a",
+      "parentId": null,
+      "title": "Synthetic page A",
+      "content": "# Synthetic document\n\nOriginal fixture text.",
+      "revision": 1,
+      "createdAt": 1791033600000,
+      "updatedAt": 1791033600000,
+      "sourceThreadId": null
+    },
+    {
+      "id": "page-b",
+      "spaceId": "space-a",
+      "parentId": null,
+      "title": "Synthetic page B",
+      "content": "# Second document\n\nSecond fixture.",
+      "revision": 1,
+      "createdAt": 1791033600000,
+      "updatedAt": 1791033600000,
+      "sourceThreadId": null
+    }
+  ],
+  "review": {
+    "id": "review-a",
+    "revision": 7,
+    "approvalDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "actionDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "scope": {
+      "owner": "synthetic-owner",
+      "gateway": "synthetic-gateway",
+      "agent": "synthetic-agent-a",
+      "project": null,
+      "generation": 1
+    },
+    "target": "synthetic://recipient-a",
+    "action": "Send fixture text",
+    "content": "  Exact synthetic content\nSecond line  ",
+    "expiresAt": 4102444800000,
+    "status": "pending"
+  }
+}

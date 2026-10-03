@@ -64,15 +64,20 @@ export function WorkspaceDialog({
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
-    container.current
-      ?.querySelector<HTMLElement>('input,textarea,select')
-      ?.focus();
+    const initial =
+      container.current?.querySelector<HTMLElement>(
+        'input:not([disabled]),textarea:not([disabled]),select:not([disabled])',
+      ) ??
+      container.current?.querySelector<HTMLElement>(
+        'button:not([disabled]),a[href]',
+      );
+    initial?.focus();
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
       if (event.key === 'Tab') {
         const items = [
           ...(container.current?.querySelectorAll<HTMLElement>(
-            'button:not([disabled]),input,textarea,select,a[href]',
+            'button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),a[href]',
           ) ?? []),
         ];
         if (event.shiftKey && document.activeElement === items[0]) {
