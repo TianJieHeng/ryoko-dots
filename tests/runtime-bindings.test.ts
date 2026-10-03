@@ -84,7 +84,7 @@ it('does not let renames promote a specialist, client fields assert authority, o
     expect(ws.runtimeBindings.resolveDot(dot.id).privilegeClass).toBe(
       'primary',
     );
-    expect(() => ws.runtimeBindings.assertCurrent(scope)).toThrow('Stale');
+    expect(() => ws.runtimeBindings.assertCurrent(scope)).not.toThrow();
     expect(() =>
       ws.runtimeBindings.bindAgent(
         { ...agent, privilegeClass: 'specialist' },

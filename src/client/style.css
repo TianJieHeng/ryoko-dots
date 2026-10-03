@@ -4037,3 +4037,16 @@ h3 {
     flex-wrap: wrap;
   }
 }
+
+/* Exact workflow / memory content is plain text, never HTML or executable markup. */
+.identity-json {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}

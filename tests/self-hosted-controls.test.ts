@@ -342,6 +342,22 @@ test.runIf(
         expectedGeneration: setup.scope.generation,
       });
       expect((await accepted.json()).status).toBe('accepted');
+      // Presentation edits cannot hide a durable accepted command by advancing authority.
+      const beforeRename =
+        workspace.runtimeBindings.resolveConversation(conversationId);
+      const configuredDot = workspace.dot(beforeRename.dotId)!;
+      workspace.updateDot(configuredDot.id, {
+        ...configuredDot,
+        name: 'Renamed display only',
+      });
+      expect(
+        workspace.runtimeBindings.resolveConversation(conversationId)
+          .authorityRevision,
+      ).toBe(beforeRename.authorityRevision);
+      const afterRename = await request(`/runtime/commands/${runId}`);
+      expect(afterRename.status).toBe(200);
+      expect((await afterRename.json()).operationId).toBe(runId);
+
       for (let attempt = 0; attempt < 100 && !release; attempt++)
         await new Promise((resolve) => setTimeout(resolve, 50));
       expect(release).toBeDefined();

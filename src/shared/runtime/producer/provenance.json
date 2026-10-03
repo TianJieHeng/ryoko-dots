@@ -1,6 +1,6 @@
 {
   "repository": "TianJieHeng/ryoko-agent",
-  "commit": "9c39b3cbc7d23c65782e0f73f8c8102d07955e2e",
+  "commit": "3453afefce2b21947390fac0e03d9eaa67f326e9",
   "typescriptSha256": "418386827d1d1a12e8c20c1b8e7d3081a6f317aea270da52262cec5f52fc12ca",
   "openrpcSha256": "1bf4ab3a304834538db5e379a06ce7e3b37acd53c8e0b193808d10a4fd5b447a",
   "methods": [

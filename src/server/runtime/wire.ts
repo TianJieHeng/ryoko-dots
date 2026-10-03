@@ -1,3 +1,8 @@
+import {
+  be06Methods,
+  validateBe06Wire,
+  type Be06Results,
+} from './be06-wire.js';
 import Ajv from 'ajv';
 import { producerSchema } from '../../shared/runtime/producer/schema.generated.js';
 import type {
@@ -39,7 +44,7 @@ export interface ReadResults {
   'runtime.events.since': RuntimeEventsSinceResult;
 }
 export type ReadMethod = keyof ReadResults;
-export interface ConversationResults extends ReadResults {
+export interface ConversationResults extends ReadResults, Be06Results {
   'client.capabilities': ClientCapabilitiesResult;
   'runtime.project.get': RuntimeProjectResult;
   'runtime.effect.get': RuntimeEffectGetResult;
@@ -118,6 +123,10 @@ export function validateWire(
   side: 'params' | 'result',
   value: unknown,
 ): void {
+  if (be06Methods.includes(method as never)) {
+    validateBe06Wire(method as never, side, value);
+    return;
+  }
   if (!validators.get(method)?.[side](value))
     throw new Error(`Invalid ${method} ${side} schema`);
 }

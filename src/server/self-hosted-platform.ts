@@ -1,3 +1,4 @@
+import { IdentityRuntimeService } from './runtime/identity-runtime-service.js';
 import { PageRuntimeService } from './runtime/page-runtime-service.js';
 import {
   contractVersion,
@@ -53,6 +54,7 @@ export class SelfHostedPlatform {
   readonly commands?: CommandService;
   readonly controls?: RuntimeControlService;
   readonly nativePages?: PageRuntimeService;
+  readonly identities?: IdentityRuntimeService;
   readonly delivery?: RuntimeDeliveryService;
   private unsubscribeResults?: () => void;
 
@@ -98,6 +100,12 @@ export class SelfHostedPlatform {
               403,
             );
         },
+        (scope, sessionId, auth) =>
+          this.identities?.verifySession(scope, sessionId, auth) ??
+          Promise.resolve(),
+        (scope, auth) =>
+          this.identities?.refreshCommandAccess(scope, auth) ??
+          Promise.resolve(),
       );
     if (transport && this.commands)
       this.nativePages = new PageRuntimeService(
@@ -134,6 +142,17 @@ export class SelfHostedPlatform {
         (bound, params, auth, markDispatched) =>
           this.nativePages!.decideNative(bound, params, auth, markDispatched),
         (id, review) => this.nativePages!.decisionUnavailableReason(id, review),
+      );
+    if (transport && this.commands && this.controls)
+      this.identities = new IdentityRuntimeService(
+        workspace,
+        database,
+        transport,
+        (id, auth, access) => this.commands!.existingBound(id, auth, access),
+        (scope, auth, access) =>
+          this.commands!.assertBound(scope, auth, access),
+        (id, prepared, auth) =>
+          this.controls!.assertWorkflowPublicationPresented(id, prepared, auth),
       );
     if (transport && this.commands) {
       this.delivery = new RuntimeDeliveryService(
@@ -196,6 +215,7 @@ export class SelfHostedPlatform {
   async stop() {
     this.unsubscribeResults?.();
     this.delivery?.close();
+    this.identities?.close();
     this.controls?.close();
     await this.commands?.stop();
     this.nativePages?.close();
@@ -221,6 +241,25 @@ export class SelfHostedPlatform {
         features: {
           ...base.features,
           conversations: ready,
+          ...(this.transport?.be06Qualification
+            ? {
+                specialists: {
+                  state: 'ready',
+                  reason:
+                    'Producer-owned stable identities; connect a primary conversation to manage them. Teams remain unavailable.',
+                },
+                memory: {
+                  state: 'ready',
+                  reason:
+                    'Scoped memory adapter; primary personal harness status and unsupported operations remain explicit.',
+                },
+                learning: {
+                  state: 'ready',
+                  reason:
+                    'Reviewed finite workflows, exact-byte publication and specialist next-session pins; no automatic personal enrollment.',
+                },
+              }
+            : {}),
           artifacts: this.nativePages
             ? {
                 state: 'ready',
@@ -272,13 +311,23 @@ export class SelfHostedPlatform {
     if (
       !this.transport ||
       !this.transport.connected ||
-      this.transport.config.dotId !== dotId
+      !this.workspace.runtimeBindings.hasAgent(dotId)
     )
       throw new ConversationError(
         'No verified runtime is configured for this Dot.',
         503,
       );
-    return this.workspace.runtimeBindings.resolveDot(dotId);
+    const scope = this.workspace.runtimeBindings.resolveDot(dotId);
+    if (
+      scope.gatewayId !== this.transport.config.gatewayId ||
+      scope.profileId !== this.transport.config.identity.profile_id ||
+      scope.principalId !== this.transport.config.identity.principal_id
+    )
+      throw new ConversationError(
+        'Runtime Dot belongs to another verified producer.',
+        403,
+      );
+    return scope;
   }
   private guard(
     scope: VerifiedRuntimeScope | VerifiedConversationScope,
@@ -405,6 +454,9 @@ export class SelfHostedPlatform {
         (
           await this.transport!.call('runtime.conversation.create', {
             schema_version: 1,
+            ...(scope.privilegeClass === 'specialist'
+              ? { agent_id: scope.agentId }
+              : {}),
             idempotency_key: admitted.operation.producerKey,
             title: effective.title,
           })
@@ -468,7 +520,13 @@ export class SelfHostedPlatform {
     // Always inspect the producer receipt; never GET -> replay a mutation.
     const receipt = await this.transport!.call(
       'runtime.conversation.operation.get',
-      { schema_version: 1, idempotency_key: operation.producerKey },
+      {
+        schema_version: 1,
+        ...(scope.privilegeClass === 'specialist'
+          ? { agent_id: scope.agentId }
+          : {}),
+        idempotency_key: operation.producerKey,
+      },
     );
     this.guard(scope, auth);
     if (!receipt.found || !receipt.conversation)
@@ -526,6 +584,9 @@ export class SelfHostedPlatform {
     this.guard(scope, auth);
     const result = await this.transport!.call('runtime.conversation.list', {
       schema_version: 1,
+      ...(scope.privilegeClass === 'specialist'
+        ? { agent_id: scope.agentId }
+        : {}),
       limit: 50,
       cursor: cursor ?? null,
       query,

@@ -1,3 +1,4 @@
+import type { WorkflowRunPrepareResult } from '../../shared/runtime/be06-producer/wire.generated.js';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
@@ -432,6 +433,70 @@ export class RuntimeControlService {
       decisionUnavailableReason:
         this.nativeDecisionReason?.(conversationId, result) ?? null,
     };
+  }
+  /** Reuses the exact review presentation ledger; hashes without retained bytes cannot authorize publication. */
+  async assertWorkflowPublicationPresented(
+    conversationId: string,
+    prepared: WorkflowRunPrepareResult,
+    auth: Guard,
+  ) {
+    const bound = await this.boundSession(conversationId, auth, 'write');
+    if (prepared.proposals.length < 2 || prepared.proposals.length > 33)
+      throw new ConversationError(
+        'Exact workflow output set is unavailable.',
+        409,
+      );
+    for (const proposal of prepared.proposals) {
+      const current = await this.call(
+        bound,
+        'runtime.approval.get',
+        { approval_id: proposal.approval_id },
+        auth,
+        'write',
+      );
+      const shown = this.db
+        .prepare(
+          'SELECT * FROM runtime_review_presentations WHERE ownerId=? AND conversationId=? AND approvalId=?',
+        )
+        .get(this.ownerId, conversationId, proposal.approval_id);
+      const material = current.detail.review,
+        approval = current.approval;
+      const arguments_ = material?.action.arguments;
+      const descriptor =
+        arguments_ &&
+        typeof arguments_.descriptor === 'object' &&
+        arguments_.descriptor !== null
+          ? (arguments_.descriptor as Record<string, unknown>)
+          : undefined;
+      const content = material?.content;
+      if (
+        !shown ||
+        shown.authority !== this.authority(bound) ||
+        shown.liveBinding !== this.liveKey(bound) ||
+        shown.fingerprint !== this.reviewFingerprint(current) ||
+        !this.exactReview(current, bound.scope) ||
+        material?.action.operation_class !== 'project_artifact_publish' ||
+        !content ||
+        !descriptor ||
+        arguments_?.project_id !== proposal.project_id ||
+        approval.approval_id !== proposal.approval_id ||
+        approval.approval_digest !== proposal.approval_digest ||
+        !['pending', 'approved'].includes(approval.status) ||
+        approval.expired ||
+        approval.expires_at * 1000 <= Date.now() ||
+        ['artifact_id', 'version', 'sha256', 'size', 'mime'].some(
+          (key) => descriptor[key] !== proposal[key as keyof typeof proposal],
+        ) ||
+        content.sha256 !== proposal.sha256 ||
+        content.mime !== proposal.mime ||
+        Buffer.from(content.data, 'base64').length !== proposal.size
+      )
+        throw new ConversationError(
+          'Display every exact workflow output before publication; the bytes, approval or scope changed.',
+          409,
+        );
+    }
+    this.fence(bound, auth, 'write');
   }
   private checkDelivery(
     bound: ControlBinding,

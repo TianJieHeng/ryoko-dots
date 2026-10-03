@@ -5,3 +5,5 @@ RESEARCH.md
 docs/superpowers
 
 src/shared/runtime/producer/*.generated.ts
+
+src/shared/runtime/be06-producer/*.generated.ts

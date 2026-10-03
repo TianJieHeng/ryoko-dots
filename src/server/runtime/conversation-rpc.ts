@@ -1,3 +1,4 @@
+import { be06Methods } from './be06-wire.js';
 import { randomUUID } from 'node:crypto';
 import type { Readable, Writable } from 'node:stream';
 import {
@@ -279,6 +280,7 @@ export class ConversationRpc {
   };
 }
 export const conversationMethods: ConversationMethod[] = [
+  ...be06Methods,
   'client.capabilities',
   'runtime.project.get',
   'runtime.effect.get',

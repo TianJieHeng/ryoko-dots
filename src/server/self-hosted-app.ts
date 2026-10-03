@@ -1,3 +1,9 @@
+import {
+  identityMethods,
+  identityReadActions,
+  type IdentityAction,
+} from '../shared/runtime/identity.js';
+import { Be06Error } from './runtime/be06-service.js';
 import { PageEffectError } from './runtime/page-effect-service.js';
 import {
   nativePageSaveSchema,
@@ -131,9 +137,11 @@ export function createSelfHostedApp({
     z.strictObject({}).parse(query(c));
     const operationId = z.uuid().parse(c.req.param('id'));
     return c.json(
-      platform.controls?.has(operationId)
-        ? await platform.controls.inspect(operationId, guard(c, platform))
-        : await platform.recover(operationId, guard(c, platform)),
+      platform.identities?.operations.has(operationId)
+        ? await platform.identities.inspect(operationId, guard(c, platform))
+        : platform.controls?.has(operationId)
+          ? await platform.controls.inspect(operationId, guard(c, platform))
+          : await platform.recover(operationId, guard(c, platform)),
     );
   });
   app.get('/api/runtime/conversations/:id/results/:commandId', async (c) => {
@@ -194,14 +202,39 @@ export function createSelfHostedApp({
       );
     });
   app.get('/api/runtime/conversations/:id/reviews/:reviewId', async (c) => {
-    z.strictObject({}).parse(query(c));
-    return c.json(
-      await controls().readReview(
-        id.parse(c.req.param('id')),
-        id.parse(c.req.param('reviewId')),
-        guard(c, platform),
-      ),
+    const { projectId } = z
+      .strictObject({ projectId: id.optional() })
+      .parse(query(c));
+    const conversationId = id.parse(c.req.param('id')),
+      auth = guard(c, platform);
+    const selected = projectId
+      ? await platform.identities?.projectReviewScope(
+          conversationId,
+          projectId,
+          auth,
+        )
+      : undefined;
+    if (projectId && !selected)
+      throw new Be06Error('Project review scope is unavailable.', 503);
+    const value = await controls().readReview(
+      conversationId,
+      id.parse(c.req.param('reviewId')),
+      auth,
     );
+    if (selected) {
+      selected.assertCurrent();
+      if (
+        value.review &&
+        value.detail.detail.review?.action.arguments.project_id !== projectId
+      )
+        throw new Be06Error(
+          'Review project does not match this exact proposal.',
+          403,
+        );
+      value.scope = selected.scope;
+      if (value.review) value.review.scope = selected.scope;
+    }
+    return c.json(value);
   });
   app.get(
     '/api/runtime/conversations/:id/deliveries/:deliveryId',
@@ -246,6 +279,7 @@ export function createSelfHostedApp({
       id.parse(c.req.param('id')),
       guard(c, platform),
     );
+    await platform.identities?.connected(c.req.param('id'), guard(c, platform));
     if (platform.transport?.config.nativePages)
       await platform.nativePages?.connect(
         c.req.param('id'),
@@ -604,6 +638,129 @@ export function createSelfHostedApp({
       ),
     );
   });
+  const identities = () => {
+    if (!platform.identities || !platform.transport?.be06Qualification)
+      throw new Be06Error('Verified identity adapter is unavailable.', 503);
+    return platform.identities;
+  };
+  app.get('/api/runtime/specialists', async (c) => {
+    const { dotId } = z.strictObject({ dotId: id }).parse(query(c));
+    return c.json(await identities().specialists(dotId, guard(c, platform)));
+  });
+  app.get('/api/runtime/identity/projects', async (c) => {
+    const { dotId } = z.strictObject({ dotId: id }).parse(query(c));
+    return c.json(await identities().projects(dotId, guard(c, platform)));
+  });
+  app.get('/api/runtime/identity/legacy-memory', (c) => {
+    const input = z
+      .strictObject({
+        dotId: id,
+        offset: z
+          .string()
+          .regex(/^[0-9]{1,9}$/)
+          .transform(Number)
+          .default(0),
+      })
+      .parse(query(c));
+    return c.json(
+      identities().legacyMemory(input.dotId, input.offset, guard(c, platform)),
+    );
+  });
+  app.get('/api/runtime/identity/legacy', (c) => {
+    const { dotId } = z.strictObject({ dotId: id }).parse(query(c));
+    return c.json(identities().legacy(dotId, guard(c, platform)));
+  });
+  app.get('/api/runtime/identity/operations/:operationId/review', async (c) => {
+    z.strictObject({}).parse(query(c));
+    return c.json(
+      await identities().present(
+        z.uuid().parse(c.req.param('operationId')),
+        guard(c, platform),
+      ),
+    );
+  });
+  app.post('/api/runtime/conversations/:id/identity/:action', async (c) => {
+    z.strictObject({}).parse(query(c));
+    const alias = c.req.param('action');
+    if (!Object.hasOwn(identityMethods, alias))
+      throw new Be06Error('Identity operation is unavailable.', 400);
+    const action = alias as IdentityAction,
+      method = identityMethods[action];
+    const base = z.strictObject({
+      payload: z.record(z.string(), z.unknown()),
+      projectId: id.nullable().optional(),
+    });
+    const conversationId = id.parse(c.req.param('id')),
+      auth = guard(c, platform);
+    if (identityReadActions.has(action)) {
+      const input = base.parse(await c.req.json());
+      return c.json(
+        await identities().read(
+          conversationId,
+          method,
+          input.payload,
+          auth,
+          input.projectId,
+        ),
+      );
+    }
+    const input = base
+      .extend({
+        operationId: z.uuid(),
+        intentDigest: z.string().regex(/^[a-f0-9]{64}$/),
+        expectedGeneration: z.number().int().nonnegative(),
+      })
+      .parse(await c.req.json());
+    return c.json(
+      await identities().act(
+        conversationId,
+        method,
+        input.payload,
+        {
+          operationId: input.operationId,
+          intentDigest: input.intentDigest,
+          expectedGeneration: input.expectedGeneration,
+        },
+        auth,
+        input.projectId,
+      ),
+    );
+  });
+  app.get(
+    '/api/runtime/conversations/:id/identity/memory/export',
+    async (c) => {
+      const input = z
+        .strictObject({
+          projectId: id.optional(),
+          includeDeleted: z.enum(['true', 'false']).default('false'),
+        })
+        .parse(query(c));
+      const auth = guard(c, platform);
+      const result = await identities().exportMemory(
+        id.parse(c.req.param('id')),
+        input.projectId ?? null,
+        input.includeDeleted === 'true',
+        auth,
+      );
+      c.header('Content-Type', 'application/json');
+      c.header('Cache-Control', 'private, no-store');
+      c.header(
+        'Content-Disposition',
+        'attachment; filename="owned-memory.json"',
+      );
+      c.header('X-Content-Type-Options', 'nosniff');
+      c.header('X-Content-SHA256', result.sha256);
+      c.header('X-Memory-Revision', String(result.revision));
+      c.header('Content-Length', String(result.bytes.length));
+      return stream(c, async (output) => {
+        for (let offset = 0; offset < result.bytes.length; offset += 16384) {
+          if (output.aborted || c.req.raw.signal.aborted) return;
+          result.assertCurrent();
+          await output.write(result.bytes.subarray(offset, offset + 16384));
+        }
+      });
+    },
+  );
   // Explicit retirement seam: no wildcard proxy, legacy SDK, timer or model fallback.
   app.all('/api/runtime/*', (c) =>
     c.json(
@@ -632,7 +789,8 @@ export function createSelfHostedApp({
     if (
       error instanceof ConversationError ||
       error instanceof PageError ||
-      error instanceof PageEffectError
+      error instanceof PageEffectError ||
+      error instanceof Be06Error
     )
       return c.json({ error: error.message }, error.status);
     return c.json(

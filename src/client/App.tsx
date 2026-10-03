@@ -2,7 +2,16 @@ import { MemoryLearning } from './runtime/MemoryLearning';
 import { specialistsSchema, configSchema } from '../shared/runtime/agents';
 import { MissionsPanel } from './runtime/MissionsPanel';
 import { useResource } from './runtime/use-resource';
-import { runtimeAction } from './runtime/actions';
+import {
+  actIdentity,
+  readIdentity,
+  requireAccepted,
+} from './runtime/identity-client';
+import {
+  agentSessionSchema,
+  identityProjectsSchema,
+} from '../shared/runtime/identity';
+import { sameScope } from '../shared/runtime/contracts';
 import { useConversations } from './runtime/use-conversations';
 import { createConversation } from './runtime/conversations';
 import { useRuntime } from './runtime/use-runtime';
@@ -200,7 +209,7 @@ function WorkspaceApp({
   const runtime = useRuntime(selectedDot);
   const conversationList = useConversations(selectedDot, runtime);
   const specialists = useResource(
-    '/runtime/specialists',
+    `/runtime/specialists?dotId=${encodeURIComponent(selectedDot)}`,
     specialistsSchema,
     runtime,
     'specialists',
@@ -354,22 +363,91 @@ function WorkspaceApp({
           throw new Error(
             'Specialist configuration awaits the qualified runtime identity adapter.',
           );
-        const configuration = configSchema.parse(body);
+        const { copyFromAgentId, ...editable } = (body ?? {}) as Record<
+          string,
+          unknown
+        >;
+        const configuration = configSchema.parse(editable);
+        if (
+          copyFromAgentId !== undefined &&
+          (path !== '/dots' ||
+            typeof copyFromAgentId !== 'string' ||
+            !specialists.data.specialists.some(
+              (row) => row.id === copyFromAgentId && row.role === 'specialist',
+            ))
+        )
+          throw new Error(
+            'Only a verified specialist may be copied into a new isolated identity.',
+          );
         const existing = specialists.data.specialists.find(
           (item) => path === `/dots/${item.dotId}`,
         );
         if (path !== '/dots' && !existing)
           throw new Error('This specialist has no verified runtime binding.');
-        await runtimeAction(
-          runtime.setup.scope,
-          existing
-            ? `/runtime/specialists/${encodeURIComponent(existing.id)}/actions`
-            : '/runtime/specialists',
-          existing ? 'configure' : 'create',
-          configuration,
-          existing?.revision ?? 0,
+        if (!selectedThread)
+          throw new Error(
+            'Open and explicitly connect a primary conversation before managing specialist settings.',
+          );
+        const scope = { ...runtime.setup.scope, project: null };
+        const session = await readIdentity(
+          scope,
+          selectedThread,
+          'session',
+          {},
+          agentSessionSchema,
+        );
+        if (session.role !== 'primary' || !session.authority_current)
+          throw new Error(
+            'Use a connected primary conversation to manage stable specialist identities.',
+          );
+        const projects = identityProjectsSchema.parse(
+          await api<unknown>(
+            `/runtime/identity/projects?dotId=${encodeURIComponent(selectedDot)}`,
+          ),
+        );
+        if (!sameScope(projects.scope, scope))
+          throw new Error(
+            'Project mapping changed before configuration. Refresh first.',
+          );
+        const projectFor = (spaceId: string) => {
+          const project = projects.projects.find(
+            (row) => row.spaceId === spaceId,
+          );
+          if (!project)
+            throw new Error('A selected Space has no verified project grant.');
+          return project.projectId;
+        };
+        const config = {
+          name: configuration.name,
+          instructions: configuration.instructions,
+          research_allowed: configuration.researchAllowed,
+          memory_allowed: configuration.memoryAllowed,
+          project_grants: configuration.spaceIds.map(projectFor),
+          default_project_id: configuration.spaceId
+            ? projectFor(configuration.spaceId)
+            : null,
+        };
+        requireAccepted(
+          await actIdentity(
+            scope,
+            selectedThread,
+            existing ? 'agents.update' : 'agents.create',
+            existing
+              ? {
+                  agent_id: existing.id,
+                  expected_revision: existing.revision,
+                  config,
+                }
+              : {
+                  config,
+                  ...(copyFromAgentId
+                    ? { copy_from_agent_id: copyFromAgentId }
+                    : {}),
+                },
+          ),
         );
         await specialists.reload();
+        runtime.reload();
       } else if (path.startsWith('/memories') || path === '/settings')
         throw new Error(
           'Use scoped runtime memory and controls. Legacy global mutation is frozen.',
@@ -903,6 +981,13 @@ function WorkspaceApp({
               <MemoryLearning
                 key={JSON.stringify(runtime.setup?.scope)}
                 connection={runtime}
+                dotId={dot.id}
+                conversationId={thread?.id}
+                conversations={conversationList.conversations.filter(
+                  (item) => item.dotId === dot.id,
+                )}
+                spaces={workspace.spaces}
+                onConversationChange={setSelectedThread}
               />
             ) : (
               <>

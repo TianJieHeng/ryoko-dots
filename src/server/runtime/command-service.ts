@@ -51,6 +51,15 @@ export class CommandService {
     ) => void,
     private pageContext: (id: string) => string = () => '',
     private assertCommandAllowed: (intent: CommandIntent) => void = () => {},
+    private verifyManagedSession?: (
+      scope: VerifiedConversationScope,
+      sessionId: string,
+      auth: Guard,
+    ) => Promise<unknown>,
+    private refreshContextAccess?: (
+      scope: VerifiedConversationScope,
+      auth: Guard,
+    ) => Promise<void>,
   ) {
     this.ledger = new CommandLedger(database, workspace.ownerId);
     this.projection = new RuntimeProjection(database);
@@ -183,6 +192,8 @@ export class CommandService {
       if (bound.readiness === 'failed')
         throw new ConversationError('Runtime agent is unavailable.', 503);
       if (bound.readiness === 'ready') {
+        if (this.transport.be06Qualification && this.verifyManagedSession)
+          await this.verifyManagedSession(original, bound.session_id, auth);
         const capabilities = await this.transport.call('runtime.capabilities', {
           session_id: bound.session_id,
         });
@@ -336,6 +347,8 @@ export class CommandService {
   ) {
     const access = intent.operation === 'cancel' ? 'read' : 'write';
     let scope = await this.authorize(intent.conversationId, auth, access);
+    if (intent.operation !== 'cancel' && this.transport.be06Qualification)
+      await this.refreshContextAccess?.(scope, auth);
     this.assertCommandAllowed(intent);
     if (scope.authorityRevision !== expectedGeneration)
       throw new ConversationError('Command authority generation changed.', 409);
@@ -392,6 +405,8 @@ export class CommandService {
             409,
           );
       }
+      if (intent.operation !== 'cancel' && this.transport.be06Qualification)
+        await this.refreshContextAccess?.(scope, auth);
       // Context is explicitly untrusted text, never authority, instructions or a tool grant.
       this.guardRecord(admitted.record, auth, access);
       this.assertCommandAllowed(intent);

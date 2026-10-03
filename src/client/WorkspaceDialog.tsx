@@ -56,6 +56,7 @@ export function WorkspaceDialog({
   const [defaultSpace, setDefaultSpace] = useState(
     dialog.type === 'dot' ? (dialog.dot?.spaceId ?? dialog.spaceId) : '',
   );
+  const [copy, setCopy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const container = useRef<HTMLElement>(null);
@@ -132,7 +133,9 @@ export function WorkspaceDialog({
               ? `Verified agent ${specialist.id} · ${specialist.role} · ${specialist.memoryBackend} · revision ${specialist.revision}`
               : 'No verified runtime identity is available yet.'}{' '}
             Accepted work retains its original capability snapshot;
-            configuration edits do not rewrite it.
+            configuration edits do not rewrite it. Open and connect a primary
+            conversation to create or edit specialists; the server assigns
+            stable identities and isolated namespaces.
           </p>
         )}
         {dialog.type === 'schedule' ? (
@@ -159,15 +162,18 @@ export function WorkspaceDialog({
                 body = { name, description: text };
               }
               if (dialog.type === 'dot') {
-                path = dialog.dot ? `/dots/${dialog.dot.id}` : '/dots';
-                method = dialog.dot ? 'PUT' : 'POST';
+                path = dialog.dot && !copy ? `/dots/${dialog.dot.id}` : '/dots';
+                method = dialog.dot && !copy ? 'PUT' : 'POST';
                 body = {
-                  spaceId: defaultSpace,
+                  spaceId: defaultSpace || null,
                   spaceIds,
                   name,
                   instructions: text,
                   researchAllowed: research,
                   memoryAllowed: memory,
+                  ...(copy && specialist?.role === 'specialist'
+                    ? { copyFromAgentId: specialist.id }
+                    : {}),
                 };
               }
               if (dialog.type === 'settings') {
@@ -234,7 +240,8 @@ export function WorkspaceDialog({
               <fieldset className="space-access-fields">
                 <legend>Space access</legend>
                 <p className="muted">
-                  Choose where this Dot can read and edit pages.
+                  Choose desired project restrictions. Live server grants remain
+                  authoritative; a default destination does not grant ownership.
                 </p>
                 {workspace.spaces.map((space) => (
                   <label className="permission-row" key={space.id}>
@@ -259,12 +266,9 @@ export function WorkspaceDialog({
                 <select
                   id="default-space"
                   value={defaultSpace}
-                  required
                   onChange={(event) => setDefaultSpace(event.target.value)}
                 >
-                  <option value="" disabled>
-                    Choose a Space
-                  </option>
+                  <option value="">No default destination</option>
                   {workspace.spaces
                     .filter((space) => spaceIds.includes(space.id))
                     .map((space) => (
@@ -308,6 +312,22 @@ export function WorkspaceDialog({
                 </label>
               </>
             )}
+            {dialog.type === 'dot' &&
+              specialist?.role === 'specialist' &&
+              dialog.dot && (
+                <label className="permission-row">
+                  <input
+                    type="checkbox"
+                    checked={copy}
+                    onChange={(event) => setCopy(event.target.checked)}
+                  />
+                  <span>
+                    Create a distinct specialist copy with these settings. The
+                    server assigns a new stable ID and isolated memory
+                    namespace; no memories are copied.
+                  </span>
+                </label>
+              )}
             {dialog.type === 'dot' && (
               <p className="config-note">
                 Reviewed Learning is managed in Memory → Reviewed Learning.
@@ -342,7 +362,11 @@ export function WorkspaceDialog({
                   (dialog.type === 'dot' && !runtime?.available('specialists'))
                 }
               >
-                {busy ? 'Saving…' : 'Save'}
+                {busy
+                  ? 'Saving…'
+                  : copy
+                    ? 'Create isolated specialist copy'
+                    : 'Save'}
               </button>
             )}
           </form>

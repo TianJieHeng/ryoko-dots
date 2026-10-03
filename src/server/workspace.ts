@@ -1,3 +1,7 @@
+import {
+  inventoryLegacyEnrollment,
+  freezeLegacyEnrollment,
+} from './runtime/be06-migration.js';
 import { RuntimeBindings } from './runtime/bindings.js';
 import { ComputerStore } from './computer-store.js';
 import { Pages } from './pages.js';
@@ -248,11 +252,17 @@ export class WorkspaceStore {
       this.db
         .prepare('UPDATE dots SET spaceId=? WHERE id=?')
         .run(defaultSpace, id);
-      this.db
-        .prepare(
-          'UPDATE dot_access_revisions SET revision=revision+1 WHERE dotId=?',
-        )
-        .run(id);
+      if (
+        current.researchAllowed !== patch.researchAllowed ||
+        current.memoryAllowed !== patch.memoryAllowed ||
+        JSON.stringify([...new Set(current.spaceIds)].sort()) !==
+          JSON.stringify([...new Set(spaceIds)].sort())
+      )
+        this.db
+          .prepare(
+            'UPDATE dot_access_revisions SET revision=revision+1 WHERE dotId=?',
+          )
+          .run(id);
       this.db.prepare('DELETE FROM dot_spaces WHERE dotId=?').run(id);
       for (const space of new Set(spaceIds))
         this.db.prepare('INSERT INTO dot_spaces VALUES (?, ?)').run(id, space);
@@ -262,6 +272,79 @@ export class WorkspaceStore {
       throw error;
     }
     return this.dot(id)!;
+  }
+  /** Verified producer configuration projection only. An empty Space grant set stays empty. */
+  mirrorRuntimeDot(
+    id: string,
+    config: {
+      name: string;
+      instructions: string;
+      researchAllowed: boolean;
+      memoryAllowed: boolean;
+      spaceIds: string[];
+      defaultSpaceId: string | null;
+    },
+  ) {
+    const current = this.dot(id);
+    const spaces = [...new Set(config.spaceIds)].sort();
+    if (
+      spaces.some((space) => !this.spaces().some((s) => s.id === space)) ||
+      (config.defaultSpaceId !== null &&
+        !spaces.includes(config.defaultSpaceId))
+    )
+      throw new Error('Invalid verified runtime Space projection.');
+    const displaySpace =
+      config.defaultSpaceId ??
+      spaces[0] ??
+      current?.spaceId ??
+      this.spaces()[0]?.id;
+    if (!displaySpace) throw new Error('Workspace display Space unavailable.');
+    const changed =
+      !current ||
+      current.researchAllowed !== config.researchAllowed ||
+      current.memoryAllowed !== config.memoryAllowed ||
+      JSON.stringify([...current.spaceIds].sort()) !== JSON.stringify(spaces);
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      this.db
+        .prepare(
+          `INSERT INTO dots(id,spaceId,name,instructions,researchAllowed,memoryAllowed,createdAt,learningContainerId,skillDeliveryEnabled)
+        VALUES(?,?,?,?,?,?,?,NULL,0) ON CONFLICT(id) DO UPDATE SET spaceId=excluded.spaceId,name=excluded.name,instructions=excluded.instructions,researchAllowed=excluded.researchAllowed,memoryAllowed=excluded.memoryAllowed`,
+        )
+        .run(
+          id,
+          displaySpace,
+          config.name,
+          config.instructions,
+          +config.researchAllowed,
+          +config.memoryAllowed,
+          current?.createdAt ?? Date.now(),
+        );
+      this.db
+        .prepare('INSERT OR IGNORE INTO dot_access_revisions VALUES(?,1)')
+        .run(id);
+      if (current && changed)
+        this.db
+          .prepare(
+            'UPDATE dot_access_revisions SET revision=revision+1 WHERE dotId=?',
+          )
+          .run(id);
+      this.db.prepare('DELETE FROM dot_spaces WHERE dotId=?').run(id);
+      for (const space of spaces)
+        this.db.prepare('INSERT INTO dot_spaces VALUES(?,?)').run(id, space);
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
+    return this.dot(id)!;
+  }
+  frozenLearningInventory() {
+    return freezeLegacyEnrollment(
+      this.db,
+      this.ownerId,
+      inventoryLegacyEnrollment(this.db, this.ownerId),
+    );
   }
   conversations(): Conversation[] {
     return this.db

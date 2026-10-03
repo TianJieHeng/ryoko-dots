@@ -4,7 +4,7 @@ BE05 wires the native executor/store, bounded owned-stdio callbacks, exact appro
 
 ## Producer contract
 
-The reviewed producer is `ryoko-agent` commit `9c39b3cbc7d23c65782e0f73f8c8102d07955e2e`.
+The reviewed producer is `ryoko-agent` commit `3453afefce2b21947390fac0e03d9eaa67f326e9`.
 
 Its actual implementation exists in:
 

@@ -1,3 +1,5 @@
+import { BE06_PRODUCER_COMMIT, type Be06Transport } from './be06-service.js';
+import { be06Methods } from './be06-wire.js';
 import { verifyGitCheckout } from './source-pin.js';
 import {
   spawn,
@@ -44,6 +46,10 @@ export const launchConfigSchema = z.strictObject({
       OPENAI_API_KEY: z.string().min(1).max(8192).optional(),
       OPENAI_BASE_URL: endpoint.optional(),
     })
+    .optional(),
+  identityProjects: z
+    .array(z.strictObject({ spaceId: id, projectId: id }))
+    .max(100)
     .optional(),
   nativePages: z
     .strictObject({
@@ -131,6 +137,7 @@ export function verifyProviderScope(config: LaunchConfig) {
     );
 }
 export interface ConversationTransport {
+  readonly be06Qualification?: Be06Transport['be06Qualification'];
   readonly config: LaunchConfig;
   readonly connected: boolean;
   readonly epoch?: number;
@@ -178,6 +185,15 @@ export class StdioConversationTransport implements ConversationTransport {
   constructor(config: LaunchConfig) {
     this.config = launchConfigSchema.parse(config);
   }
+  get be06Qualification() {
+    return this.connected
+      ? {
+          producerCommit: BE06_PRODUCER_COMMIT,
+          methods: be06Methods,
+          specialistSessions: true,
+        }
+      : undefined;
+  }
   get connected() {
     return (
       !!this.proof && !!this.rpc?.connected && this.process?.exitCode === null
@@ -204,7 +220,7 @@ export class StdioConversationTransport implements ConversationTransport {
       [
         '-I',
         '-c',
-        'import json,sys,yaml; print(json.dumps(yaml.safe_load(sys.stdin.read())))',
+        'import json,sys; from ruamel.yaml import YAML; reader=YAML(typ="safe",pure=True); reader.version=(1,1); print(json.dumps(reader.load(sys.stdin.read())))',
       ],
       {
         input: raw,
@@ -220,6 +236,24 @@ export class StdioConversationTransport implements ConversationTransport {
       .strictObject({
         agent_identity: z.record(z.string(), z.unknown()),
         mcp_servers: z.strictObject({}).optional(),
+        delegation: z
+          .strictObject({
+            specialists: z.record(z.string(), z.unknown()).optional(),
+            durable: z
+              .strictObject({
+                enabled: z.boolean(),
+                limits: z.strictObject({
+                  max_depth: z.number().int().positive(),
+                  max_total_children: z.number().int().positive(),
+                  max_concurrent_children: z.literal(1),
+                }),
+              })
+              .optional(),
+            max_iterations: z.number().int().positive().optional(),
+            max_concurrent_children: z.literal(1).optional(),
+          })
+          .optional(),
+        runtime_budget: z.record(z.string(), z.unknown()).optional(),
         onboarding: z
           .strictObject({
             seen: z.strictObject({ profile_build_offered: z.boolean() }),
@@ -296,19 +330,23 @@ export class StdioConversationTransport implements ConversationTransport {
   private async launch() {
     // A failed pipe cannot leave a second owning stdio process running.
     await this.stop();
+    let stage = 'trusted_paths';
     try {
       for (const name of ['checkout', 'home', 'runtimeDirectory'] as const) {
         if (realpathSync(this.config[name]) !== this.config[name])
           throw new Error('Use canonical absolute trusted paths.');
       }
+      stage = 'source_pin';
       verifyGitCheckout(
         this.config.checkout,
-        '9c39b3cbc7d23c65782e0f73f8c8102d07955e2e',
+        '3453afefce2b21947390fac0e03d9eaa67f326e9',
       );
       for (const [file, expected] of pins)
         if (sha(readFileSync(join(this.config.checkout, file))) !== expected)
           throw new Error('Ryoko generated contract pin mismatch.');
+      stage = 'profile_configuration';
       this.checkProfile();
+      stage = 'stdio_capability_read';
       const child = spawn(
         this.config.python,
         ['-u', '-m', 'tui_gateway.entry'],
@@ -349,6 +387,7 @@ export class StdioConversationTransport implements ConversationTransport {
       const proof = await this.rpc.call('runtime.conversation.capabilities', {
         schema_version: 1,
       });
+      stage = 'owner_identity';
       if (
         !identityMatches(this.config.identity, proof.identity) ||
         proof.identity.role !== 'primary' ||
@@ -390,7 +429,7 @@ export class StdioConversationTransport implements ConversationTransport {
     } catch {
       await this.stop();
       throw new Error(
-        'Ryoko startup or owner identity verification failed. Check the trusted server configuration.',
+        `Ryoko startup or owner identity verification failed (${stage}). Check the trusted server configuration.`,
       );
     }
   }
