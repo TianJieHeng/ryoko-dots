@@ -76,12 +76,15 @@ names.push(
   'runtime.dots.register',
   'runtime.dots.page.prepare',
   'runtime.dots.page.publish',
+  'runtime.dots.computer.prepare',
+  'runtime.dots.computer.execute',
   'runtime.dots.effect.reconcile',
 );
 const callbackNames = [
   'dots.effect.dispatch',
   'dots.effect.inspect',
   'dots.page.read',
+  'dots.computer.observe',
   'dots.approval',
 ];
 const serverRequests = rpc['x-server-requests'].filter((m) =>
@@ -168,7 +171,7 @@ writeFileSync(
         methods: names,
         serverRequests: callbackNames,
         notifications: ['request.cancel'],
-        status: 'canonical_native_pages_schedules_stdio_subset',
+        status: 'canonical_native_pages_computers_schedules_stdio_subset',
       },
       null,
       2,

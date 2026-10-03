@@ -1,3 +1,4 @@
+import type { ComputerRuntimeService } from './computer-runtime-service.js';
 import { createHash } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
@@ -106,6 +107,7 @@ export class PageRuntimeService {
     private selectedPage: (
       conversationId: string,
     ) => { spaceId: string; pageId: string } | null = () => null,
+    private computer?: ComputerRuntimeService,
   ) {
     this.db = new DatabaseSync(database);
     this.db.exec('PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;');
@@ -119,7 +121,7 @@ export class PageRuntimeService {
       CREATE TABLE IF NOT EXISTS runtime_page_registrations(conversationId TEXT PRIMARY KEY,revision INTEGER NOT NULL,signature TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS runtime_page_native_reviews(conversationId TEXT NOT NULL,approvalId TEXT NOT NULL,approvalDigest TEXT NOT NULL,state TEXT NOT NULL,PRIMARY KEY(conversationId,approvalId));`);
     initializeOperationRegistry(this.db, 'page');
-    if (transport.config.nativePages) {
+    if (transport.config.nativePages || transport.config.nativeComputer) {
       if (!transport.setNativeHandler)
         throw new ConversationError(
           'Native callback transport unavailable.',
@@ -190,7 +192,11 @@ export class PageRuntimeService {
     }
   }
   async connect(conversationId: string, auth: Guard) {
-    if (!this.transport.config.nativePages) return false;
+    if (
+      !this.transport.config.nativePages &&
+      !this.transport.config.nativeComputer
+    )
+      return false;
     const existing = this.registering.get(conversationId);
     if (existing) {
       await existing;
@@ -208,13 +214,17 @@ export class PageRuntimeService {
     conversationId: string,
     auth: Guard,
   ): Promise<Registration> {
-    const config = this.transport.config.nativePages!;
+    const config = this.transport.config.nativePages ?? {
+      adapterId: 'dots-native-pages',
+      projects: [],
+    };
     let bound = this.bound(conversationId, auth, 'write');
     let signature = hash(
       nativePageCanonical({
         authority: this.authority(bound),
         projects: config.projects,
         grants: bound.scope.grantRevision,
+        computer: this.computer?.registrationSignature() ?? null,
       }),
     );
     const old = this.registrations.get(bound.binding.liveSessionId);
@@ -276,7 +286,7 @@ export class PageRuntimeService {
         );
       projects.push(mapping);
     }
-    if (!projects.length)
+    if (this.transport.config.nativePages && !projects.length)
       throw new ConversationError(
         'No native page Space/project grants are currently available.',
         403,
@@ -286,6 +296,7 @@ export class PageRuntimeService {
         authority: this.authority(bound),
         projects: config.projects,
         grants: bound.scope.grantRevision,
+        computer: this.computer?.registrationSignature() ?? null,
       }),
     );
     const saved = this.db
@@ -296,32 +307,35 @@ export class PageRuntimeService {
     const revision = saved
       ? Number(saved.revision) + (saved.signature === signature ? 0 : 1)
       : 1;
-    const registered = await this.transport.call('runtime.dots.register', {
-      schema_version: 1,
-      session_id: bound.binding.liveSessionId,
-      adapter_id: config.adapterId,
-      kind: 'page',
-      revision,
-      expected_revision:
-        old && old.bound.epoch === bound.epoch ? old.revision : null,
-      enabled: true,
-      project_ids: projects.map((p) => p.projectId),
-      space_ids: projects.map((p) => p.spaceId),
-      actions: [],
-    });
-    this.fence(bound, auth, 'write');
-    if (
-      registered.adapter_id !== config.adapterId ||
-      registered.kind !== 'page' ||
-      registered.revision !== revision ||
-      !registered.enabled ||
-      registered.agent_id !== bound.scope.agentId ||
-      !registered.registered
-    )
-      throw new ConversationError(
-        'Native page registration receipt mismatch.',
-        403,
-      );
+    if (this.transport.config.nativePages) {
+      const registered = await this.transport.call('runtime.dots.register', {
+        schema_version: 1,
+        session_id: bound.binding.liveSessionId,
+        adapter_id: config.adapterId,
+        kind: 'page',
+        revision,
+        expected_revision:
+          old && old.bound.epoch === bound.epoch ? old.revision : null,
+        enabled: true,
+        project_ids: projects.map((p) => p.projectId),
+        space_ids: projects.map((p) => p.spaceId),
+        actions: [],
+      });
+      this.fence(bound, auth, 'write');
+      if (
+        registered.adapter_id !== config.adapterId ||
+        registered.kind !== 'page' ||
+        registered.revision !== revision ||
+        !registered.enabled ||
+        registered.agent_id !== bound.scope.agentId ||
+        !registered.registered
+      )
+        throw new ConversationError(
+          'Native page registration receipt mismatch.',
+          403,
+        );
+    }
+    await this.computer?.register(bound, auth);
     const snapshot = await this.transport.call('runtime.snapshot', {
       schema_version: 1,
       session_id: bound.binding.liveSessionId,
@@ -563,6 +577,22 @@ export class PageRuntimeService {
       method === 'dots.effect.inspect',
       signal,
     );
+    const computer =
+      method === 'dots.computer.observe' ||
+      (method.startsWith('dots.effect.') &&
+        request.identity.adapter_kind === 'computer');
+    if (computer) {
+      if (!this.computer)
+        throw new ConversationError('Computer adapter unavailable.', 503);
+      return this.computer.callback(
+        method,
+        raw,
+        peer,
+        authority.run_id,
+        signal,
+        () => this.runGeneration(registration, authority.run_id),
+      );
+    }
     if (method === 'dots.effect.inspect')
       return this.effects.inspect(raw, peer);
     if (method === 'dots.page.read') return this.effects.read(raw, peer);
@@ -619,12 +649,24 @@ export class PageRuntimeService {
       review.approval.action_digest !== request.action_digest ||
       review.approval.status !== 'pending' ||
       !review.detail.reviewable ||
-      review.detail.review?.action.operation_class !== 'dots_page_publish'
+      !['dots_page_publish', 'dots_computer_action'].includes(
+        review.detail.review?.action.operation_class ?? '',
+      )
     )
       throw new ConversationError(
         'Native approval callback differs from its exact producer review.',
         403,
       );
+    if (
+      review.detail.review?.action.operation_class === 'dots_computer_action'
+    ) {
+      if (!this.computer)
+        throw new ConversationError(
+          'Computer approval adapter unavailable.',
+          503,
+        );
+      this.computer.assertApproval(request.session_id, peer);
+    }
     const key = `${request.session_id}:${request.approval_id}`;
     if (this.approvals.has(key))
       throw new ConversationError(
@@ -766,7 +808,9 @@ export class PageRuntimeService {
   ): string | null {
     if (
       review.approval.status !== 'pending' ||
-      review.detail.review?.action.operation_class !== 'dots_page_publish'
+      !['dots_page_publish', 'dots_computer_action'].includes(
+        review.detail.review?.action.operation_class ?? '',
+      )
     )
       return null;
     const manual = this.db
@@ -778,7 +822,8 @@ export class PageRuntimeService {
         review.approval.approval_id,
         review.approval.approval_digest,
       );
-    if (manual) return null;
+    if (manual || this.computer?.manualApproval(conversationId, review))
+      return null;
     const waiting = [...this.approvals.values()].find(
       (pending) =>
         pending.registration.bound.scope.conversationId === conversationId &&

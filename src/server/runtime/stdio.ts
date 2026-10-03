@@ -51,6 +51,7 @@ export const launchConfigSchema = z.strictObject({
     .array(z.strictObject({ spaceId: id, projectId: id }))
     .max(100)
     .optional(),
+  nativeComputer: z.strictObject({ executorId: id }).optional(),
   nativePages: z
     .strictObject({
       adapterId: id,
@@ -324,6 +325,13 @@ export class StdioConversationTransport implements ConversationTransport {
       )
         throw new Error('Native page project mappings must be one-to-one.');
     }
+    if (
+      this.config.nativeComputer &&
+      !['dots_computer_observe', 'dots_computer_propose'].every((tool) =>
+        agents?.[this.config.identity.agent_id]?.allowed_tools?.includes(tool),
+      )
+    )
+      throw new Error('Native computer needs exact reviewed tool grants.');
     this.profileHash = sha(raw);
   }
   start(): Promise<RuntimeConversationCapabilities> {
@@ -381,7 +389,7 @@ export class StdioConversationTransport implements ConversationTransport {
             this.process !== child ||
             this.epoch !== launchEpoch ||
             !this.nativeHandler ||
-            !this.config.nativePages
+            !(this.config.nativePages || this.config.nativeComputer)
           )
             throw new Error('Native callback binding unavailable.');
           return this.nativeHandler(method, params, signal);
@@ -414,7 +422,7 @@ export class StdioConversationTransport implements ConversationTransport {
           .some((method) => !proof.methods.includes(method))
       )
         throw new Error('Ryoko capability identity or bounds mismatch.');
-      if (this.config.nativePages) {
+      if (this.config.nativePages || this.config.nativeComputer) {
         if (!this.nativeHandler)
           throw new Error('Native page callbacks are not installed.');
         const native = await rpc.call('client.capabilities', {
@@ -425,7 +433,8 @@ export class StdioConversationTransport implements ConversationTransport {
           ![
             'dots.effect.dispatch',
             'dots.effect.inspect',
-            'dots.page.read',
+            ...(this.config.nativePages ? ['dots.page.read'] : []),
+            ...(this.config.nativeComputer ? ['dots.computer.observe'] : []),
             'dots.approval',
           ].every((method) => native.server_requests.includes(method))
         )

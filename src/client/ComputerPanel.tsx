@@ -2,12 +2,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Dot } from '../shared/types';
 import type { ComputerAction } from '../shared/computer-types';
 import {
-  computerStatusSchema,
   screenSchema,
   assertFreshScreen,
   type RuntimeComputerStatus,
 } from '../shared/runtime/computers';
-import { runComputerOperation } from './runtime/computers';
+import {
+  discoverComputerStatus,
+  inspectComputerOperation,
+  loadComputerStatus,
+  pendingComputerOperations,
+  runComputerOperation,
+  type ComputerOperationReference,
+} from './runtime/computers';
 import { sameScope } from '../shared/runtime/contracts';
 import { useRuntime } from './runtime/use-runtime';
 import { RuntimeStatus } from './runtime/RuntimeStatus';
@@ -24,13 +30,31 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
   const activeTab = useRef(tab);
   activeTab.current = tab;
   const runtime = useRuntime(dot.id);
-  const [status, setStatus] = useState<RuntimeComputerStatus>();
-  const [effectNotice, setEffectNotice] = useState('');
-  const [pendingEffect, setPendingEffect] = useState(false);
-  const unresolved = useRef<
-    | { status: RuntimeComputerStatus; action: string; input: unknown }
+  const [storedStatus, setStatus] = useState<{
+    dotId: string;
+    status: RuntimeComputerStatus;
+  }>();
+  const status =
+    storedStatus &&
+    runtime.setup?.scope &&
+    storedStatus.dotId === dot.id &&
+    sameScope(storedStatus.status.scope, runtime.setup.scope)
+      ? storedStatus.status
+      : undefined;
+  const resolvedExecutor = useRef<
+    | {
+        dotId: string;
+        scope: RuntimeComputerStatus['scope'];
+        executorId: string;
+      }
     | undefined
   >(undefined);
+  const [effectNotice, setEffectNotice] = useState('');
+  const [pendingOperations, setPendingOperations] = useState<
+    ComputerOperationReference[]
+  >([]);
+  const pendingEffect = pendingOperations.length > 0;
+  const unresolved = useRef<ComputerOperationReference[]>([]);
   const [screen, setScreen] = useState<Screen>();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -62,35 +86,66 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
     running: false,
   });
   const controller = useRef<AbortController | null>(null);
-  const base = `/runtime/computers?dotId=${encodeURIComponent(dot.id)}`;
+  const refreshSequence = useRef(0);
   const runtimeScopeKey = JSON.stringify(runtime.setup?.scope);
   const runtimeReady = runtime.available('computer');
   useEffect(() => {
-    unresolved.current = undefined;
-    setPendingEffect(false);
+    unresolved.current = [];
+    setPendingOperations([]);
     setEffectNotice('');
-  }, [runtimeScopeKey]);
+  }, [dot.id, runtimeScopeKey]);
   const refresh = useCallback(async () => {
+    const sequence = ++refreshSequence.current;
     const revision = lifecycle.current.revision;
     const current = () =>
-      lifecycle.current.active && revision === lifecycle.current.revision;
+      lifecycle.current.active &&
+      revision === lifecycle.current.revision &&
+      sequence === refreshSequence.current;
     try {
-      if (!runtimeReady || !runtime.setup?.scope) {
+      if (!runtime.setup?.scope) {
         setStatus(undefined);
         setScreen(undefined);
         return;
       }
-      const next = computerStatusSchema.parse(
-        await api<unknown>(base, 'GET', undefined, controller.current?.signal),
-      );
-      if (!sameScope(runtime.setup.scope, next.scope))
-        throw new Error('Computer belongs to another binding.');
+      const known = resolvedExecutor.current;
+      const next =
+        known &&
+        known.dotId === dot.id &&
+        sameScope(known.scope, runtime.setup.scope)
+          ? await loadComputerStatus(
+              known.executorId,
+              runtime.setup.scope,
+              controller.current?.signal,
+            )
+          : await discoverComputerStatus(
+              dot.id,
+              runtime.setup.scope,
+              controller.current?.signal,
+            );
       if (!current()) return;
-      setStatus(next);
+      resolvedExecutor.current = {
+        dotId: dot.id,
+        scope: next.scope,
+        executorId: next.executorId,
+      };
+      unresolved.current = pendingComputerOperations(next);
+      setPendingOperations(unresolved.current);
+      setStatus({ dotId: dot.id, status: next });
+      // A newer revision invalidates the preceding screen immediately.
+      setScreen((currentScreen) => {
+        if (!currentScreen) return undefined;
+        try {
+          return assertFreshScreen(currentScreen, next);
+        } catch {
+          return undefined;
+        }
+      });
       lifecycle.current.loaded = true;
       lifecycle.current.running = next.state === 'running';
       setError('');
       if (
+        runtimeReady &&
+        next.configured &&
         activeTab.current === 'Browser' &&
         next.state === 'running' &&
         next.permissions.browser &&
@@ -135,7 +190,7 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
         setScreen(undefined);
       }
     }
-  }, [base, runtimeScopeKey, runtimeReady]);
+  }, [dot.id, runtimeScopeKey, runtimeReady]);
   useEffect(() => {
     lifecycle.current.active = true;
     lifecycle.current.busy = false;
@@ -168,33 +223,28 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
       clearTimeout(timer);
     };
   }, [refresh]);
-  const inspectEffect = async () => {
-    const saved = unresolved.current;
+  const inspectEffect = async (saved: ComputerOperationReference) => {
     const revision = lifecycle.current.revision;
-    if (!saved || lifecycle.current.busy) return;
+    if (!saved || !status || lifecycle.current.busy) return;
     lifecycle.current.busy = true;
     setBusy(true);
     try {
-      const receipt = await runComputerOperation(
-        saved.status,
-        saved.action,
-        saved.input,
-      );
+      const receipt = await inspectComputerOperation(status, saved);
       if (!lifecycle.current.active || revision !== lifecycle.current.revision)
         return;
       setEffectNotice(
-        `${receipt.state} · effect ${receipt.effectId ?? 'not assigned'} · operation ${receipt.operationId}`,
+        `${receipt.state} · owner operation ${receipt.operationId}`,
       );
       if (['reconciled', 'failed'].includes(receipt.state)) {
-        unresolved.current = undefined;
-        setPendingEffect(false);
+        unresolved.current = pendingComputerOperations(status);
+        setPendingOperations(unresolved.current);
         if (receipt.output) setOutput(JSON.stringify(receipt.output, null, 2));
       }
       await refresh();
     } catch {
       if (lifecycle.current.active && revision === lifecycle.current.revision)
         setError(
-          'Effect outcome remains unknown. Do not repeat the original action.',
+          'Operation outcome remains unknown. Do not repeat the original action.',
         );
     } finally {
       if (revision === lifecycle.current.revision) {
@@ -213,15 +263,12 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
       !status ||
       !runtimeReady ||
       lifecycle.current.busy ||
-      unresolved.current
+      unresolved.current.length > 0
     )
       return;
     const input = body as { action?: string; input?: unknown };
     const action = endpoint === '/actions' ? input.action! : endpoint.slice(1);
     const payload = endpoint === '/actions' ? input.input : body;
-    const request = { status, action, input: payload };
-    unresolved.current = request;
-    setPendingEffect(true);
     lifecycle.current.busy = true;
     lifecycle.current.revision++;
     const revision = lifecycle.current.revision;
@@ -232,12 +279,10 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
       if (!lifecycle.current.active || revision !== lifecycle.current.revision)
         return;
       setEffectNotice(
-        `${receipt.state} · effect ${receipt.effectId ?? 'not assigned'} · operation ${receipt.operationId}`,
+        `${receipt.state} · owner operation ${receipt.operationId}`,
       );
-      if (['reconciled', 'failed'].includes(receipt.state)) {
-        unresolved.current = undefined;
-        setPendingEffect(false);
-      }
+      unresolved.current = pendingComputerOperations(status);
+      setPendingOperations(unresolved.current);
       if (showOutput)
         setOutput(
           receipt.output
@@ -249,10 +294,21 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
         return;
       return receipt.state === 'reconciled' ? receipt.output : undefined;
     } catch {
-      if (lifecycle.current.active && revision === lifecycle.current.revision)
-        setError(
-          'Computer outcome is unknown. Inspect the original effect; remote execution may have occurred.',
-        );
+      if (lifecycle.current.active && revision === lifecycle.current.revision) {
+        try {
+          unresolved.current = pendingComputerOperations(status);
+          setPendingOperations(unresolved.current);
+          setError(
+            unresolved.current.length
+              ? 'Computer outcome is unknown. Inspect the original operation; remote execution may have occurred.'
+              : 'Computer action was not admitted. Refresh status and check the input.',
+          );
+        } catch {
+          setError(
+            'Computer recovery storage is unavailable. Restore browser storage and refresh before continuing.',
+          );
+        }
+      }
     } finally {
       if (revision === lifecycle.current.revision) {
         lifecycle.current.busy = false;
@@ -269,13 +325,22 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
         setEffectNotice(
           `Safety control ${receipt.state} · ${receipt.operationId}`,
         );
+        unresolved.current = pendingComputerOperations(status);
+        setPendingOperations(unresolved.current);
         await refresh();
       }
     } catch {
-      if (lifecycle.current.active && revision === lifecycle.current.revision)
+      if (lifecycle.current.active && revision === lifecycle.current.revision) {
+        try {
+          unresolved.current = pendingComputerOperations(status);
+          setPendingOperations(unresolved.current);
+        } catch {
+          // Retain the last known unresolved identities when storage fails.
+        }
         setError(
-          'Safety control acknowledgment is unknown. Inspect the executor directly; do not assume it stopped.',
+          'Safety control acknowledgment is unknown. Inspect the original operation; do not assume it stopped.',
         );
+      }
     }
   };
   const action = (
@@ -295,10 +360,18 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
     return run('/actions', { action, input }, 'POST', showOutput);
   };
   const running =
-    status?.state === 'running' && status.permissions.enabled && !pendingEffect;
+    runtimeReady &&
+    status?.configured &&
+    status.state === 'running' &&
+    status.permissions.enabled &&
+    !status.control.transitioning &&
+    !pendingEffect;
   const human =
     status?.control?.holder === 'human' && !status.control.transitioning;
   const browser = !!running && !!status?.permissions.browser;
+  const resumeSnapshotRequired =
+    !!status?.control.resumeSnapshotRequired && !human;
+  const canControl = runtimeReady && !!status?.configured;
   return (
     <section
       className="computer-panel"
@@ -307,21 +380,31 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
     >
       {!runtimeReady && <RuntimeStatus connection={runtime} compact />}
       {effectNotice && <p role="status">{effectNotice}</p>}
-      {pendingEffect && (
-        <button disabled={busy} onClick={() => void inspectEffect()}>
-          Inspect original effect
+      {pendingOperations.map((operation) => (
+        <button
+          key={operation.operationId}
+          disabled={busy || !status}
+          onClick={() => void inspectEffect(operation)}
+        >
+          Inspect original operation {operation.operationId}
         </button>
-      )}
+      ))}
       {status && (
         <div className="computer-actions">
           <span>
             Executor {status.executorId} · revision {status.revision} · state
             refreshed {new Date(status.refreshedAt).toLocaleTimeString()}
           </span>
-          <button onClick={() => void safetyAction('take')}>
+          <button
+            disabled={!canControl}
+            onClick={() => void safetyAction('take')}
+          >
             Take control now
           </button>
-          <button onClick={() => void safetyAction('emergency_stop')}>
+          <button
+            disabled={!canControl}
+            onClick={() => void safetyAction('emergency_stop')}
+          >
             Emergency stop
           </button>
         </div>
@@ -333,7 +416,9 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
       )}
       {!status ? (
         <p role="status">
-          {error ? 'Computer status unavailable.' : 'Loading computer…'}
+          {error || !runtimeReady
+            ? 'Computer status unavailable.'
+            : 'Loading computer…'}
         </p>
       ) : (
         <>
@@ -352,9 +437,9 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
             <div className="computer-setup">
               <h3>Connect a computer service</h3>
               <p>
-                This Dot does not have a computer service configured. Configure
-                the server’s computer service URL and token, then restart. Each
-                Dot gets its own browser and workspace.
+                This Dot does not have a qualified, available executor. A
+                configured service URL alone does not establish readiness. Check
+                the server’s executor configuration and qualification evidence.
               </p>
               <a
                 href="https://github.com/TianJieHeng/ryoko-dots/blob/main/docs/runtime/frontend-setup.md"
@@ -411,12 +496,34 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
                     value={url}
                     onChange={(event) => setUrl(event.target.value)}
                     required
-                    disabled={!browser || busy || human}
+                    disabled={
+                      !browser || busy || human || resumeSnapshotRequired
+                    }
                   />
-                  <button disabled={!browser || busy || human || !url.trim()}>
+                  <button
+                    disabled={
+                      !browser ||
+                      busy ||
+                      human ||
+                      resumeSnapshotRequired ||
+                      !url.trim()
+                    }
+                  >
                     Go
                   </button>
                 </form>
+                {resumeSnapshotRequired && (
+                  <p role="status">
+                    Refresh the executor snapshot before resuming browser
+                    actions.
+                  </p>
+                )}
+                <button
+                  disabled={!browser || busy || human}
+                  onClick={() => void action('snapshot', {})}
+                >
+                  Refresh snapshot
+                </button>
                 {screenError && (
                   <p className="computer-error" role="status">
                     {screenError}
@@ -562,10 +669,12 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
                         placeholder="Type into focused field"
                         autoComplete="off"
                         value={text}
-                        maxLength={20000}
+                        maxLength={16000}
                         onChange={(event) => setText(event.target.value)}
                       />
-                      <button disabled={busy || !browser || !text}>Type</button>
+                      <button disabled={busy || !browser || !screen || !text}>
+                        Type
+                      </button>
                     </form>
                     <form
                       className="computer-row"
@@ -592,11 +701,13 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
                           <option key={name}>{name}</option>
                         ))}
                       </select>
-                      <button disabled={busy || !browser}>Press key</button>
+                      <button disabled={busy || !browser || !screen}>
+                        Press key
+                      </button>
                     </form>
                     <div className="computer-actions">
                       <button
-                        disabled={busy || !browser}
+                        disabled={busy || !browser || !screen}
                         onClick={() =>
                           void action('human_scroll', { deltaY: -500 })
                         }
@@ -604,7 +715,7 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
                         Scroll up
                       </button>
                       <button
-                        disabled={busy || !browser}
+                        disabled={busy || !browser || !screen}
                         onClick={() =>
                           void action('human_scroll', { deltaY: 500 })
                         }
@@ -757,9 +868,13 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
                     <li key={entry.id}>
                       <strong>{entry.action.replaceAll('_', ' ')}</strong>
                       <span>
-                        {entry.actor} · {entry.outcome} · effect{' '}
-                        {entry.effectId ?? 'unassigned'} ·{' '}
-                        {new Date(entry.createdAt).toLocaleTimeString()}
+                        {entry.actor} · {entry.outcome}
+                        {entry.effectId
+                          ? ` · effect ${entry.effectId}`
+                          : entry.actor === 'owner'
+                            ? ' · owner operation'
+                            : ''}{' '}
+                        · {new Date(entry.createdAt).toLocaleTimeString()}
                       </span>
                     </li>
                   ))}
@@ -784,7 +899,7 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
                     <input
                       type="checkbox"
                       checked={status.permissions[permission]}
-                      disabled={busy || pendingEffect || !status.configured}
+                      disabled={busy || pendingEffect || !canControl}
                       onChange={(event) =>
                         void run(
                           '/permissions',
@@ -809,7 +924,8 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
               <button
                 disabled={
                   busy ||
-                  !status.configured ||
+                  !canControl ||
+                  pendingEffect ||
                   !status.permissions.enabled ||
                   status.state === 'running'
                 }
@@ -818,7 +934,12 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
                 Start computer
               </button>
               <button
-                disabled={busy || status.state !== 'running'}
+                disabled={
+                  busy ||
+                  pendingEffect ||
+                  !canControl ||
+                  status.state !== 'running'
+                }
                 onClick={() => void run('/stop')}
               >
                 Stop computer

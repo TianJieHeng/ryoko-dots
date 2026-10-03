@@ -172,6 +172,7 @@ export class ConversationRpc {
         'dots.effect.dispatch',
         'dots.effect.inspect',
         'dots.page.read',
+        'dots.computer.observe',
         'dots.approval',
       ].includes(method) ||
       this.callbacks.size >= 8
@@ -295,6 +296,8 @@ export const conversationMethods: ConversationMethod[] = [
   'runtime.dots.register',
   'runtime.dots.page.prepare',
   'runtime.dots.page.publish',
+  'runtime.dots.computer.prepare',
+  'runtime.dots.computer.execute',
   'runtime.dots.effect.reconcile',
   'runtime.capabilities',
   'runtime.snapshot',

@@ -1,3 +1,7 @@
+import {
+  ComputerRuntimeService,
+  type ComputerRuntimeOptions,
+} from './runtime/computer-runtime-service.js';
 import { LegacyScheduleMigration } from './runtime/legacy-schedule-migration.js';
 import { RuntimeScheduleService } from './runtime/schedule-service.js';
 import type { ControlBinding } from './runtime/control-service.js';
@@ -59,6 +63,7 @@ export class SelfHostedPlatform {
   private readonly legacySchedules?: LegacyScheduleMigration;
   readonly controls?: RuntimeControlService;
   readonly nativePages?: PageRuntimeService;
+  readonly nativeComputers?: ComputerRuntimeService;
   readonly identities?: IdentityRuntimeService;
   readonly delivery?: RuntimeDeliveryService;
   private unsubscribeResults?: () => void;
@@ -67,6 +72,7 @@ export class SelfHostedPlatform {
     readonly workspace: WorkspaceStore,
     database: string,
     readonly transport?: ConversationTransport,
+    computerOptions: ComputerRuntimeOptions = {},
   ) {
     this.ledger = new ConversationLedger(database, workspace.ownerId);
     if (transport)
@@ -78,7 +84,10 @@ export class SelfHostedPlatform {
         (scope, auth, access) => this.guard(scope, auth, access),
         (id) => {
           const meta = this.ledger.metadata(id);
-          const nativeContext = this.nativePages?.context(id) ?? '';
+          const nativeContext =
+            (this.nativePages?.context(id) ?? '') +
+            '\n' +
+            (this.nativeComputers?.context() ?? '');
           if (!meta?.pageId) return nativeContext;
           const page = workspace.pages.get(meta.spaceId!, meta.pageId);
           return (
@@ -112,6 +121,16 @@ export class SelfHostedPlatform {
           this.identities?.refreshCommandAccess(scope, auth) ??
           Promise.resolve(),
       );
+    if (transport?.config.nativeComputer && this.commands)
+      this.nativeComputers = new ComputerRuntimeService(
+        workspace,
+        database,
+        transport,
+        (id, auth, access) => this.commands!.existingBound(id, auth, access),
+        (bound, auth, access) =>
+          this.commands!.assertBound(bound.scope, auth, access),
+        computerOptions,
+      );
     if (transport && this.commands)
       this.nativePages = new PageRuntimeService(
         workspace,
@@ -134,7 +153,11 @@ export class SelfHostedPlatform {
             ? { pageId: meta.pageId, spaceId: meta.spaceId }
             : null;
         },
+        this.nativeComputers,
       );
+    this.nativeComputers?.setConnector((id, auth) =>
+      this.nativePages!.connect(id, auth),
+    );
     if (transport && this.commands)
       this.controls = new RuntimeControlService(
         workspace.ownerId,
@@ -336,6 +359,7 @@ export class SelfHostedPlatform {
     this.controls?.close();
     await this.commands?.stop();
     this.nativePages?.close();
+    this.nativeComputers?.close();
     await this.transport?.stop();
     this.ledger.close();
   }
@@ -391,6 +415,17 @@ export class SelfHostedPlatform {
                     'Conversation-scoped schedule configuration and history. A verified default project and live scheduler proof are required for activation.',
                 }
               : base.features.schedules,
+          computer: this.nativeComputers?.edge?.qualified
+            ? {
+                state: 'ready',
+                reason:
+                  'Qualified native executor; current permissions, snapshot and target availability remain required.',
+              }
+            : {
+                state: 'unsupported',
+                reason:
+                  'Target-host browser/files/shell capabilities have not been qualified.',
+              },
           artifacts: this.nativePages
             ? {
                 state: 'ready',

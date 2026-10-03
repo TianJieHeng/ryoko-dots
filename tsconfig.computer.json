@@ -2,10 +2,14 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
-    "outDir": "dist/server",
+    "outDir": "dist/computer",
     "rootDir": "src",
     "module": "NodeNext",
     "moduleResolution": "NodeNext"
   },
-  "include": ["src/server", "src/browser", "src/shared", "src/computer"]
+  "include": [
+    "src/computer",
+    "src/shared/computer-types.ts",
+    "src/shared/computer-edge-protocol.ts"
+  ]
 }

@@ -1,3 +1,5 @@
+import { ComputerService } from './computer-service.js';
+import { loadComputerHostQualification } from './runtime/computer-http-edge.js';
 import { ownerAuthConfig } from './owner-auth-config.js';
 import { readFileSync } from 'node:fs';
 import { createServer } from 'node:https';
@@ -20,10 +22,41 @@ const workspace = new WorkspaceStore(database, authConfig.ownerId);
 const auth = new OwnerAuth(database, authConfig);
 const store = new Store(database);
 const launch = loadLaunchConfig(process.env.RYOKO_CONFIG_PATH);
+const computerBinding = launch?.nativeComputer
+  ? { dotId: launch.dotId, executorId: launch.nativeComputer.executorId }
+  : null;
+const computerService = computerBinding
+  ? new ComputerService(
+      workspace,
+      {
+        computerSupervisorUrl: process.env.COMPUTER_SUPERVISOR_URL,
+        computerSupervisorToken: process.env.COMPUTER_SUPERVISOR_TOKEN,
+        computerToken: process.env.COMPUTER_TOKEN,
+        computerNamespace: process.env.COMPUTER_NAMESPACE,
+      },
+      () => store.settings().paused,
+      fetch,
+      70000,
+      {
+        executorId: (dotId) => {
+          if (dotId !== computerBinding.dotId)
+            throw new Error('Computer identity mismatch.');
+          return computerBinding.executorId;
+        },
+      },
+    )
+  : undefined;
+const computerQualification = computerBinding
+  ? loadComputerHostQualification(
+      process.env.COMPUTER_QUALIFICATION_PATH,
+      computerBinding,
+    )
+  : null;
 const platform = new SelfHostedPlatform(
   workspace,
   database,
   launch ? new StdioConversationTransport(launch) : undefined,
+  { service: computerService, qualification: computerQualification },
 );
 const app = createSelfHostedApp({ store, auth, platform });
 app.use('*', async (c, next) => {

@@ -212,8 +212,11 @@ it('cancels in-flight actions on revocation and bounds upstream deadlines', asyn
     'cancelled or timed out',
   );
   expect(
-    f.workspace.computers.audit(f.id).every((a) => a.outcome === 'failed'),
-  ).toBe(true);
+    f.workspace.computers.audit(f.id).find((a) => a.action === 'exec')?.outcome,
+  ).toBe('unknown');
+  expect(
+    f.workspace.computers.audit(f.id).find((a) => a.action === 'read')?.outcome,
+  ).toBe('failed');
 });
 it('preserves recovery handback after permissions are revoked; upstream failures are sanitized', async () => {
   const f = fixture();
@@ -303,5 +306,5 @@ it('gives agents a safe recovery instruction for stale browser or control confli
   await expect(
     f.service.action(f.id, 'navigate', { url: 'https://example.com' }, 'agent'),
   ).rejects.not.toThrow(f.config.computerToken);
-  expect(f.workspace.computers.audit(f.id)[0].outcome).toBe('failed');
+  expect(f.workspace.computers.audit(f.id)[0].outcome).toBe('unknown');
 });

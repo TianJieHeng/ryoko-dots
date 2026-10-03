@@ -16,6 +16,7 @@ import type {
   DotsEffectResult,
   DotsEffectReceipt,
   DotsPageReadResult,
+  DotsComputerObserveResult,
   DotsApprovalResult,
   RuntimeCapabilities,
   MissionSnapshot,
@@ -61,6 +62,8 @@ export interface ConversationResults extends ReadResults, Be06Results {
   'runtime.dots.register': DotsRegistrationResult;
   'runtime.dots.page.prepare': DotsPreparedResult;
   'runtime.dots.page.publish': DotsEffectResult;
+  'runtime.dots.computer.prepare': DotsPreparedResult;
+  'runtime.dots.computer.execute': DotsEffectResult;
   'runtime.dots.effect.reconcile': DotsEffectResult;
   'runtime.control.get': RuntimeControlResult;
   'runtime.control.pause': RuntimeControlResult;
@@ -97,6 +100,7 @@ export interface NativeResults {
   'dots.effect.dispatch': DotsEffectReceipt;
   'dots.effect.inspect': DotsEffectReceipt;
   'dots.page.read': DotsPageReadResult;
+  'dots.computer.observe': DotsComputerObserveResult;
   'dots.approval': DotsApprovalResult;
 }
 export type NativeMethod = keyof NativeResults;

@@ -1,3 +1,6 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { signEdge } from '../shared/computer-edge-protocol.js';
+import type { ComputerProtocolTransport } from './runtime/computer-http-edge.js';
 import { createHmac } from 'node:crypto';
 import { z } from 'zod';
 import {
@@ -23,13 +26,22 @@ const controlSchema = z.object({
   resumeSnapshotRequired: z.boolean(),
   request: z.object({ id: z.string(), status: z.string() }).optional(),
 });
+export type ComputerServiceConfig = Pick<
+  PlatformConfig,
+  | 'computerSupervisorUrl'
+  | 'computerSupervisorToken'
+  | 'computerToken'
+  | 'computerNamespace'
+>;
 export class ComputerService {
+  private auditDispatch = new AsyncLocalStorage<{ sent: boolean }>();
   constructor(
     private workspace: WorkspaceStore,
-    private config: PlatformConfig,
+    private config: ComputerServiceConfig,
     private paused: () => boolean,
     private transport: typeof fetch = fetch,
     private deadlineMs = 70000,
+    private governance: { executorId: (dotId: string) => string } | null = null,
   ) {}
   get configured() {
     return !!(
@@ -67,6 +79,9 @@ export class ComputerService {
     body: unknown | undefined,
     signal?: AbortSignal,
     dotId?: string,
+    beforeSend?: () => void,
+    redact = true,
+    responseLimit = 4_000_000,
   ): Promise<unknown> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.deadlineMs);
@@ -74,6 +89,9 @@ export class ComputerService {
       ? AbortSignal.any([signal, controller.signal])
       : controller.signal;
     try {
+      beforeSend?.();
+      const audit = this.auditDispatch.getStore();
+      if (audit && body !== undefined) audit.sent = true;
       const response = await this.transport(url, {
         method: body === undefined ? 'GET' : 'POST',
         headers: {
@@ -100,7 +118,7 @@ export class ComputerService {
         const { done, value } = await reader.read();
         if (done) break;
         size += value.length;
-        if (size > 4_000_000) {
+        if (size > responseLimit) {
           await reader.cancel();
           throw new Error('Computer response exceeded its size limit.');
         }
@@ -113,7 +131,7 @@ export class ComputerService {
         this.config.computerToken?.trim(),
         this.config.computerSupervisorToken?.trim(),
       ])
-        if (secret) text = text.split(secret).join('[redacted]');
+        if (redact && secret) text = text.split(secret).join('[redacted]');
       return JSON.parse(text);
     } catch (error) {
       if (combined.aborted)
@@ -188,6 +206,14 @@ export class ComputerService {
   }
   async status(id: string): Promise<ComputerStatus> {
     this.requireDot(id);
+    if (this.governance)
+      return {
+        configured: this.configured,
+        state: this.configured ? 'unavailable' : 'not_configured',
+        permissions: this.workspace.computers.permissions(id),
+        audit: this.workspace.computers.audit(id),
+        error: 'Use the authenticated runtime computer status surface.',
+      };
     const base = {
       configured: this.configured,
       permissions: this.workspace.computers.permissions(id),
@@ -218,6 +244,103 @@ export class ComputerService {
       };
     }
   }
+  /** Only the server-owned adapter receives this port. No callback URL, token,
+   * container name, policy or actor is read from HTTP/browser route parameters. */
+  protocol(id: string): ComputerProtocolTransport {
+    this.requireDot(id);
+    if (!this.governance)
+      throw new Error('Governed computer mode is required.');
+    const executorId = this.governance.executorId(id);
+    return {
+      configured: () => this.configured,
+      request: async (path, body, role, signal, beforeSend, expectedTarget) => {
+        if (
+          !this.configured ||
+          ![
+            '/edge/status',
+            '/edge/change',
+            '/edge/change-inspect',
+            '/edge/execute',
+            '/edge/observe',
+            '/edge/screen',
+            '/edge/inspect',
+          ].includes(path)
+        )
+          throw new Error('Computer protocol unavailable.');
+        this.requireDot(id);
+        const url = await this.running(id, signal);
+        signal.throwIfAborted();
+        const envelope = signEdge(
+          path,
+          {
+            version: 1,
+            dotId: id,
+            executorId,
+            role,
+            expiresAt: Date.now() + Math.min(65000, this.deadlineMs),
+            body,
+            expectedTarget: expectedTarget ?? null,
+          },
+          this.token(id),
+        );
+        return this.json(
+          `${url}${path}`,
+          this.token(id),
+          envelope,
+          signal,
+          id,
+          beforeSend,
+          false,
+          path === '/edge/screen' ? 16_100_000 : 4_000_000,
+        );
+      },
+    };
+  }
+  /** Feed these only to the private receipt sanitizer; never expose via routes. */
+  protocolSecrets(id: string): readonly string[] {
+    this.requireDot(id);
+    return [
+      this.token(id),
+      this.config.computerToken!.trim(),
+      this.config.computerSupervisorToken!.trim(),
+    ];
+  }
+  /** Authenticated owner lifecycle ONLY. Caller owns durable operation admission,
+   * local fence-first control change, and unknown-outcome handling. Never retry
+   * this call after a lost response; supervisor has no operation-bound proof. */
+  async governedLifecycle(
+    id: string,
+    verb: 'start' | 'stop',
+    authenticate: () => void,
+    signal: AbortSignal,
+  ) {
+    this.requireDot(id);
+    if (!this.governance || !this.configured)
+      throw new Error('Governed supervisor unavailable.');
+    const raw = await this.json(
+      `${this.config.computerSupervisorUrl!.replace(/\/$/, '')}/computers/${id}/${verb === 'start' ? 'ensure' : 'stop'}`,
+      this.config.computerSupervisorToken!.trim(),
+      {},
+      signal,
+      undefined,
+      () => {
+        authenticate();
+        signal.throwIfAborted();
+      },
+    );
+    authenticate();
+    if (verb === 'start') {
+      const state = stateSchema.parse(raw);
+      this.endpoint(id, state);
+      if (state.status !== 'running')
+        throw new Error('Supervisor has not witnessed a running target.');
+      return { state: 'running' as const };
+    }
+    z.object({ stopped: z.literal(true) })
+      .strict()
+      .parse(raw);
+    return { state: 'stopped' as const };
+  }
   private async audited<T>(
     id: string,
     action: string,
@@ -226,16 +349,29 @@ export class ComputerService {
   ): Promise<T> {
     this.requireDot(id);
     const receipt = this.workspace.computers.begin(id, action, actor);
-    try {
-      const result = await fn();
-      this.workspace.computers.finish(receipt, 'succeeded');
-      return result;
-    } catch (error) {
-      this.workspace.computers.finish(receipt, 'failed');
-      throw error;
-    }
+    return this.auditDispatch.run({ sent: false }, async () => {
+      try {
+        const result = await fn();
+        this.workspace.computers.finish(receipt, 'succeeded');
+        return result;
+      } catch (error) {
+        this.workspace.computers.finish(
+          receipt,
+          this.auditDispatch.getStore()?.sent ? 'unknown' : 'failed',
+        );
+        throw error;
+      }
+    });
+  }
+
+  private legacyOnly() {
+    if (this.governance)
+      throw new Error(
+        'Legacy computer dispatch is disabled; use authenticated runtime effects or owner operations.',
+      );
   }
   async permissions(id: string, input: unknown) {
+    this.legacyOnly();
     const patch = computerPermissionsSchema.partial().parse(input);
     await this.audited(id, 'permissions', 'owner', async () =>
       this.workspace.computers.patch(id, patch),
@@ -243,6 +379,7 @@ export class ComputerService {
     return this.status(id);
   }
   async start(id: string) {
+    this.legacyOnly();
     await this.audited(id, 'start', 'owner', async () => {
       this.allowed(id, undefined, 'owner');
       this.endpoint(id, await this.supervisor(`/computers/${id}/ensure`, {}));
@@ -250,6 +387,7 @@ export class ComputerService {
     return this.status(id);
   }
   async stop(id: string) {
+    this.legacyOnly();
     await this.audited(id, 'stop', 'owner', async () => {
       if (!this.configured)
         throw new Error('Computer service is not configured.');
@@ -258,6 +396,7 @@ export class ComputerService {
     return this.status(id);
   }
   async control(id: string, verb: 'take' | 'release') {
+    this.legacyOnly();
     await this.audited(id, verb, 'owner', async () => {
       if (!this.configured)
         throw new Error('Computer service is not configured.');
@@ -316,6 +455,7 @@ export class ComputerService {
     actor: 'owner' | 'agent' = 'owner',
     signal?: AbortSignal,
   ): Promise<unknown> {
+    this.legacyOnly();
     if (!Object.hasOwn(computerInputs, action))
       throw new Error('Unknown computer action.');
     const parsed = computerInputs[action].parse(input);

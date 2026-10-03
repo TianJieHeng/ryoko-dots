@@ -3,6 +3,9 @@ import { isPublicAddress, validateUrl } from '../src/browser/security.js';
 describe('browser network boundaries', () => {
   it.each([
     '127.0.0.1',
+    '192.88.99.2',
+    '3fff::1',
+    '3fff:fff:ffff::1',
     '10.0.0.1',
     '172.16.0.1',
     '192.168.0.1',

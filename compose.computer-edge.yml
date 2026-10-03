@@ -1,0 +1,11 @@
+# Build/configuration specimen only. Do not activate until per-host qualification.
+# Merge AFTER compose.computers.yml; the existing pinned supervisor remains owner.
+services:
+  computer-image:
+    image: opendots-computer:dots-edge-v1
+    build:
+      context: .
+      dockerfile: deployment/computers/edge.Dockerfile
+  computer-supervisor:
+    environment:
+      COMPUTER_IMAGE: opendots-computer:dots-edge-v1

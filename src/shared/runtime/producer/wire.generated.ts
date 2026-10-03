@@ -436,10 +436,58 @@ export interface RuntimeDeliveryParams {
   schema_version: 1
   delivery_id: string
 }
-export interface DotsReconcileParams {
+export interface DotsComputerExecuteParams {
   session_id: string
   schema_version: 1
-  effect_id: string
+  command_id: string
+  proposal: DotsComputerProposal
+  approval_id: string
+  approval_digest: string
+}
+export interface DotsComputerProposal {
+  kind?: 'computer'
+  executor_id: string
+  expected_grant_revision: number
+  expected_control_revision: number
+  snapshot_id: number
+  snapshot_sha256: string
+  action: 'navigate' | 'read' | 'snapshot' | 'screenshot' | 'click' | 'type' | 'key' | 'scroll' | 'files_list' | 'files_read' | 'files_write' | 'exec'
+  input: DotsEmptyInput | DotsNavigateInput | DotsClickInput | DotsTypeInput | DotsKeyInput | DotsScrollInput | DotsFilesListInput | DotsFilesReadInput | DotsFilesWriteInput | DotsExecInput
+}
+export type DotsEmptyInput = Record<string, never>
+export interface DotsNavigateInput {
+  url: string
+}
+export interface DotsClickInput {
+  ref: string
+  snapshotId: number
+}
+export interface DotsTypeInput {
+  ref: string
+  snapshotId: number
+  text: string
+  submit?: boolean
+}
+export interface DotsKeyInput {
+  key: string
+}
+export interface DotsScrollInput {
+  deltaY: number
+}
+export interface DotsFilesListInput {
+  path?: string
+}
+export interface DotsFilesReadInput {
+  path: string
+}
+export interface DotsFilesWriteInput {
+  path: string
+  contents: string
+  append?: boolean
+}
+export interface DotsExecInput {
+  command: string
+  timeoutMs?: number
 }
 export interface DotsEffectResult {
   effect_id: string
@@ -480,6 +528,28 @@ export interface DotsEffectIdentity {
   content_sha256: string
   content_size: number
 }
+export interface DotsComputerPrepareParams {
+  session_id: string
+  schema_version: 1
+  command_id: string
+  proposal: DotsComputerProposal
+}
+export interface DotsPreparedResult {
+  command_id: string
+  run_id: string
+  operation_id: string
+  action_digest: string
+  input_digest: string
+  content_sha256: string
+  approval_id: string
+  approval_digest: string
+  expires_at: number
+}
+export interface DotsReconcileParams {
+  session_id: string
+  schema_version: 1
+  effect_id: string
+}
 export interface DotsPagePrepareParams {
   session_id: string
   schema_version: 1
@@ -501,17 +571,6 @@ export interface DotsPageDocument {
   content: string
   parent_id: string | null
   archived: boolean
-}
-export interface DotsPreparedResult {
-  command_id: string
-  run_id: string
-  operation_id: string
-  action_digest: string
-  input_digest: string
-  content_sha256: string
-  approval_id: string
-  approval_digest: string
-  expires_at: number
 }
 export interface DotsPagePublishParams {
   session_id: string
@@ -1212,57 +1271,34 @@ export interface DotsApprovalResult {
   approval_digest: string
   choice: 'once' | 'deny'
 }
+export interface DotsComputerObserveRequest {
+  session_id: string
+  authority: DotsReadAuthority
+  scope: DotsComputerObserveScope
+  deadline_at: number
+}
+export interface DotsComputerObserveScope {
+  executor_id: string
+  expected_grant_revision: number
+  action: 'snapshot' | 'read' | 'screenshot' | 'files_list' | 'files_read' | 'result'
+  input?: DotsEmptyInput | DotsFilesListInput | DotsFilesReadInput
+  effect_id?: string | null
+}
+export interface DotsComputerObserveResult {
+  authority: DotsReadAuthority
+  scope: DotsComputerObserveScope
+  control_revision: number
+  snapshot_id: number
+  snapshot_sha256: string
+  content_json: string
+  content_sha256: string
+}
 export interface DotsDispatchRequest {
   session_id: string
   identity: DotsEffectIdentity
   proposal: DotsPageProposal | DotsComputerProposal
   content_json: string
   deadline_at: number
-}
-export interface DotsComputerProposal {
-  kind?: 'computer'
-  executor_id: string
-  expected_grant_revision: number
-  expected_control_revision: number
-  snapshot_id: number
-  snapshot_sha256: string
-  action: 'navigate' | 'read' | 'snapshot' | 'screenshot' | 'click' | 'type' | 'key' | 'scroll' | 'files_list' | 'files_read' | 'files_write' | 'exec'
-  input: DotsEmptyInput | DotsNavigateInput | DotsClickInput | DotsTypeInput | DotsKeyInput | DotsScrollInput | DotsFilesListInput | DotsFilesReadInput | DotsFilesWriteInput | DotsExecInput
-}
-export type DotsEmptyInput = Record<string, never>
-export interface DotsNavigateInput {
-  url: string
-}
-export interface DotsClickInput {
-  ref: string
-  snapshotId: number
-}
-export interface DotsTypeInput {
-  ref: string
-  snapshotId: number
-  text: string
-  submit?: boolean
-}
-export interface DotsKeyInput {
-  key: string
-}
-export interface DotsScrollInput {
-  deltaY: number
-}
-export interface DotsFilesListInput {
-  path?: string
-}
-export interface DotsFilesReadInput {
-  path: string
-}
-export interface DotsFilesWriteInput {
-  path: string
-  contents: string
-  append?: boolean
-}
-export interface DotsExecInput {
-  command: string
-  timeoutMs?: number
 }
 export interface DotsInspectRequest {
   session_id: string

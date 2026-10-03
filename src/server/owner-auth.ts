@@ -363,7 +363,12 @@ export class OwnerAuth {
       };
       c.set(
         'ownerPrincipal',
-        Object.freeze({ ownerId: this.options.ownerId, assertCurrent }),
+        Object.freeze({
+          ownerId: this.options.ownerId,
+          authSessionId: hash('computer-owner:' + session.idHash),
+          authRevision: session.revision,
+          assertCurrent,
+        }),
       );
       await next();
       // Fence delayed finite reads; streaming adapters must check assertCurrent per chunk.
@@ -385,10 +390,18 @@ export class OwnerAuth {
 
 export function requireOwner(c: Context): {
   ownerId: string;
+  authSessionId: string;
+  authRevision: number;
   assertCurrent: () => void;
 } {
   const principal = c.get('ownerPrincipal') as
-    { ownerId: string; assertCurrent: () => void } | undefined;
+    | {
+        ownerId: string;
+        authSessionId: string;
+        authRevision: number;
+        assertCurrent: () => void;
+      }
+    | undefined;
   if (!principal) throw new Error('Authenticated owner context is required.');
   principal.assertCurrent();
   return principal;

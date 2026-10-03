@@ -8,8 +8,38 @@ export function initializeOperationRegistry(
     | 'control'
     | 'page'
     | 'identity_skill'
-    | 'schedule',
+    | 'schedule'
+    | 'computer'
+    | 'computer_owner',
 ) {
+  if (family === 'computer' || family === 'computer_owner') {
+    db.exec(
+      'CREATE TABLE IF NOT EXISTS runtime_operation_registry(operationId TEXT PRIMARY KEY,ownerId TEXT NOT NULL,family TEXT NOT NULL,digest TEXT NOT NULL,authority TEXT NOT NULL)',
+    );
+    const source =
+      family === 'computer'
+        ? `SELECT e.operationId,json_extract(f.binding,'$.ownerId') AS ownerId,e.proposalDigest AS digest,e.identity AS authority FROM runtime_computer_effects e JOIN runtime_computer_fences f USING(executorId)`
+        : `SELECT e.operationId,e.ownerId,e.intentDigest AS digest,f.binding AS authority FROM runtime_computer_owner_actions e JOIN runtime_computer_fences f USING(executorId)`;
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      if (
+        db
+          .prepare(
+            `SELECT 1 FROM (${source}) source JOIN runtime_operation_registry registry USING(operationId) WHERE registry.ownerId!=source.ownerId OR registry.family!=? OR registry.digest!=source.digest OR registry.authority!=source.authority LIMIT 1`,
+          )
+          .get(family)
+      )
+        throw new Error('Existing computer operation namespace conflicts.');
+      db.prepare(
+        `INSERT OR IGNORE INTO runtime_operation_registry SELECT operationId,ownerId,?,digest,authority FROM (${source})`,
+      ).run(family);
+      db.exec('COMMIT');
+    } catch (e) {
+      db.exec('ROLLBACK');
+      throw e;
+    }
+    return;
+  }
   const [table, authority] =
     family === 'conversation'
       ? ['conversation_operations', 'binding']
@@ -55,7 +85,9 @@ export function claimOperation(
     | 'control'
     | 'page'
     | 'identity_skill'
-    | 'schedule',
+    | 'schedule'
+    | 'computer'
+    | 'computer_owner',
   digest: string,
   authority: string,
 ) {

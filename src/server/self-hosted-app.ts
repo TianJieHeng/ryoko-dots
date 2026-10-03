@@ -1,3 +1,9 @@
+import { ComputerEffectError } from './runtime/computer-effect-service.js';
+import {
+  computerActionSchema,
+  nativeComputerPrepareSchema,
+  nativeComputerExecuteSchema,
+} from './runtime/computer-runtime-service.js';
 import { scheduleActionSchema } from './runtime/schedule-service.js';
 import {
   identityMethods,
@@ -79,6 +85,16 @@ export function createSelfHostedApp({
     const { dotId } = z
       .strictObject({ dotId: z.string().max(256).default('') })
       .parse(query(c));
+    if (
+      platform.nativeComputers &&
+      dotId === platform.transport?.config.dotId
+    ) {
+      await platform.scope(dotId);
+      await platform.nativeComputers.status(
+        platform.nativeComputers.effects.binding.executorId,
+        requireOwner(c),
+      );
+    }
     const value = await platform.setup(dotId);
     current();
     return c.json(value);
@@ -188,13 +204,29 @@ export function createSelfHostedApp({
     z.strictObject({}).parse(query(c));
     const operationId = z.uuid().parse(c.req.param('id'));
     return c.json(
-      platform.schedules?.has(operationId)
-        ? await platform.schedules.inspect(operationId, guard(c, platform))
-        : platform.identities?.operations.has(operationId)
-          ? await platform.identities.inspect(operationId, guard(c, platform))
-          : platform.controls?.has(operationId)
-            ? await platform.controls.inspect(operationId, guard(c, platform))
-            : await platform.recover(operationId, guard(c, platform)),
+      platform.nativeComputers?.hasOwner(operationId)
+        ? await platform.nativeComputers.inspectOwner(
+            operationId,
+            requireOwner(c),
+          )
+        : platform.nativeComputers?.has(operationId)
+          ? await platform.nativeComputers.inspect(
+              operationId,
+              guard(c, platform),
+            )
+          : platform.schedules?.has(operationId)
+            ? await platform.schedules.inspect(operationId, guard(c, platform))
+            : platform.identities?.operations.has(operationId)
+              ? await platform.identities.inspect(
+                  operationId,
+                  guard(c, platform),
+                )
+              : platform.controls?.has(operationId)
+                ? await platform.controls.inspect(
+                    operationId,
+                    guard(c, platform),
+                  )
+                : await platform.recover(operationId, guard(c, platform)),
     );
   });
   app.get('/api/runtime/conversations/:id/results/:commandId', async (c) => {
@@ -333,7 +365,15 @@ export function createSelfHostedApp({
       guard(c, platform),
     );
     await platform.identities?.connected(c.req.param('id'), guard(c, platform));
-    if (platform.transport?.config.nativePages)
+    if (platform.nativeComputers)
+      await platform.nativeComputers.status(
+        platform.nativeComputers.effects.binding.executorId,
+        requireOwner(c),
+      );
+    if (
+      platform.transport?.config.nativePages ||
+      platform.transport?.config.nativeComputer
+    )
       await platform.nativePages?.connect(
         c.req.param('id'),
         guard(c, platform),
@@ -350,6 +390,97 @@ export function createSelfHostedApp({
       };
     return c.json(setup);
   });
+  const computers = () => {
+    if (!platform.nativeComputers)
+      throw new ConversationError(
+        'Native computer adapter is unavailable.',
+        503,
+      );
+    return platform.nativeComputers;
+  };
+  const computerOwner = (c: Context) => {
+    guard(c, platform);
+    return requireOwner(c);
+  };
+  app.get('/api/runtime/computers', async (c) => {
+    const { dotId } = z.strictObject({ dotId: id }).parse(query(c));
+    if (dotId !== platform.transport?.config.dotId)
+      throw new ConversationError('Computer belongs to another Dot.', 403);
+    await platform.scope(dotId);
+    return c.json(
+      await computers().status(
+        computers().effects.binding.executorId,
+        computerOwner(c),
+      ),
+    );
+  });
+  app.get('/api/runtime/computers/:executorId', async (c) => {
+    await platform.scope(platform.transport?.config.dotId ?? '');
+    return c.json(
+      await computers().status(
+        id.parse(c.req.param('executorId')),
+        computerOwner(c),
+      ),
+    );
+  });
+  app.get('/api/runtime/computers/:executorId/screen', async (c) =>
+    c.json(
+      await computers().screen(
+        id.parse(c.req.param('executorId')),
+        computerOwner(c),
+      ),
+    ),
+  );
+  for (const route of ['actions', 'control'])
+    app.post(`/api/runtime/computers/:executorId/${route}`, async (c) =>
+      c.json(
+        await computers().ownerAction(
+          id.parse(c.req.param('executorId')),
+          computerActionSchema.parse(await c.req.json()),
+          computerOwner(c),
+        ),
+      ),
+    );
+  app.get('/api/runtime/computer-operations/:operationId', async (c) =>
+    c.json(
+      await computers().inspectOwner(
+        z.uuid().parse(c.req.param('operationId')),
+        computerOwner(c),
+      ),
+    ),
+  );
+  app.post('/api/runtime/conversations/:id/computer-actions', async (c) =>
+    c.json(
+      await computers().prepare(
+        id.parse(c.req.param('id')),
+        nativeComputerPrepareSchema.parse(await c.req.json()),
+        guard(c, platform),
+      ),
+    ),
+  );
+  app.post(
+    '/api/runtime/conversations/:id/computer-actions/:operationId/execute',
+    async (c) =>
+      c.json(
+        await computers().execute(
+          id.parse(c.req.param('id')),
+          z.uuid().parse(c.req.param('operationId')),
+          nativeComputerExecuteSchema.parse(await c.req.json()),
+          guard(c, platform),
+        ),
+      ),
+  );
+  app.get(
+    '/api/runtime/conversations/:id/computer-actions/:operationId',
+    async (c) =>
+      c.json(
+        await computers().inspectNative(
+          id.parse(c.req.param('id')),
+          z.uuid().parse(c.req.param('operationId')),
+          guard(c, platform),
+        ),
+      ),
+  );
   const pages = () => {
     if (!platform.nativePages)
       throw new ConversationError('Native page adapter is unavailable.', 503);
@@ -842,6 +973,7 @@ export function createSelfHostedApp({
     if (
       error instanceof ConversationError ||
       error instanceof PageError ||
+      error instanceof ComputerEffectError ||
       error instanceof PageEffectError ||
       error instanceof Be06Error
     )

@@ -1,4 +1,5 @@
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
+import type { ComputerRuntimeService } from '../src/server/runtime/computer-runtime-service';
 import { randomUUID, createHash } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -35,7 +36,7 @@ const gate = <T>() => {
   });
   return { promise, resolve };
 };
-async function fixture() {
+async function fixture(computer?: ComputerRuntimeService) {
   const root = mkdtempSync(join(tmpdir(), 'dots-page-runtime-')),
     database = join(root, 'workspace.db');
   const workspace = new WorkspaceStore(database, 'owner'),
@@ -208,6 +209,7 @@ async function fixture() {
     },
     () => !sourceArchived,
     () => (selectedPage ? { spaceId, pageId: selectedPage } : null),
+    computer,
   );
   cleanups.push(() => {
     service.close();
@@ -720,4 +722,74 @@ test('native context is globally byte-bounded and retains the selected page beyo
     store_id: 'pages',
   });
   expect(context.nativePages[0].pages[0].page_id).toBe(selected);
+});
+
+test('computer and page model approvals share the original waiter and never send a second producer resolve', async () => {
+  const assertApproval = vi.fn();
+  const computer = {
+    registrationSignature: () => 'computer',
+    register: async () => {},
+    assertApproval,
+    manualApproval: () => false,
+  } as unknown as ComputerRuntimeService;
+  const f = await fixture(computer);
+  for (const kind of ['dots_page_publish', 'dots_computer_action'] as const) {
+    const request = { ...approval(), approval_id: `review-${kind}` };
+    const detail = review(request);
+    detail.detail.review!.action.operation_class = kind;
+    let decided = false;
+    f.replies.set('runtime.approval.get', () => ({
+      ...detail,
+      approval: {
+        ...detail.approval,
+        status: decided ? 'approved' : 'pending',
+      },
+    }));
+    const waiting = f.handler('dots.approval', request);
+    const received = waiting.then((value) => {
+      decided = true;
+      return value;
+    });
+    for (
+      let n = 0;
+      n < 30 && f.service.decisionUnavailableReason('conversation', detail);
+      n++
+    )
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    const result = await f.service.decideNative(
+      f.bound('conversation', f.auth, 'write'),
+      {
+        approval_id: request.approval_id,
+        approval_digest: request.approval_digest,
+        choice: 'once',
+      },
+      f.auth,
+    );
+    expect(await received).toMatchObject({
+      approval_id: request.approval_id,
+      choice: 'once',
+    });
+    expect(result?.approval.status).toBe('approved');
+    expect(
+      f.calls.filter((c) => c.method === 'runtime.approval.resolve'),
+    ).toHaveLength(0);
+  }
+  expect(assertApproval).toHaveBeenCalledTimes(1);
+});
+
+test('computer callbacks cannot fall through page dispatch or unconfigured approval routes', async () => {
+  const f = await fixture(),
+    request = approval(),
+    detail = review(request);
+  detail.detail.review!.action.operation_class = 'dots_computer_action';
+  f.replies.set('runtime.approval.get', () => detail);
+  await expect(f.handler('dots.approval', request)).rejects.toThrow(
+    /Computer approval adapter unavailable/,
+  );
+  const raw = dispatch(f.spaceId);
+  raw.identity.adapter_kind = 'computer';
+  await expect(f.handler('dots.effect.dispatch', raw)).rejects.toThrow(
+    /Computer adapter unavailable/,
+  );
+  expect(f.workspace.pages.list(f.spaceId)).toHaveLength(0);
 });

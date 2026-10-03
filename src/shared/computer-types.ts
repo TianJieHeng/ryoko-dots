@@ -12,7 +12,11 @@ export interface ComputerAudit {
   id: string;
   action: string;
   actor: 'owner' | 'agent';
-  outcome: 'pending' | 'succeeded' | 'failed';
+  outcome: 'pending' | 'succeeded' | 'failed' | 'unknown';
+  operationId?: string | null;
+  effectId?: string | null;
+  agentId?: string | null;
+  sessionId?: string | null;
   createdAt: number;
 }
 export interface ComputerControl {

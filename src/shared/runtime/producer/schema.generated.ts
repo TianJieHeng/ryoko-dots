@@ -417,6 +417,42 @@ export const producerSchema = {
       }
     },
     {
+      "name": "runtime.dots.computer.execute",
+      "summary": "",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/DotsComputerExecuteParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DotsEffectResult"
+        }
+      }
+    },
+    {
+      "name": "runtime.dots.computer.prepare",
+      "summary": "",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/DotsComputerPrepareParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DotsPreparedResult"
+        }
+      }
+    },
+    {
       "name": "runtime.dots.effect.reconcile",
       "summary": "",
       "params": [
@@ -847,6 +883,24 @@ export const producerSchema = {
         "name": "result",
         "schema": {
           "$ref": "#/components/schemas/DotsApprovalResult"
+        }
+      }
+    },
+    {
+      "name": "dots.computer.observe",
+      "summary": "",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/DotsComputerObserveRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DotsComputerObserveResult"
         }
       }
     },
@@ -3723,7 +3777,7 @@ export const producerSchema = {
         "title": "RuntimeDeliveryParams",
         "type": "object"
       },
-      "DotsReconcileParams": {
+      "DotsComputerExecuteParams": {
         "additionalProperties": false,
         "properties": {
           "session_id": {
@@ -3737,19 +3791,332 @@ export const producerSchema = {
             "title": "Schema Version",
             "type": "integer"
           },
-          "effect_id": {
+          "command_id": {
             "maxLength": 256,
             "minLength": 1,
-            "title": "Effect Id",
+            "title": "Command Id",
+            "type": "string"
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/DotsComputerProposal"
+          },
+          "approval_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "approval_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Approval Digest",
             "type": "string"
           }
         },
         "required": [
           "session_id",
           "schema_version",
-          "effect_id"
+          "command_id",
+          "proposal",
+          "approval_id",
+          "approval_digest"
         ],
-        "title": "DotsReconcileParams",
+        "title": "DotsComputerExecuteParams",
+        "type": "object"
+      },
+      "DotsComputerProposal": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "computer",
+            "default": "computer",
+            "title": "Kind",
+            "type": "string"
+          },
+          "executor_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Executor Id",
+            "type": "string"
+          },
+          "expected_grant_revision": {
+            "minimum": 0,
+            "title": "Expected Grant Revision",
+            "type": "integer"
+          },
+          "expected_control_revision": {
+            "minimum": 0,
+            "title": "Expected Control Revision",
+            "type": "integer"
+          },
+          "snapshot_id": {
+            "minimum": 0,
+            "title": "Snapshot Id",
+            "type": "integer"
+          },
+          "snapshot_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Snapshot Sha256",
+            "type": "string"
+          },
+          "action": {
+            "enum": [
+              "navigate",
+              "read",
+              "snapshot",
+              "screenshot",
+              "click",
+              "type",
+              "key",
+              "scroll",
+              "files_list",
+              "files_read",
+              "files_write",
+              "exec"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DotsEmptyInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsNavigateInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsClickInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsTypeInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsKeyInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsScrollInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsFilesListInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsFilesReadInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsFilesWriteInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsExecInput"
+              }
+            ],
+            "title": "Input"
+          }
+        },
+        "required": [
+          "executor_id",
+          "expected_grant_revision",
+          "expected_control_revision",
+          "snapshot_id",
+          "snapshot_sha256",
+          "action",
+          "input"
+        ],
+        "title": "DotsComputerProposal",
+        "type": "object"
+      },
+      "DotsEmptyInput": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "DotsEmptyInput",
+        "type": "object"
+      },
+      "DotsNavigateInput": {
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "DotsNavigateInput",
+        "type": "object"
+      },
+      "DotsClickInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ref": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Ref",
+            "type": "string"
+          },
+          "snapshotId": {
+            "minimum": 0,
+            "title": "Snapshotid",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ref",
+          "snapshotId"
+        ],
+        "title": "DotsClickInput",
+        "type": "object"
+      },
+      "DotsTypeInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ref": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Ref",
+            "type": "string"
+          },
+          "snapshotId": {
+            "minimum": 0,
+            "title": "Snapshotid",
+            "type": "integer"
+          },
+          "text": {
+            "maxLength": 16000,
+            "title": "Text",
+            "type": "string"
+          },
+          "submit": {
+            "default": false,
+            "title": "Submit",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ref",
+          "snapshotId",
+          "text"
+        ],
+        "title": "DotsTypeInput",
+        "type": "object"
+      },
+      "DotsKeyInput": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "title": "DotsKeyInput",
+        "type": "object"
+      },
+      "DotsScrollInput": {
+        "additionalProperties": false,
+        "properties": {
+          "deltaY": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "ge": -10000,
+            "le": 10000,
+            "title": "Deltay"
+          }
+        },
+        "required": [
+          "deltaY"
+        ],
+        "title": "DotsScrollInput",
+        "type": "object"
+      },
+      "DotsFilesListInput": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "default": "",
+            "maxLength": 1024,
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "title": "DotsFilesListInput",
+        "type": "object"
+      },
+      "DotsFilesReadInput": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "DotsFilesReadInput",
+        "type": "object"
+      },
+      "DotsFilesWriteInput": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Path",
+            "type": "string"
+          },
+          "contents": {
+            "maxLength": 24000,
+            "title": "Contents",
+            "type": "string"
+          },
+          "append": {
+            "default": false,
+            "title": "Append",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "path",
+          "contents"
+        ],
+        "title": "DotsFilesWriteInput",
+        "type": "object"
+      },
+      "DotsExecInput": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Command",
+            "type": "string"
+          },
+          "timeoutMs": {
+            "default": 30000,
+            "maximum": 60000,
+            "minimum": 1000,
+            "title": "Timeoutms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "command"
+        ],
+        "title": "DotsExecInput",
         "type": "object"
       },
       "DotsEffectResult": {
@@ -4037,6 +4404,126 @@ export const producerSchema = {
         "title": "DotsEffectIdentity",
         "type": "object"
       },
+      "DotsComputerPrepareParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "command_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Command Id",
+            "type": "string"
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/DotsComputerProposal"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "command_id",
+          "proposal"
+        ],
+        "title": "DotsComputerPrepareParams",
+        "type": "object"
+      },
+      "DotsPreparedResult": {
+        "additionalProperties": false,
+        "properties": {
+          "command_id": {
+            "title": "Command Id",
+            "type": "string"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "operation_id": {
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "action_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Action Digest",
+            "type": "string"
+          },
+          "input_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Input Digest",
+            "type": "string"
+          },
+          "content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Sha256",
+            "type": "string"
+          },
+          "approval_id": {
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "approval_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Approval Digest",
+            "type": "string"
+          },
+          "expires_at": {
+            "title": "Expires At",
+            "type": "number"
+          }
+        },
+        "required": [
+          "command_id",
+          "run_id",
+          "operation_id",
+          "action_digest",
+          "input_digest",
+          "content_sha256",
+          "approval_id",
+          "approval_digest",
+          "expires_at"
+        ],
+        "title": "DotsPreparedResult",
+        "type": "object"
+      },
+      "DotsReconcileParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "effect_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Effect Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "schema_version",
+          "effect_id"
+        ],
+        "title": "DotsReconcileParams",
+        "type": "object"
+      },
       "DotsPagePrepareParams": {
         "additionalProperties": false,
         "properties": {
@@ -4168,64 +4655,6 @@ export const producerSchema = {
           "archived"
         ],
         "title": "DotsPageDocument",
-        "type": "object"
-      },
-      "DotsPreparedResult": {
-        "additionalProperties": false,
-        "properties": {
-          "command_id": {
-            "title": "Command Id",
-            "type": "string"
-          },
-          "run_id": {
-            "title": "Run Id",
-            "type": "string"
-          },
-          "operation_id": {
-            "title": "Operation Id",
-            "type": "string"
-          },
-          "action_digest": {
-            "pattern": "^[0-9a-f]{64}$",
-            "title": "Action Digest",
-            "type": "string"
-          },
-          "input_digest": {
-            "pattern": "^[0-9a-f]{64}$",
-            "title": "Input Digest",
-            "type": "string"
-          },
-          "content_sha256": {
-            "pattern": "^[0-9a-f]{64}$",
-            "title": "Content Sha256",
-            "type": "string"
-          },
-          "approval_id": {
-            "title": "Approval Id",
-            "type": "string"
-          },
-          "approval_digest": {
-            "pattern": "^[0-9a-f]{64}$",
-            "title": "Approval Digest",
-            "type": "string"
-          },
-          "expires_at": {
-            "title": "Expires At",
-            "type": "number"
-          }
-        },
-        "required": [
-          "command_id",
-          "run_id",
-          "operation_id",
-          "action_digest",
-          "input_digest",
-          "content_sha256",
-          "approval_id",
-          "approval_digest",
-          "expires_at"
-        ],
-        "title": "DotsPreparedResult",
         "type": "object"
       },
       "DotsPagePublishParams": {
@@ -9249,6 +9678,143 @@ export const producerSchema = {
         "title": "DotsApprovalResult",
         "type": "object"
       },
+      "DotsComputerObserveRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "authority": {
+            "$ref": "#/components/schemas/DotsReadAuthority"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/DotsComputerObserveScope"
+          },
+          "deadline_at": {
+            "title": "Deadline At",
+            "type": "number"
+          }
+        },
+        "required": [
+          "session_id",
+          "authority",
+          "scope",
+          "deadline_at"
+        ],
+        "title": "DotsComputerObserveRequest",
+        "type": "object"
+      },
+      "DotsComputerObserveScope": {
+        "additionalProperties": false,
+        "properties": {
+          "executor_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Executor Id",
+            "type": "string"
+          },
+          "expected_grant_revision": {
+            "minimum": 0,
+            "title": "Expected Grant Revision",
+            "type": "integer"
+          },
+          "action": {
+            "enum": [
+              "snapshot",
+              "read",
+              "screenshot",
+              "files_list",
+              "files_read",
+              "result"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DotsEmptyInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsFilesListInput"
+              },
+              {
+                "$ref": "#/components/schemas/DotsFilesReadInput"
+              }
+            ],
+            "title": "Input"
+          },
+          "effect_id": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Effect Id"
+          }
+        },
+        "required": [
+          "executor_id",
+          "expected_grant_revision",
+          "action"
+        ],
+        "title": "DotsComputerObserveScope",
+        "type": "object"
+      },
+      "DotsComputerObserveResult": {
+        "additionalProperties": false,
+        "properties": {
+          "authority": {
+            "$ref": "#/components/schemas/DotsReadAuthority"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/DotsComputerObserveScope"
+          },
+          "control_revision": {
+            "minimum": 0,
+            "title": "Control Revision",
+            "type": "integer"
+          },
+          "snapshot_id": {
+            "minimum": 0,
+            "title": "Snapshot Id",
+            "type": "integer"
+          },
+          "snapshot_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Snapshot Sha256",
+            "type": "string"
+          },
+          "content_json": {
+            "maxLength": 65536,
+            "title": "Content Json",
+            "type": "string"
+          },
+          "content_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "authority",
+          "scope",
+          "control_revision",
+          "snapshot_id",
+          "snapshot_sha256",
+          "content_json",
+          "content_sha256"
+        ],
+        "title": "DotsComputerObserveResult",
+        "type": "object"
+      },
       "DotsDispatchRequest": {
         "additionalProperties": false,
         "properties": {
@@ -9288,302 +9854,6 @@ export const producerSchema = {
           "deadline_at"
         ],
         "title": "DotsDispatchRequest",
-        "type": "object"
-      },
-      "DotsComputerProposal": {
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "computer",
-            "default": "computer",
-            "title": "Kind",
-            "type": "string"
-          },
-          "executor_id": {
-            "maxLength": 256,
-            "minLength": 1,
-            "title": "Executor Id",
-            "type": "string"
-          },
-          "expected_grant_revision": {
-            "minimum": 0,
-            "title": "Expected Grant Revision",
-            "type": "integer"
-          },
-          "expected_control_revision": {
-            "minimum": 0,
-            "title": "Expected Control Revision",
-            "type": "integer"
-          },
-          "snapshot_id": {
-            "minimum": 0,
-            "title": "Snapshot Id",
-            "type": "integer"
-          },
-          "snapshot_sha256": {
-            "pattern": "^[0-9a-f]{64}$",
-            "title": "Snapshot Sha256",
-            "type": "string"
-          },
-          "action": {
-            "enum": [
-              "navigate",
-              "read",
-              "snapshot",
-              "screenshot",
-              "click",
-              "type",
-              "key",
-              "scroll",
-              "files_list",
-              "files_read",
-              "files_write",
-              "exec"
-            ],
-            "title": "Action",
-            "type": "string"
-          },
-          "input": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DotsEmptyInput"
-              },
-              {
-                "$ref": "#/components/schemas/DotsNavigateInput"
-              },
-              {
-                "$ref": "#/components/schemas/DotsClickInput"
-              },
-              {
-                "$ref": "#/components/schemas/DotsTypeInput"
-              },
-              {
-                "$ref": "#/components/schemas/DotsKeyInput"
-              },
-              {
-                "$ref": "#/components/schemas/DotsScrollInput"
-              },
-              {
-                "$ref": "#/components/schemas/DotsFilesListInput"
-              },
-              {
-                "$ref": "#/components/schemas/DotsFilesReadInput"
-              },
-              {
-                "$ref": "#/components/schemas/DotsFilesWriteInput"
-              },
-              {
-                "$ref": "#/components/schemas/DotsExecInput"
-              }
-            ],
-            "title": "Input"
-          }
-        },
-        "required": [
-          "executor_id",
-          "expected_grant_revision",
-          "expected_control_revision",
-          "snapshot_id",
-          "snapshot_sha256",
-          "action",
-          "input"
-        ],
-        "title": "DotsComputerProposal",
-        "type": "object"
-      },
-      "DotsEmptyInput": {
-        "additionalProperties": false,
-        "properties": {},
-        "title": "DotsEmptyInput",
-        "type": "object"
-      },
-      "DotsNavigateInput": {
-        "additionalProperties": false,
-        "properties": {
-          "url": {
-            "maxLength": 2048,
-            "minLength": 1,
-            "title": "Url",
-            "type": "string"
-          }
-        },
-        "required": [
-          "url"
-        ],
-        "title": "DotsNavigateInput",
-        "type": "object"
-      },
-      "DotsClickInput": {
-        "additionalProperties": false,
-        "properties": {
-          "ref": {
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Ref",
-            "type": "string"
-          },
-          "snapshotId": {
-            "minimum": 0,
-            "title": "Snapshotid",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "ref",
-          "snapshotId"
-        ],
-        "title": "DotsClickInput",
-        "type": "object"
-      },
-      "DotsTypeInput": {
-        "additionalProperties": false,
-        "properties": {
-          "ref": {
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Ref",
-            "type": "string"
-          },
-          "snapshotId": {
-            "minimum": 0,
-            "title": "Snapshotid",
-            "type": "integer"
-          },
-          "text": {
-            "maxLength": 16000,
-            "title": "Text",
-            "type": "string"
-          },
-          "submit": {
-            "default": false,
-            "title": "Submit",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "ref",
-          "snapshotId",
-          "text"
-        ],
-        "title": "DotsTypeInput",
-        "type": "object"
-      },
-      "DotsKeyInput": {
-        "additionalProperties": false,
-        "properties": {
-          "key": {
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Key",
-            "type": "string"
-          }
-        },
-        "required": [
-          "key"
-        ],
-        "title": "DotsKeyInput",
-        "type": "object"
-      },
-      "DotsScrollInput": {
-        "additionalProperties": false,
-        "properties": {
-          "deltaY": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              }
-            ],
-            "ge": -10000,
-            "le": 10000,
-            "title": "Deltay"
-          }
-        },
-        "required": [
-          "deltaY"
-        ],
-        "title": "DotsScrollInput",
-        "type": "object"
-      },
-      "DotsFilesListInput": {
-        "additionalProperties": false,
-        "properties": {
-          "path": {
-            "default": "",
-            "maxLength": 1024,
-            "title": "Path",
-            "type": "string"
-          }
-        },
-        "title": "DotsFilesListInput",
-        "type": "object"
-      },
-      "DotsFilesReadInput": {
-        "additionalProperties": false,
-        "properties": {
-          "path": {
-            "maxLength": 1024,
-            "minLength": 1,
-            "title": "Path",
-            "type": "string"
-          }
-        },
-        "required": [
-          "path"
-        ],
-        "title": "DotsFilesReadInput",
-        "type": "object"
-      },
-      "DotsFilesWriteInput": {
-        "additionalProperties": false,
-        "properties": {
-          "path": {
-            "maxLength": 1024,
-            "minLength": 1,
-            "title": "Path",
-            "type": "string"
-          },
-          "contents": {
-            "maxLength": 24000,
-            "title": "Contents",
-            "type": "string"
-          },
-          "append": {
-            "default": false,
-            "title": "Append",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "path",
-          "contents"
-        ],
-        "title": "DotsFilesWriteInput",
-        "type": "object"
-      },
-      "DotsExecInput": {
-        "additionalProperties": false,
-        "properties": {
-          "command": {
-            "maxLength": 8000,
-            "minLength": 1,
-            "title": "Command",
-            "type": "string"
-          },
-          "timeoutMs": {
-            "default": 30000,
-            "maximum": 60000,
-            "minimum": 1000,
-            "title": "Timeoutms",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "command"
-        ],
-        "title": "DotsExecInput",
         "type": "object"
       },
       "DotsInspectRequest": {

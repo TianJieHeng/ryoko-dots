@@ -138,7 +138,7 @@ test.runIf(
       python,
       [
         '-c',
-        `import json,sys,yaml\nfrom agent.agent_identity import resolve_agent_context\np=sys.argv[1]\nc=yaml.safe_load(open(p+'/config.yaml'))\ni=resolve_agent_context(c,session_id='conversation_ingress',profile_home=p).identity\nprint(json.dumps({k:getattr(i,k) for k in ['principal_id','profile_id','agent_id','policy_digest','config_digest']}))`,
+        `import json,sys; import hermes_yaml as yaml\nfrom agent.agent_identity import resolve_agent_context\np=sys.argv[1]\nc=yaml.safe_load(open(p+'/config.yaml'))\ni=resolve_agent_context(c,session_id='conversation_ingress',profile_home=p).identity\nprint(json.dumps({k:getattr(i,k) for k in ['principal_id','profile_id','agent_id','policy_digest','config_digest']}))`,
         home,
       ],
       {
@@ -367,7 +367,7 @@ test.runIf(
         python,
         [
           '-c',
-          `import json,sys,time,yaml
+          `import json,sys,time; import hermes_yaml as yaml
 from agent.agent_identity import resolve_agent_context
 from agent.result_artifacts import artifact_actor
 from hermes_state import SessionDB
