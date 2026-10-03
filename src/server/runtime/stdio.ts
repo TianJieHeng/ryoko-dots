@@ -1,3 +1,4 @@
+import { stateGateDescriptor } from '../operations/state-gate.js';
 import { BE06_PRODUCER_COMMIT, type Be06Transport } from './be06-service.js';
 import { be06Methods } from './be06-wire.js';
 import { verifyGitCheckout } from './source-pin.js';
@@ -148,6 +149,7 @@ export interface ConversationTransport {
     params: unknown,
   ): Promise<ConversationResults[M]>;
   stop(): Promise<void>;
+  quiesce?(): void;
   setNativeHandler?(handler: NativeHandler): () => void;
   subscribeResultAvailable?(
     listener: (notification: unknown, epoch: number) => void,
@@ -159,6 +161,7 @@ export class StdioConversationTransport implements ConversationTransport {
   private rpc?: ConversationRpc;
   private proof?: RuntimeConversationCapabilities;
   private starting?: Promise<RuntimeConversationCapabilities>;
+  private quiescing = false;
   private profileHash = '';
   epoch = 0;
   private nativeHandler?: NativeHandler;
@@ -335,6 +338,8 @@ export class StdioConversationTransport implements ConversationTransport {
     this.profileHash = sha(raw);
   }
   start(): Promise<RuntimeConversationCapabilities> {
+    if (this.quiescing)
+      return Promise.reject(new Error('Runtime is stopping.'));
     if (this.connected) {
       this.checkProfile();
       return Promise.resolve(this.proof!);
@@ -346,6 +351,7 @@ export class StdioConversationTransport implements ConversationTransport {
   private async launch() {
     // A failed pipe cannot leave a second owning stdio process running.
     await this.stop();
+    if (this.quiescing) throw new Error('Runtime is stopping.');
     let stage = 'trusted_paths';
     try {
       for (const name of ['checkout', 'home', 'runtimeDirectory'] as const) {
@@ -363,16 +369,21 @@ export class StdioConversationTransport implements ConversationTransport {
       stage = 'profile_configuration';
       this.checkProfile();
       stage = 'stdio_capability_read';
+      const gateFd = stateGateDescriptor();
       const child = spawn(
         this.config.python,
         ['-u', '-m', 'tui_gateway.entry'],
         {
           cwd: this.config.checkout,
-          env: childEnvironment(this.config),
-          stdio: 'pipe',
+          env: {
+            ...childEnvironment(this.config),
+            ...(gateFd === undefined ? {} : { DOTS_STATE_GATE_FD: '3' }),
+          },
+          stdio:
+            gateFd === undefined ? 'pipe' : ['pipe', 'pipe', 'pipe', gateFd],
           shell: false,
         },
-      );
+      ) as ChildProcessWithoutNullStreams;
       this.process = child;
       const launchEpoch = this.epoch + 1;
       const rpc = new ConversationRpc(
@@ -460,17 +471,25 @@ export class StdioConversationTransport implements ConversationTransport {
       throw new Error('Ryoko disconnected. Recovery remains read-only.');
     return this.rpc!.call(method, params);
   }
-  async stop() {
+  quiesce() {
+    this.quiescing = true;
     this.proof = undefined;
     this.rpc?.close();
+  }
+  async stop() {
+    this.proof = undefined;
+    const rpc = this.rpc;
+    rpc?.close();
     const child = this.process;
     if (
       !child ||
       !child.pid ||
       child.exitCode !== null ||
       child.signalCode !== null
-    )
+    ) {
+      await rpc?.drain();
       return;
+    }
     await new Promise<void>((resolve) => {
       const timer = setTimeout(() => {
         child.kill('SIGKILL');
@@ -481,5 +500,6 @@ export class StdioConversationTransport implements ConversationTransport {
       });
       child.kill('SIGTERM');
     });
+    await rpc?.drain();
   }
 }

@@ -1,11 +1,11 @@
-# Default self-hosted stack. Do not run alongside deployment/compose.self-hosted.yml.
+# Separate replacement stack, never start beside the legacy compose.yml stack.
+# Run from repository root with `docker compose -f deployment/compose.self-hosted.yml ...`.
 # Native TLS is mandatory for the container's non-loopback listener.
 services:
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
-      target: app
+      context: ..
+      dockerfile: deployment/Dockerfile.self-hosted
       args:
         NODE_IMAGE: ${DOTS_NODE_IMAGE:-node:24-bookworm-slim}
     user: '1000:1000'

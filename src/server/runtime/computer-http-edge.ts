@@ -1,3 +1,4 @@
+import { ReadinessEvidence } from '../operations/readiness-evidence.js';
 import { readFileSync, statSync } from 'node:fs';
 import { z } from 'zod';
 import type { ComputerAction } from '../../shared/computer-types.js';
@@ -58,6 +59,11 @@ export class NativeComputerHttpEdge implements NativeComputerEdge {
   readonly dotId: string;
   readonly executorId: string;
   private ready = false;
+  private statusEvidence = new ReadinessEvidence();
+  operationalState() {
+    if (!this.configured) return 'unconfigured' as const;
+    return this.statusEvidence.read(0, this.available());
+  }
   private verified = false;
   get configured() {
     return this.transport.configured() && this.qualification !== null;
@@ -129,6 +135,7 @@ export class NativeComputerHttpEdge implements NativeComputerEdge {
       status.identity.evidence === this.qualification.evidence &&
       this.qualifiedActions.every((a) => status.actions.includes(a));
     this.verified = this.ready;
+    this.statusEvidence.record(this.ready ? 'ready' : 'unavailable', 0);
     return status;
   }
   async change(

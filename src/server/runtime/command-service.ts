@@ -139,9 +139,12 @@ export class CommandService {
       }
     }
   }
-  async stop() {
+  quiesce() {
     this.closed = true;
     clearTimeout(this.recoveryTimer);
+  }
+  async stop() {
+    this.quiesce();
     await this.recovering;
     await Promise.allSettled([
       ...this.binding.values(),

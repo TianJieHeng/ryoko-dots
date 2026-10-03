@@ -61,6 +61,8 @@ export class SelfHostedPlatform {
   private starting?: Promise<void>;
   /** Derived only from the installation's durable verified ingress ledger. */
   conversationOrigin?: (id: string) => 'slack' | undefined;
+  private stopping = false;
+  private stopped?: Promise<void>;
   readonly ledger: ConversationLedger;
   readonly commands?: CommandService;
   readonly schedules?: RuntimeScheduleService;
@@ -396,6 +398,7 @@ export class SelfHostedPlatform {
       throw new ConversationError('Schedule authority changed.', 409);
   }
   async start() {
+    if (this.stopping) throw new ConversationError('Runtime is stopping.', 503);
     if (!this.transport) return;
     return (this.starting ??= (async () => {
       const config = this.transport!.config;
@@ -408,6 +411,8 @@ export class SelfHostedPlatform {
           403,
         );
       const proof = await this.transport!.start();
+      if (this.stopping)
+        throw new ConversationError('Runtime is stopping.', 503);
       if (!identityMatches(config.identity, proof.identity))
         throw new ConversationError(
           'Configured runtime identity mismatch.',
@@ -438,19 +443,27 @@ export class SelfHostedPlatform {
       throw error;
     }));
   }
-  async stop() {
-    await this.voice?.close();
-    this.unsubscribeResults?.();
-    this.delivery?.close();
-    this.schedules?.close();
-    this.legacySchedules?.close();
-    this.identities?.close();
-    this.controls?.close();
-    await this.commands?.stop();
-    this.nativePages?.close();
-    this.nativeComputers?.close();
-    await this.transport?.stop();
-    this.ledger.close();
+  stop(): Promise<void> {
+    this.stopping = true;
+    this.commands?.quiesce();
+    this.transport?.quiesce?.();
+    return (this.stopped ??= (async () => {
+      // Keep every ledger open until HTTP, media, recovery and native callbacks
+      // have settled. Timeout escalation is owned by the operational shutdown.
+      await this.voice?.close();
+      this.unsubscribeResults?.();
+      await this.transport?.stop();
+      await this.starting?.catch(() => {});
+      await this.commands?.stop();
+      this.delivery?.close();
+      this.schedules?.close();
+      this.legacySchedules?.close();
+      this.identities?.close();
+      this.controls?.close();
+      this.nativePages?.close();
+      this.nativeComputers?.close();
+      this.ledger.close();
+    })());
   }
   async setup(dotId: string): Promise<RuntimeSetup> {
     if (!this.transport) return runtimeSetup();

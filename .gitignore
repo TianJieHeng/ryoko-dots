@@ -18,3 +18,7 @@ data/
 
 # Local hosted-project selection
 .copilotkit/
+
+# Python operational fixture caches
+__pycache__/
+*.py[cod]

@@ -1,11 +1,13 @@
-FROM node:24-bookworm-slim AS build
+# Operator pins the reviewed Node image digest before target-host qualification.
+ARG NODE_IMAGE=node:24-bookworm-slim
+FROM ${NODE_IMAGE} AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build && node scripts/check-production-boundary.mjs .
 
-FROM node:24-bookworm-slim AS app
+FROM ${NODE_IMAGE} AS app
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=4310 DATABASE_PATH=/state/dots.sqlite
 WORKDIR /app
 # Python is for the offline lifetime gate. A configured Ryoko producer also needs
@@ -19,13 +21,3 @@ USER node
 EXPOSE 4310
 ENTRYPOINT ["/usr/bin/python3", "/app/scripts/operations/lifetime_gate.py", "--gate", "/gate/state.lock", "--"]
 CMD ["/usr/local/bin/node", "/app/dist/server/server/index.js"]
-
-FROM node:24-bookworm-slim AS browser
-ENV NODE_ENV=production BROWSER_HOST=0.0.0.0 BROWSER_PORT=4311 PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev && npx playwright install --with-deps chromium && chmod -R a+rX /ms-playwright
-COPY --from=build /app/dist/server ./dist/server
-USER node
-EXPOSE 4311
-CMD ["node", "dist/server/browser/index.js"]

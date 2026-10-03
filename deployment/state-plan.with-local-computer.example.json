@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "stateRoot": "/operator/private/state",
+  "resources": [
+    {
+      "role": "dots_db",
+      "path": "dots.sqlite",
+      "kind": "sqlite"
+    },
+    {
+      "role": "ryoko_db",
+      "path": "ryoko/state.db",
+      "kind": "sqlite"
+    },
+    {
+      "role": "artifacts",
+      "path": "ryoko/artifacts",
+      "kind": "tree"
+    },
+    {
+      "role": "history_archive",
+      "path": "migration/history.sqlite",
+      "kind": "sqlite"
+    },
+    {
+      "role": "legacy_archive",
+      "path": "migration/legacy.sqlite",
+      "kind": "sqlite"
+    },
+    {
+      "role": "retirement_receipts",
+      "path": "migration/receipts",
+      "kind": "tree"
+    },
+    {
+      "role": "computer_edge_journal",
+      "path": "computers/profiles/.dots-edge/edge.sqlite",
+      "kind": "sqlite"
+    },
+    {
+      "role": "computer_browser_profile",
+      "path": "computers/profiles/reviewed-dot-id",
+      "kind": "tree"
+    },
+    {
+      "role": "computer_workspace",
+      "path": "computers/workspace",
+      "kind": "tree"
+    },
+    {
+      "role": "computer_qualification_receipts",
+      "path": "computers/qualification",
+      "kind": "tree"
+    }
+  ],
+  "pins": {
+    "consumerCommit": "replace-with-exact-reviewed-commit",
+    "producerCommit": "replace-with-exact-reviewed-commit",
+    "producerSchemaSha256": "replace-with-actual-schema-digest",
+    "operatorConfigSha256": "replace-with-non-secret-config-digest"
+  }
+}

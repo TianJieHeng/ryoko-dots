@@ -1,8 +1,10 @@
+import { ownerTokenFromEnvironment } from './operations/operator-secrets.js';
+
 /** Resolve trusted startup configuration only. Never consume forwarded headers. */
 export function ownerAuthConfig(env: NodeJS.ProcessEnv) {
   const host = env.HOST ?? '127.0.0.1';
   const port = Number(env.PORT ?? 4310);
-  const ownerToken = env.OWNER_TOKEN;
+  const ownerToken = ownerTokenFromEnvironment(env);
   const loopback = ['127.0.0.1', '::1', 'localhost'].includes(host);
   const development = env.NODE_ENV === 'development';
   const listenerOrigin = `${env.TLS_CERT_PATH ? 'https' : 'http'}://${host === '::1' ? '[::1]' : host}:${port}`;

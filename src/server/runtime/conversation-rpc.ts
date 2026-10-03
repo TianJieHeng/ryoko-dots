@@ -33,6 +33,7 @@ export class ConversationRpc {
   private buffer = Buffer.alloc(0);
   private pending = new Map<string, Pending>();
   private closed = false;
+  private nativeTasks = new Set<Promise<unknown>>();
   private callbacks = new Map<
     string | number,
     { controller: AbortController; sessionId: string; method: string }
@@ -204,8 +205,16 @@ export class ConversationRpc {
       );
       if (!Number.isFinite(duration) || duration <= 0)
         throw new Error('Expired');
-      const result = await Promise.race([
+      const task = Promise.resolve(
         this.nativeHandler(method as NativeMethod, params, controller.signal),
+      );
+      this.nativeTasks.add(task);
+      void task.then(
+        () => this.nativeTasks.delete(task),
+        () => this.nativeTasks.delete(task),
+      );
+      const result = await Promise.race([
+        task,
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => {
             controller.abort();
@@ -265,6 +274,9 @@ export class ConversationRpc {
       throw new RuntimeFailure('unknown');
     }
     return result as ConversationResults[M];
+  }
+  async drain() {
+    await Promise.allSettled([...this.nativeTasks]);
   }
   close = () => {
     if (this.closed) return;

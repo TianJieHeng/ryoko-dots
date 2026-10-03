@@ -12,6 +12,14 @@ The retained template documentation below describes the legacy application. Its 
 
 <div align="center">
 
+## Self-hosted operations and imported archives
+
+The default Docker/Compose path now uses the [BE11 operations runbook](docs/BE11-operations.md): non-root, private host port, native TLS for the non-loopback container listener, an existing owner secret mount and a shared lifetime state gate. It starts without Intelligence or managed Channels credentials. Do not run both root Compose and the separate deployment example, or run either beside a legacy admission owner. Real producer, voice, Slack and computer activation retain their separate qualification gates.
+
+Owner-only `/api/ops/readiness` reports each surface independently and `/api/ops/metrics` returns allowlisted aggregate values. `/health/live` exposes only process liveness. Neither endpoint is production certification. [Imported history](docs/history-export-contract.md) is a read-only inert archive available from **Imported history** after an operator supplies `LEGACY_HISTORY_ARCHIVE_PATH`; original source/record IDs remain in stable links and historical commands never execute.
+
+Retired managed/model-loop SDK packages remain development-only to keep their historical tests and notices; a transitive startup import check enforces the production boundary. Everything below this section describes the original template and its historical demonstrations unless explicitly covered by the current self-hosted runbooks. Historical provider checks do not qualify this runtime.
+
 # OpenDots
 
 ### Always-on AI coworkers that move between text, calls, and Slack.

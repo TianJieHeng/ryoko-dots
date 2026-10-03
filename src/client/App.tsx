@@ -1,3 +1,5 @@
+import { ImportedHistory } from './runtime/ImportedHistory';
+import { archivedHistoryLocation } from '../shared/runtime/legacy-history';
 import { MemoryLearning } from './runtime/MemoryLearning';
 import { specialistsSchema, configSchema } from '../shared/runtime/agents';
 import { MissionsPanel } from './runtime/MissionsPanel';
@@ -215,9 +217,9 @@ function WorkspaceApp({
     'specialists',
   );
   const [selectedThread, setSelectedThread] = useState<string>();
-  const [view, rawSetView] = useState<'chat' | 'tasks' | 'memories' | 'space'>(
-    'chat',
-  );
+  const [view, rawSetView] = useState<
+    'chat' | 'tasks' | 'memories' | 'space' | 'history'
+  >('chat');
   const dirtyPage = useRef(false);
   const [spaceId, setSpaceId] = useState('');
   const [pageId, setPageId] = useState<string>();
@@ -235,6 +237,21 @@ function WorkspaceApp({
   useEffect(() => {
     let acceptedHash = location.hash;
     const navigate = () => {
+      if (archivedHistoryLocation(location.hash)) {
+        if (
+          dirtyPage.current &&
+          !window.confirm('Leave your unsaved page draft?')
+        ) {
+          history.replaceState(null, '', acceptedHash);
+          return;
+        }
+        dirtyPage.current = false;
+        acceptedHash = location.hash;
+        rawSetView('history');
+        setMobile(false);
+        return;
+      }
+
       const mission = location.hash.match(
         /^#\/missions\/([A-Za-z0-9_-]+)(?:\/reviews\/([A-Za-z0-9_-]+))?$/,
       );
@@ -692,6 +709,24 @@ function WorkspaceApp({
         )}
         <div className="sidebar-bottom">
           <button
+            className={`nav-item ${view === 'history' ? 'active' : ''}`}
+            onClick={() => {
+              if (
+                dirtyPage.current &&
+                !window.confirm('Leave your unsaved page draft?')
+              )
+                return;
+              dirtyPage.current = false;
+              location.hash = '#/history';
+              rawSetView('history');
+              setMobile(false);
+            }}
+          >
+            <BookOpen size={17} />
+            <span>Imported history</span>
+            <small>Read-only</small>
+          </button>
+          <button
             className={`nav-item ${view === 'tasks' ? 'active' : ''}`}
             onClick={() => {
               setView('tasks');
@@ -769,11 +804,13 @@ function WorkspaceApp({
             <strong>
               {view === 'chat'
                 ? dot.name
-                : view === 'tasks'
-                  ? 'Activity'
-                  : view === 'space'
-                    ? 'Pages'
-                    : 'Memories'}
+                : view === 'history'
+                  ? 'Imported history'
+                  : view === 'tasks'
+                    ? 'Activity'
+                    : view === 'space'
+                      ? 'Pages'
+                      : 'Memories'}
             </strong>
           </div>
           <div className="top-actions">
@@ -802,7 +839,9 @@ function WorkspaceApp({
             </button>
           </div>
         )}
-        {view === 'space' ? (
+        {view === 'history' ? (
+          <ImportedHistory />
+        ) : view === 'space' ? (
           <SpaceWorkspace
             key={spaceId}
             space={

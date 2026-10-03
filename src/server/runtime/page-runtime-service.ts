@@ -130,6 +130,16 @@ export class PageRuntimeService {
       this.detach = transport.setNativeHandler(this.handle);
     }
   }
+  operationalState() {
+    return this.transport.connected &&
+      !this.closed &&
+      [...this.registrations.values()].some(
+        (registration) =>
+          registration.bound.epoch === (this.transport.epoch ?? 0),
+      )
+      ? ('ready' as const)
+      : ('unavailable' as const);
+  }
   close() {
     this.closed = true;
     this.detach?.();

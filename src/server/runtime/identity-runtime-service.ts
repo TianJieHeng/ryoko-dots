@@ -1,3 +1,4 @@
+import { ReadinessEvidence } from '../operations/readiness-evidence.js';
 import { frozenLegacyMemoryInventory } from './be06-migration.js';
 import { createHash } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
@@ -28,6 +29,16 @@ const requireThat = (value: unknown, code: string) => {
 export class IdentityRuntimeService {
   readonly operations: IdentitySkillService;
   private db: DatabaseSync;
+  private readinessEvidence = {
+    memory: new ReadinessEvidence(),
+    learning: new ReadinessEvidence(),
+  };
+  operationalState(surface: 'memory' | 'learning') {
+    return this.readinessEvidence[surface].read(
+      this.transport.epoch ?? 0,
+      this.transport.connected,
+    );
+  }
   constructor(
     private workspace: WorkspaceStore,
     database: string,
@@ -542,10 +553,30 @@ export class IdentityRuntimeService {
       for (const agent of (result as { agents: AgentConfigurationRecord[] })
         .agents)
         await this.mirror(agent, auth);
-    return {
-      ...this.envelope(id, this.project(payload, projectId), auth),
-      result,
-    };
+    const envelope = this.envelope(id, this.project(payload, projectId), auth);
+    if (
+      method === 'runtime.memory.status' &&
+      envelope.scope.agent === this.transport.config.identity.agent_id
+    ) {
+      const health = (result as { health: { status: string } }).health.status;
+      this.readinessEvidence.memory.record(
+        health === 'ready'
+          ? 'ready'
+          : health === 'unconfigured'
+            ? 'unconfigured'
+            : 'unavailable',
+        this.transport.epoch ?? 0,
+      );
+    }
+    if (
+      method === 'runtime.workflow.list' &&
+      envelope.scope.agent === this.transport.config.identity.agent_id
+    )
+      this.readinessEvidence.learning.record(
+        'ready',
+        this.transport.epoch ?? 0,
+      );
+    return { ...envelope, result };
   }
   async act(
     id: string,

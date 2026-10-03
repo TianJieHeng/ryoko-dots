@@ -1,3 +1,4 @@
+import { ReadinessEvidence } from '../operations/readiness-evidence.js';
 import {
   commandScheduleDefinitionSchema,
   commandScheduleRecordSchema,
@@ -160,6 +161,13 @@ export interface ScheduleServiceOptions {
  * provider activation, external publication or implicit authority grant. */
 export class RuntimeScheduleService {
   private db: DatabaseSync;
+  private operationalEvidence = new ReadinessEvidence();
+  operationalState() {
+    return this.operationalEvidence.read(
+      this.transport.epoch ?? 0,
+      this.transport.connected,
+    );
+  }
   private now: () => number;
   constructor(
     private ownerId: string,
@@ -287,6 +295,14 @@ export class RuntimeScheduleService {
         !['healthy', 'waiting', 'ticking'].includes(scheduler.state))
     )
       throw new ConversationError('Inconsistent scheduler owner proof.', 409);
+    this.operationalEvidence.record(
+      scheduler.recurring_admission_ready
+        ? 'ready'
+        : scheduler.enabled
+          ? 'unavailable'
+          : 'unconfigured',
+      this.transport.epoch ?? 0,
+    );
     return scheduler;
   }
   async readSchedulerStatus(conversationId: string, auth: Guard) {

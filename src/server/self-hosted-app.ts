@@ -1,3 +1,7 @@
+import { createSelfHostedSlackApp } from './runtime/slack-routes.js';
+import type { SelfHostedSlack } from './runtime/slack-service.js';
+import type { RuntimeOperations } from './operations/runtime-operations.js';
+import type { LegacyHistoryReader } from './operations/history-archive.js';
 import { runtimeVoiceRoutes } from './runtime/voice-routes.js';
 import { ComputerEffectError } from './runtime/computer-effect-service.js';
 import {
@@ -29,8 +33,6 @@ import { controlActionSchema } from './runtime/control-service.js';
 import { ConversationError } from './runtime/conversation-ledger.js';
 import { PageError, pageInput, pagePatch } from './pages.js';
 import type { Store } from './store.js';
-import { createSelfHostedSlackApp } from './runtime/slack-routes.js';
-import type { SelfHostedSlack } from './runtime/slack-service.js';
 const id = z.string().min(1).max(256);
 const cursor = z.string().min(1).max(2048);
 const create = z.strictObject({
@@ -69,19 +71,47 @@ export function createSelfHostedApp({
   auth,
   platform,
   store,
+  operations,
+  history,
   slack,
 }: {
   auth: OwnerAuth;
   platform: SelfHostedPlatform;
   store: Store;
+  operations?: RuntimeOperations;
+  history?: LegacyHistoryReader;
   slack?: SelfHostedSlack;
 }) {
   const app = new Hono();
+  app.get('/health/live', (c) => c.json({ alive: true }));
+  if (operations) {
+    app.use('*', async (c, next) => {
+      if (!c.req.path.startsWith('/api/') && c.req.path !== '/slack/events')
+        return next();
+      if (
+        c.req.path === '/api/ops/readiness' ||
+        c.req.path === '/api/ops/metrics'
+      )
+        return next();
+      const release = operations.admission();
+      if (!release)
+        return c.json(
+          { error: 'Service is draining; no new work was admitted.' },
+          503,
+        );
+      try {
+        await next();
+      } finally {
+        release();
+      }
+    });
+  }
   if (slack)
     app.route(
       '/',
       createSelfHostedSlackApp({ service: slack, auth, platform }),
     );
+
   app.use(
     '/api/*',
     bodyLimit({
@@ -90,6 +120,67 @@ export function createSelfHostedApp({
     }),
   );
   app.use('/api/*', auth.middleware());
+  if (operations) {
+    app.get('/api/ops/readiness', async (c) => {
+      const current = guard(c, platform);
+      const result = await operations.readiness(['storage']);
+      current();
+      c.header('Cache-Control', 'private, no-store');
+      return c.json(result, result.ready ? 200 : 503);
+    });
+    app.get('/api/ops/metrics', (c) => {
+      guard(c, platform)();
+      c.header('Cache-Control', 'private, no-store');
+      return c.json(operations.metrics());
+    });
+  }
+  const archiveWindow = z.strictObject({
+    source: id,
+    offset: z
+      .string()
+      .regex(/^(0|[1-9][0-9]{0,8})$/)
+      .transform(Number)
+      .default(0),
+  });
+  app.get('/api/ops/legacy-history/sources', (c) => {
+    if (Object.keys(query(c)).length)
+      throw new ConversationError('Invalid history selector.', 400);
+    if (!history)
+      return c.json(
+        { error: 'Imported history archive is unconfigured.' },
+        503,
+      );
+    c.header('Cache-Control', 'private, no-store');
+    return c.json(history.sources(guard(c, platform)));
+  });
+  app.get('/api/ops/legacy-history', (c) => {
+    const input = archiveWindow.parse(query(c));
+    if (!history)
+      return c.json(
+        { error: 'Imported history archive is unconfigured.' },
+        503,
+      );
+    c.header('Cache-Control', 'private, no-store');
+    return c.json(history.list(input.source, guard(c, platform), input.offset));
+  });
+  app.get('/api/ops/legacy-history/:legacyId', (c) => {
+    const input = archiveWindow.parse(query(c));
+    if (!history)
+      return c.json(
+        { error: 'Imported history archive is unconfigured.' },
+        503,
+      );
+    c.header('Cache-Control', 'private, no-store');
+    return c.json(
+      history.read(
+        input.source,
+        id.parse(c.req.param('legacyId')),
+        guard(c, platform),
+        input.offset,
+      ),
+    );
+  });
+
   if (platform.voice)
     app.route(
       '/api',
@@ -130,6 +221,7 @@ export function createSelfHostedApp({
             : 'Slack is disabled, disconnected, or lacks current scoped authority and connected-workspace qualification.',
       };
     }
+
     current();
     return c.json(value);
   });
@@ -803,6 +895,75 @@ export function createSelfHostedApp({
       mode: 'live',
       configured: false,
     });
+  });
+  // Retained local metadata/archive reads never invoke a model or old scheduler.
+  app.post('/api/spaces', async (c) => {
+    const input = z
+      .strictObject({
+        name: z.string().trim().min(1).max(60),
+        description: z.string().max(500).default(''),
+      })
+      .parse(await c.req.json());
+    guard(c, platform)();
+    return c.json(
+      platform.workspace.createSpace(input.name, input.description),
+      201,
+    );
+  });
+  app.get('/api/tasks/:id', (c) => {
+    const current = guard(c, platform);
+    z.strictObject({}).parse(query(c));
+    const detail = store.detail(id.parse(c.req.param('id')));
+    current();
+    c.header('Cache-Control', 'private, no-store');
+    return detail
+      ? c.json({
+          ...detail,
+          provenance: 'legacy-local',
+          readOnly: true,
+          executable: false,
+        })
+      : c.json({ error: 'Historical task not found.' }, 404);
+  });
+  app.get('/api/conversations/:id/capture', (c) => {
+    const current = guard(c, platform);
+    current();
+    z.strictObject({}).parse(query(c));
+    const conversationId = id.parse(c.req.param('id'));
+    c.header('Cache-Control', 'private, no-store');
+    const meta = platform.ledger.metadata(conversationId);
+    if (
+      meta ||
+      platform.workspace.runtimeBindings.hasConversation(conversationId)
+    ) {
+      try {
+        const bound = platform.workspace.runtimeBindings.resolveConversation(
+          conversationId,
+          'read',
+        );
+        if (
+          !meta ||
+          meta.dotId !== bound.dotId ||
+          (meta.spaceId &&
+            !platform.workspace.canAccessSpace(bound.dotId, meta.spaceId))
+        )
+          throw new Error('Denied');
+        platform.workspace.runtimeBindings.assertCurrent(bound, 'read');
+      } catch {
+        throw new ConversationError('Conversation capture access denied.', 403);
+      }
+      current();
+      // Canonical captures are served through immutable runtime result/artifact routes.
+      return c.json(null);
+    }
+    let capture: unknown;
+    try {
+      capture = platform.workspace.capture(conversationId);
+    } catch {
+      throw new ConversationError('Conversation capture access denied.', 403);
+    }
+    current();
+    return c.json(capture);
   });
   app.get('/api/conversations/:id/reviewed-page/:toolCallId', (c) => {
     guard(c, platform)();

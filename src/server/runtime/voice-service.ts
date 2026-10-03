@@ -1,3 +1,4 @@
+import { ReadinessEvidence } from '../operations/readiness-evidence.js';
 import { randomUUID, createHash } from 'node:crypto';
 import { z } from 'zod';
 import {
@@ -124,6 +125,14 @@ export interface VoiceHost {
 export class RuntimeVoiceService {
   readonly ledger: VoiceLedger;
   private timer?: ReturnType<typeof setInterval>;
+  private providerEvidence = new ReadinessEvidence();
+  operationalState() {
+    if (!this.media.available) return 'unconfigured' as const;
+    return this.providerEvidence.read(
+      0,
+      !this.closing && this.sweepError === null,
+    );
+  }
   private closing = false;
   private mediaPaused = false;
   private mutations = new Set<Promise<unknown>>();
@@ -363,6 +372,7 @@ export class RuntimeVoiceService {
         current.admission = 'admitted';
       });
       this.ledger.settle(input.operationId, 'accepted');
+      this.providerEvidence.record('ready', 0);
       await this.scope(row, auth, 'write');
       signal.throwIfAborted();
       if (
@@ -376,6 +386,7 @@ export class RuntimeVoiceService {
         );
       return this.admission(this.ledger.call(callId));
     } catch (error) {
+      this.providerEvidence.record('unavailable', 0);
       const rejected =
         !dispatched ||
         (error instanceof MediaFailure && error.outcome === 'rejected');

@@ -230,3 +230,40 @@ test('producer request.cancel validates exact session and method, aborts its wai
     rpc.close();
   }
 });
+
+test('transport drain waits for the actual callback after close aborts it', async () => {
+  const { input, output } = channels();
+  let release!: () => void;
+  let aborted = false;
+  const rpc = new ConversationRpc(
+    input,
+    output,
+    undefined,
+    undefined,
+    async (_method, _params, signal) => {
+      signal.addEventListener('abort', () => {
+        aborted = true;
+      });
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return {
+        approval_id: 'approval',
+        approval_digest: 'b'.repeat(64),
+        choice: 'deny',
+      };
+    },
+  );
+  frame(input, 'slow-callback', 'dots.approval', approval());
+  rpc.close();
+  expect(aborted).toBe(true);
+  let drained = false;
+  const drain = rpc.drain().then(() => {
+    drained = true;
+  });
+  await tick();
+  expect(drained).toBe(false);
+  release();
+  await drain;
+  expect(drained).toBe(true);
+});

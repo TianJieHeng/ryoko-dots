@@ -174,6 +174,7 @@ export interface NativeComputerEdge {
   readonly qualifiedActions: readonly ComputerAction[];
   /** Pure, fail-closed current configuration/running check; never provisions. */
   available(): boolean;
+  operationalState?(): 'ready' | 'unavailable' | 'unconfigured' | 'unsupported';
   /** Preserve endpoint/container/HMAC identity, path sandbox, SSRF/DNS pinning,
    * redirects, response bounds and secret redaction. Invoke beforeSend exactly
    * once immediately at the final send edge, without an intervening await.

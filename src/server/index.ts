@@ -1,3 +1,4 @@
+import { stateGateDescriptor } from './operations/state-gate.js';
 import { loadVoiceMedia } from './runtime/voice-config.js';
 import { ComputerService } from './computer-service.js';
 import { loadComputerHostQualification } from './runtime/computer-http-edge.js';
@@ -5,7 +6,15 @@ import { ownerAuthConfig } from './owner-auth-config.js';
 import { readFileSync } from 'node:fs';
 import { createServer } from 'node:https';
 import { OwnerAuth } from './owner-auth.js';
-import { createShutdown } from './shutdown.js';
+import { DatabaseSync } from 'node:sqlite';
+import { dirname } from 'node:path';
+import {
+  RuntimeOperations,
+  createOperationalShutdown,
+  storageDiagnostic,
+} from './operations/runtime-operations.js';
+import { stateMetrics } from './operations/state-metrics.js';
+import { LegacyHistoryReader } from './operations/history-archive.js';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Store } from './store.js';
@@ -16,10 +25,15 @@ import {
   StdioConversationTransport,
 } from './runtime/stdio.js';
 import { WorkspaceStore } from './workspace.js';
+import { browserScope } from './self-hosted-platform.js';
 import {
   createSlackRuntime,
   startSlackRuntime,
 } from './runtime/slack-runtime.js';
+if (stateGateDescriptor() === undefined)
+  throw new Error(
+    'Self-hosted startup requires the supervised lifetime state gate. Use npm start or the documented service launcher.',
+  );
 const authConfig = ownerAuthConfig(process.env);
 const { host, port } = authConfig;
 const database = process.env.DATABASE_PATH ?? 'data/opendots.sqlite';
@@ -75,7 +89,80 @@ const slack = createSlackRuntime({
   env: process.env,
   locallyPaused: () => store.settings().paused,
 });
-const app = createSelfHostedApp({ store, auth, platform, slack });
+const diagnosticsDb = new DatabaseSync(database, { readOnly: true });
+const requiredTables = [
+  'workspace_owner',
+  'spaces',
+  'pages',
+  'browser_owner',
+  'canonical_conversations',
+];
+const history = process.env.LEGACY_HISTORY_ARCHIVE_PATH
+  ? new LegacyHistoryReader(
+      process.env.LEGACY_HISTORY_ARCHIVE_PATH,
+      workspace.ownerId,
+    )
+  : undefined;
+const operations = new RuntimeOperations(
+  {
+    storage: () => storageDiagnostic(diagnosticsDb, requiredTables).state,
+    conversations: () =>
+      !platform.transport
+        ? 'unconfigured'
+        : platform.transport.connected
+          ? 'ready'
+          : 'unavailable',
+    commands: () =>
+      !platform.commands
+        ? 'unconfigured'
+        : platform.commands.ready()
+          ? 'ready'
+          : 'unavailable',
+    artifacts: () => platform.nativePages?.operationalState() ?? 'unconfigured',
+    schedules: () => platform.schedules?.operationalState() ?? 'unconfigured',
+    memory: () =>
+      platform.identities?.operationalState('memory') ?? 'unconfigured',
+    learning: () =>
+      platform.identities?.operationalState('learning') ?? 'unconfigured',
+    computer: () =>
+      platform.nativeComputers?.edge?.operationalState?.() ?? 'unconfigured',
+    voice: () => platform.voice?.operationalState() ?? 'unconfigured',
+    slack: () => {
+      if (!slack) return 'unconfigured';
+      if (!platform.workspace.runtimeBindings.hasAgent(slack.config.dotId))
+        return 'unavailable';
+      const status = slack.status(
+        browserScope(
+          platform.workspace.runtimeBindings.resolveDot(slack.config.dotId),
+        ),
+      ).state;
+      return status === 'ready'
+        ? 'ready'
+        : status === 'unconfigured'
+          ? 'unconfigured'
+          : status === 'unsupported'
+            ? 'unsupported'
+            : 'unavailable';
+    },
+  },
+  (line) => console.log(line),
+  500,
+  () => stateMetrics(diagnosticsDb, dirname(database)),
+);
+console.log(
+  JSON.stringify({
+    event: 'storage_diagnostic',
+    ...storageDiagnostic(diagnosticsDb, requiredTables),
+  }),
+);
+const app = createSelfHostedApp({
+  store,
+  auth,
+  platform,
+  slack,
+  operations,
+  history,
+});
 app.use('*', async (c, next) => {
   c.header('X-Content-Type-Options', 'nosniff');
   c.header('Referrer-Policy', 'no-referrer');
@@ -118,26 +205,27 @@ const server = serve(
       );
   },
 );
-const shutdown = createShutdown({
-  stopRunner: () => {},
-  stopPlatform: async () => {
+const shutdown = createOperationalShutdown({
+  operations,
+  closeHttp: () =>
+    new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    ),
+  stopAdapters: async () => {
     try {
       await slack?.stop();
     } finally {
       await platform.stop();
     }
   },
-  closeServer: () =>
-    new Promise<void>((resolve, reject) =>
-      server.close((error) => (error ? reject(error) : resolve())),
-    ),
-  exit: (code) => {
+  closeStorage: () => {
+    history?.close();
+    diagnosticsDb.close();
     auth.close();
     workspace.close();
     store.close();
-    process.exit(code);
   },
-  report: (operation) => console.error(operation),
+  exit: (code) => process.exit(code),
 });
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
