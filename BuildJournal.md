@@ -568,3 +568,8 @@ Mandatory gates remain open with no owner-accepted exclusions: actual authentica
 No deployment, live provider/credential/channel activation, external message, real user migration or cohort switch occurred. Rollback must freeze new admissions and preserve original accepted/unknown work, mappings, journals, artifacts and receipt ownership; it cannot replay work through an old DotAgent. ProductionReady isfalse. BE12 local qualification does not satisfy its externally gated production/cutover exit.
 
 Publication: this final local-qualification checkpoint is direct to main, with original local history preserved. Remote commit/tree/root journal equality and exact-commit GitHub Actions/status observations are checked after publication. The workflow exists; zero reported runs/statuses means external CI is unverified, never passed. The final commit hash is reported outside its own content to avoid a self-reference.
+
+
+## Local implementation Phase 0 — Baseline — 2026-10-18
+
+Owner authorized phased implementation with local validation and Git/journal checkpoints; no CI. Baseline aaff582, Ubuntu 24.04.4 x86_64, Python 3.12.3. Node/npm absent from PATH. No matching Node/Python application processes or listeners on 4310/4173/5173 were observed; no Dots private config/state directory exists. Selected fresh owner-local state at /home/ryoko/.local/share/ryoko-dots, loopback port 4310; no existing state adopted. Git identity is configured. implementation_buildPlan.md is included in this checkpoint. Initial review operations run had 31 passes, one PID-marker race error and one skip; historical evidence is not a fresh pass. Phase 0 complete. Commits are local; no CI or remote publication performed.
