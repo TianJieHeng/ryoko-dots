@@ -595,3 +595,10 @@ Production boot probe had only approximately 2.5s of startup polling; a diagnost
 Reviewed audit dry run, then applied compatible locked updates (no manifest range changes): concurrently 10.0.6, shell-quote 1.12.0, source-map-js 1.2.2, graphql-yoga 5.24.6 and affected GraphQL utilities. npm audit reports zero vulnerabilities. npm install scripts were not blanket-enabled. Production source pins unchanged.
 
 Validation: full format/lint/typecheck/build passed before dependency correction; post-correction build/typecheck/full format and changed-file ESLint passed. Runtime baseline fixture integrity passed (no live producer claimed); 67-module production import boundary passed. Existing 1.2MB frontend bundle warning remains. Logs and audit evidence are under ignored artifacts/local-build. No CI used. Implementation plan now records the supplied agent path, PM installation procedure, changed schema and Codex app-server incompatibility; that repository remains untouched.
+
+
+## Local implementation Phase 3 — Static frontend inspection — 2026-10-18
+
+Static preview passed at 1440x1000 and 390x844: rendered login/setup, keyboard focus, no horizontal overflow, expected API 503, zero uncaught page errors. Screenshots/evidence: artifacts/local-build/preview-{1440,390}.png and preview.json. Visually inspected the narrow screenshot. Preview server and browser closed cleanly.
+
+Fixed browser QA launcher portability: use Playwright's installed executable by default, with CHROMIUM_PATH retained as an override, rather than hard-coding /usr/bin/chromium. Changed-script format/ESLint pass. This enabled the older synthetic harness to run: 9 checks passed, 8 failed, one explicitly not run, followed by an uncaught narrow-scenario wait for hidden Dots navigation. Ten screenshots were produced. Failures include obsolete automatic-connect expectations and stale runtime fixtures; their full diagnosis/repair remains Phase 8 integration work, not a green browser acceptance claim. Log/evidence: artifacts/local-build/browser-synthetic.log and artifacts/runtime-browser/evidence.json. Static inspection phase complete; assembled runtime UI acceptance remains open.

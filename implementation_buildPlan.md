@@ -285,7 +285,7 @@ Completion checklist:
 - [x] Host tools, Node/npm and locked JavaScript dependencies installed.
 - [x] Browser QA dependencies installed and launch verified.
 - [x] PID-marker race fixed; applicable local checks pass (aggregate plus corrected Slack-file rerun; producer cases deferred).
-- [ ] Frontend preview verified.
+- [x] Frontend preview verified (desktop/mobile static preview; extended synthetic suite has recorded failures).
 - [ ] Authenticated workspace and persistent manual pages verified.
 - [ ] Pinned producer and its complete isolated runtime/test dependencies installed.
 - [ ] Actual stdio integration tests pass.

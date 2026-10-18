@@ -250,7 +250,7 @@ if (process.argv.includes('--serve-fixtures')) {
 let browser;
 try {
   browser = await chromium.launch({
-    executablePath: process.env.CHROMIUM_PATH ?? '/usr/bin/chromium',
+    executablePath: process.env.CHROMIUM_PATH,
     headless: true,
     args: ['--no-sandbox', '--disable-background-networking'],
   });
