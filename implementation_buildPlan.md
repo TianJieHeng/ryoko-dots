@@ -276,8 +276,8 @@ Re-run relevant local checks after implementation changes. Update `BuildJournal.
 
 Completion checklist:
 
-- [ ] Host tools, Node/npm and locked JavaScript dependencies installed.
-- [ ] Browser QA dependencies installed and launch verified.
+- [x] Host tools, Node/npm and locked JavaScript dependencies installed.
+- [x] Browser QA dependencies installed and launch verified.
 - [ ] PID-marker race fixed; applicable local checks pass.
 - [ ] Frontend preview verified.
 - [ ] Authenticated workspace and persistent manual pages verified.
