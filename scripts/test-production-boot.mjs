@@ -46,18 +46,27 @@ const exited = new Promise((done) =>
 );
 try {
   let live;
-  for (let attempts = 0; attempts < 100; attempts++) {
+  // Fresh SQLite/auth initialization can exceed 2.5 seconds on a development
+  // host. Bound actual elapsed startup time rather than counting fast polls.
+  const startupDeadline = globalThis.performance.now() + 15000;
+  while (globalThis.performance.now() < startupDeadline) {
     if (child.exitCode !== null)
       throw new Error('Fresh-install child exited before readiness.');
     try {
-      live = await globalThis.fetch(origin + '/health/live');
+      live = await globalThis.fetch(origin + '/health/live', {
+        signal: globalThis.AbortSignal.timeout(1000),
+      });
       if (live.ok) break;
     } catch {
       /* startup */
     }
-    await sleep(25);
+    await sleep(100);
   }
-  assert.equal(live?.status, 200);
+  assert.equal(
+    live?.status,
+    200,
+    'Server did not become live within 15 seconds.',
+  );
   const html = await (await globalThis.fetch(origin + '/')).text();
   assert.ok(html.includes('type="module"'));
   const asset = html.match(/src="([^"]+\.js)"/);
@@ -121,8 +130,10 @@ try {
     }),
   );
 } finally {
+  // Let the supervisor terminate/reap its state-owning descendants on failure.
+  // Killing only this launcher can orphan the actual server and its gate.
   if (child.exitCode === null && child.signalCode === null)
-    child.kill('SIGKILL');
+    child.kill('SIGTERM');
   await exited;
   rmSync(temp, { recursive: true, force: true });
 }

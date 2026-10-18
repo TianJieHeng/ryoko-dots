@@ -156,6 +156,10 @@ Stop gracefully and restart; verify the same data remains. Confirm a second star
 
 ## Phase 5 — Install the pinned Ryoko producer and its dependencies
 
+**Owner update (2026-10-18):** The intended agent already exists at `/home/ryoko/Desktop/rhermes/ryoko-agent`; installation and connection are deferred until the owner returns. Inspect and prepare the handoff now; do not clone or alter that checkout as an incidental Dots setup action. Its current clean HEAD is `a5ca09642c95d98702b3b21d004fe2551d4857ab`; the older Dots pin exists in its history, but current generated contract hashes differ. The clone commands below remain a fallback reference, not the selected action.
+
+The supplied agent uses its own PM tooling: after following its isolated bootstrap/developer instructions, the documented fresh test-environment build is `python -m pm.build_env --source . --out .venv --group dev --group test`; an external test environment is selected with `HERMES_PYTHON` for `scripts/run_tests.sh`. Do not use raw pip/uv to mutate Hermes environments.
+
 The Python agent is a separate repository, not an npm dependency. Required producer commit:
 
 ```text
@@ -202,6 +206,8 @@ Compare the selected producer to `src/shared/runtime/producer/provenance.json` a
 **Exit:** the explicit stdio suite passes; synthetic results remain distinguished from live-provider results.
 
 ## Phase 7 — Configure identity and enable live chat
+
+**OAuth integration constraint:** The owner requested existing Codex ChatGPT OAuth for testing. `codex login status` confirms a login, and the supplied agent documents `model.openai_runtime: codex_app_server`. Dots currently validates only `openai`/`custom` providers with optional `chat_completions`, and does not allow `openai_runtime`. Reusing the login requires a reviewed adapter/profile change and end-to-end qualification; copying a token into `OPENAI_API_KEY` is not an integration. Preserve authentication through the supported Codex interface. Reference: [OpenAI Codex authentication](https://learn.chatgpt.com/docs/auth) and the supplied agent’s `website/docs/user-guide/features/codex-app-server-runtime.md`. Live OAuth-backed Dots chat remains pending this work and the deferred agent connection.
 
 Follow `docs/runtime/self-hosted-conversations.md` and `docs/runtime/self-hosted-commands.md`, together with the pinned producer's profile instructions.
 
@@ -278,7 +284,7 @@ Completion checklist:
 
 - [x] Host tools, Node/npm and locked JavaScript dependencies installed.
 - [x] Browser QA dependencies installed and launch verified.
-- [ ] PID-marker race fixed; applicable local checks pass.
+- [x] PID-marker race fixed; applicable local checks pass (aggregate plus corrected Slack-file rerun; producer cases deferred).
 - [ ] Frontend preview verified.
 - [ ] Authenticated workspace and persistent manual pages verified.
 - [ ] Pinned producer and its complete isolated runtime/test dependencies installed.

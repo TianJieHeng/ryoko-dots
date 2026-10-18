@@ -179,7 +179,7 @@ class StateTest(unittest.TestCase):
 
     def test_killed_supervisor_leaves_direct_owner_gate_held(self):
         marker = self.root / 'synthetic-child-pid'
-        code = 'import os,time,sys;open(sys.argv[1],"w").write(str(os.getpid()));time.sleep(30)'
+        code = 'import os,time,sys,pathlib;p=pathlib.Path(sys.argv[1]);t=p.with_suffix(".tmp");t.write_text(str(os.getpid()));t.replace(p);time.sleep(30)'
         proc = subprocess.Popen([sys.executable, str(OPS / 'lifetime_gate.py'), '--gate', str(self.gate), '--', sys.executable, '-c', code, str(marker)])
         child_pid = None
         try:
@@ -194,15 +194,15 @@ class StateTest(unittest.TestCase):
                 self.snapshot()
         finally:
             if proc.poll() is None:
-                proc.kill()
-                proc.wait()
+                proc.terminate()
+                proc.wait(timeout=25)
             if child_pid is not None:
                 os.killpg(child_pid, signal.SIGKILL)
 
     def test_supervised_stubborn_owner_and_descendant_are_killed_before_gate_release(self):
         marker = self.root / 'tree-ready'
         descendant = "import signal,time;signal.signal(signal.SIGTERM,signal.SIG_IGN);time.sleep(30)"
-        owner = "import subprocess,signal,sys,time,json,os;signal.signal(signal.SIGTERM,signal.SIG_IGN);c=subprocess.Popen([sys.executable,'-c',sys.argv[2]]);open(sys.argv[1],'w').write(json.dumps([os.getpid(),c.pid]));time.sleep(30)"
+        owner = "import subprocess,signal,sys,time,json,os,pathlib;signal.signal(signal.SIGTERM,signal.SIG_IGN);c=subprocess.Popen([sys.executable,'-c',sys.argv[2]]);p=pathlib.Path(sys.argv[1]);t=p.with_suffix('.tmp');t.write_text(json.dumps([os.getpid(),c.pid]));t.replace(p);time.sleep(30)"
         wrapper = "import sys;sys.path.insert(0,sys.argv[1]);from lifetime_gate import run;sys.exit(run(sys.argv[2],sys.argv[3:],timeout=0.15))"
         proc = subprocess.Popen([sys.executable, '-c', wrapper, str(OPS), str(self.gate), sys.executable, '-c', owner, str(marker), descendant])
         pids = []
@@ -238,7 +238,7 @@ class StateTest(unittest.TestCase):
         helper = (OPS.parents[1] / 'src/server/operations/state-gate.ts').as_uri()
         script = self.root / 'forward-gate.mjs'
         script.write_text("import {spawn} from 'node:child_process';import {stateGateDescriptor} from " + json.dumps(helper) + ";const fd=stateGateDescriptor();const child=spawn(process.argv[2],['-c',process.argv[3],process.argv[4]],{env:{DOTS_STATE_GATE_FD:'3'},stdio:['ignore','ignore','ignore',fd]});await new Promise(r=>child.once('exit',r));")
-        producer = "import os,sys,time,json;open(sys.argv[1],'w').write(json.dumps([os.getppid(),os.getpid()]));time.sleep(30)"
+        producer = "import os,sys,time,json,pathlib;p=pathlib.Path(sys.argv[1]);t=p.with_suffix('.tmp');t.write_text(json.dumps([os.getppid(),os.getpid()]));t.replace(p);time.sleep(30)"
         proc = subprocess.Popen([sys.executable, str(OPS / 'lifetime_gate.py'), '--gate', str(self.gate), '--', node, str(script), sys.executable, producer, str(marker)])
         pids = []
         try:

@@ -5,6 +5,8 @@ import { once } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createSelfHostedSlackApp } from '../src/server/runtime/slack-routes.js';
+import { OwnerAuth } from '../src/server/owner-auth.js';
 import {
   SelfHostedSlack,
   verifySlackSignature,
@@ -576,9 +578,6 @@ test('actual Slack Web API adapter uses loopback auth, JSON send, safe response-
 });
 
 test('Hono public route preserves raw signature bytes; owner-only status cannot be opened anonymously', async () => {
-  const { createSelfHostedSlackApp } =
-    await import('../src/server/runtime/slack-routes.js');
-  const { OwnerAuth } = await import('../src/server/owner-auth.js');
   const f = fixture();
   await f.service.connect();
   const auth = new OwnerAuth(':memory:', {
