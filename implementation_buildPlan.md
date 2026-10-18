@@ -2,6 +2,8 @@
 
 Prepared: 2026-10-18. Baseline: `main`, commit `aaff582`.
 
+Current checkpoint: Phases 0–4 completed for the local workspace; agent installation/connection is deferred at the owner’s request. See [local startup](docs/local-startup.md) and the latest `BuildJournal.md` entries for actual results and unresolved integration checks.
+
 ## Goal and execution rules
 
 Bring this checkout through three observable milestones: a frontend preview, an authenticated local workspace, and working chat backed by the pinned Ryoko runtime. Qualify optional integrations and persistent deployment afterward.
@@ -286,7 +288,7 @@ Completion checklist:
 - [x] Browser QA dependencies installed and launch verified.
 - [x] PID-marker race fixed; applicable local checks pass (aggregate plus corrected Slack-file rerun; producer cases deferred).
 - [x] Frontend preview verified (desktop/mobile static preview; extended synthetic suite has recorded failures).
-- [ ] Authenticated workspace and persistent manual pages verified.
+- [x] Authenticated workspace and persistent manual pages verified.
 - [ ] Pinned producer and its complete isolated runtime/test dependencies installed.
 - [ ] Actual stdio integration tests pass.
 - [ ] Real provider-backed chat and restart recovery verified.

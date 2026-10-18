@@ -1,0 +1,20 @@
+# Local user service for this workstation; install under ~/.config/systemd/user/.
+# Reads private .env and owner-token file. Do not run npm start alongside it.
+[Unit]
+Description=Ryoko Dots local workspace
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ryoko/Desktop/rdots/ryoko-dots
+ExecStart=/home/ryoko/.local/bin/node --env-file=.env scripts/start-self-hosted.mjs
+Environment=NODE_ENV=production
+KillMode=control-group
+TimeoutStopSec=40
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target
