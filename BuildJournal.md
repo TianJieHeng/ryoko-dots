@@ -946,3 +946,21 @@ directly and retain startup output in a private desktop.log under
 Verified a cold launch with PATH=/usr/bin:/bin through the installed wrapper:
 the window loaded http://127.0.0.1:4310/ and reported visible. Formatting and
 ESLint checks passed. Closed the diagnostic launch before reopening normally.
+
+## 2026-10-21 — Match theme controls and computer chrome to the mockup
+
+Reviewed the supplied Neon Relay mockup and design specification. Legacy light
+styles were overriding themed computer surfaces and controls. Added theme-aware
+pane headers, browser toolbar, files/terminal fields, output, settings, tabs,
+selected/hover/focus states and error colors across all three themes. Actual
+browser screenshot pixels are preserved. Main-screen icon controls now share
+lavender outlines and accent highlights; primary actions use the theme accent.
+Added a brighter angular violet masthead, condensed display typography, orange
+monogram plate, lime sidebar labels, and beveled/outlined composer/button frames.
+Focus rings remain outside controls and reduced-size layouts retain usable targets.
+
+Validation: production frontend build and whitespace checks passed. Live browser
+checks opened Browser, Files and Terminal in each of the three themes, confirmed
+dark theme panel backgrounds, captured screenshots, and reported zero browser
+exceptions. Reviewed the populated Neon Relay computer-pane screenshot and
+captured the narrow layout. No backend or agent behavior changed; no CI used.
