@@ -846,3 +846,13 @@ IDs, persisted uncertain outcomes, bounded concurrent tasks, cursor polling,
 cancellation, and per-Dot authorization are wired. No provider retry is used to
 resolve an uncertain submission. API rate limits and OpenAPI discovery added.
 All runtime and integration validation remains pending until the final phase.
+
+## 2026-10-21 — Phase 4: persistent Dots and management UI
+
+Added the Dots & API workspace with runtime selection, independent conversations,
+saved drafts, task status, default/name/archive management, and scoped credential
+creation/revocation. Added owner-maintained manifest enrollment for independent
+Hermes profiles with separate workspace databases and duplicate-home rejection.
+The paginated persistent registry does not repurpose Hermes specialist authority
+or remove its primary constraint. Legacy specialist catalog bounds stay intact.
+Practical concurrency measurement, migration checks, and UI tests are deferred.

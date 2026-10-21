@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "runtimes": [
+    {
+      "kind": "hermes",
+      "id": "research-hermes",
+      "name": "Research",
+      "launchConfig": "/absolute/private/config/research-hermes.json"
+    },
+    {
+      "kind": "codex",
+      "id": "codex",
+      "name": "Codex",
+      "executable": "/absolute/path/to/codex",
+      "cwd": "/absolute/path/to/working-directory",
+      "home": "/absolute/path/to/.codex"
+    }
+  ]
+}

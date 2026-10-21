@@ -82,3 +82,22 @@
 @media (max-width:900px) { [data-theme] .template-app.app .workspace { margin-left: 0; } [data-theme] .template-app.app .sidebar { left: 0; z-index: 50; } [data-theme] .icon-rail { display:none; } [data-theme] .template-app .chat-composer { margin: 8px 12px 12px; } [data-theme] .chat-transcript { padding:16px; } [data-theme] .chat-persona-actions { flex-wrap:wrap; } }
 @media (max-width:600px) { [data-theme] .chat-transcript { background-image:none; background-color:var(--canvas); } [data-theme] .template-app .chat-persona { padding:12px; } [data-theme] .template-app .chat-persona strong { font-size:24px; } }
 @media (prefers-reduced-motion:reduce) { [data-theme] * { transition:none!important; animation:none!important; } }
+.hub-panel { padding:24px; height:100%; overflow:auto; }
+.hub-heading { display:flex; justify-content:space-between; align-items:center; }
+.hub-heading h1 { margin-bottom:4px; }
+.hub-heading p { color:var(--muted); }
+.hub-layout { display:grid; grid-template-columns:230px minmax(0,1fr); gap:18px; min-height:600px; height:calc(100vh - 230px); }
+.hub-directory { overflow:auto; padding-right:10px; }
+.hub-directory h2 { font-size:15px; margin:20px 0 12px; }
+.hub-directory > button { width:100%; display:flex; flex-direction:column; align-items:flex-start; margin-bottom:8px; min-height:44px; text-align:left; }
+.hub-directory button.selected { border-left:4px solid var(--accent); background:var(--raised); }
+.hub-directory small { color:var(--muted); }
+.hub-chat { display:flex; flex-direction:column; min-height:0; overflow:hidden; border:1px solid var(--line); }
+.hub-api { margin-top:24px; padding:20px; background:var(--surface); }
+.hub-api label { display:block; margin:12px 0; max-width:600px; }
+.hub-api input[type=checkbox] { width:auto; }
+.hub-activity { max-height:220px; overflow:auto; padding:10px 20px; }
+.hub-api summary,.hub-activity summary { cursor:pointer; min-height:32px; }
+.hub-panel button { min-height:40px; }
+.hub-directory details p { font-size:12px; }
+@media(max-width:900px){.hub-layout{grid-template-columns:1fr;height:auto}.hub-directory{max-height:220px}.hub-chat{height:70vh}.hub-panel{padding:12px}}

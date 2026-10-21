@@ -1,0 +1,62 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { api } from './api';
+import type { HubDot, HubThread, HubRun, HubMessage, ChildRun } from '../shared/hub/types';
+type Credential = {id:string;name:string;dots:string[];writeAccess:number;expiresAt:number;revoked:number};
+const label=(r:HubRun)=>({accepted:'Message received',running:'Working…',waiting_approval:'Waiting for approval',completed:'Finished',failed:'Task failed',cancelled:'Stopped',unknown:'Delivery uncertain — check status before resending'}[r.state]);
+export function HubPanel(){
+  const [dots,setDots]=useState<HubDot[]>([]),[dotId,setDotId]=useState(''),[threads,setThreads]=useState<HubThread[]>([]),[thread,setThread]=useState<HubThread>();
+  const [messages,setMessages]=useState<HubMessage[]>([]),[runs,setRuns]=useState<HubRun[]>([]),[draft,setDraft]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+  const [credentials,setCredentials]=useState<Credential[]>([]),[token,setToken]=useState(''),[name,setName]=useState(''),[write,setWrite]=useState(false),[rename,setRename]=useState('');
+  const [moreDots,setMoreDots]=useState<string|null>(null),[moreThreads,setMoreThreads]=useState<string|null>(null),[moreMessages,setMoreMessages]=useState<string|null>(null);
+  const [children,setChildren]=useState<Record<string,{supported:boolean;items:ChildRun[]}>>({});
+  const [loaded,setLoaded]=useState(false);
+  const active=useRef(''); active.current=thread?.id??'';
+  const submitting=useRef(false),scroll=useRef<HTMLDivElement>(null),follow=useRef(true);
+  const [newMessages,setNewMessages]=useState(false);
+  const dot=dots.find(d=>d.id===dotId);
+  const loadDots=useCallback(async(cursor?:string)=>{const r=await api<{items:HubDot[];nextCursor:string|null}>('/v1/dots'+(cursor?'?cursor='+encodeURIComponent(cursor):''));setDots(old=>cursor?[...old,...r.items]:r.items);setMoreDots(r.nextCursor);setDotId(old=>old||r.items.find(d=>d.isDefault)?.id||r.items[0]?.id||'');},[]);
+  const loadThreads=useCallback(async(id:string,cursor?:string)=>{const r=await api<{items:HubThread[];nextCursor:string|null}>(`/v1/dots/${id}/conversations${cursor?'?cursor='+encodeURIComponent(cursor):''}`);return r;},[]);
+  useEffect(()=>{void loadDots().catch(e=>setError(String(e.message)));},[loadDots]);
+  useEffect(()=>{let current=true;if(!dotId)return;setThread(undefined);setMessages([]);setRuns([]);setThreads([]);setError('');void loadThreads(dotId).then(r=>{if(current){setThreads(r.items);setMoreThreads(r.nextCursor);}}).catch(e=>{if(current)setError(e.message);});return()=>{current=false;};},[dotId,loadThreads]);
+  useEffect(()=>{if(!thread)return;const id=thread.id;let current=true;setMessages([]);setRuns([]);setLoaded(false);setChildren({});follow.current=true;
+    try{setDraft(localStorage.getItem('dots.hub.draft.'+id)??'');}catch{setDraft('');}
+    const refresh=async()=>{try{
+      const list=await api<{items:HubRun[]}>(`/v1/conversations/${id}/runs`);
+      const updated=await Promise.all(list.items.map(r=>['completed','failed','cancelled'].includes(r.state)?r:api<HubRun>(`/v1/runs/${r.id}`)));
+      const history=await api<{items:HubMessage[];nextCursor:string|null}>(`/v1/conversations/${id}/messages`);
+      if(current){setRuns(updated);setMessages(old=>{const map=new Map(old.map(m=>[m.id,m]));history.items.forEach(m=>map.set(m.id,m));return [...map.values()];});setMoreMessages(history.nextCursor);setLoaded(true);setError('');}
+    }catch(e){if(current)setError(e instanceof Error?e.message:'Could not refresh conversation.');}};
+    void refresh();const timer=setInterval(()=>{if(!document.hidden)void refresh();},3000);return()=>{current=false;clearInterval(timer);};
+  },[thread]);
+  useEffect(()=>{if(follow.current)scroll.current?.scrollTo({top:scroll.current.scrollHeight});else setNewMessages(true);},[messages,runs]);
+  const action=async(work:()=>Promise<void>)=>{if(submitting.current)return;submitting.current=true;setBusy(true);setError('');try{await work();}catch(e){setError(e instanceof Error?e.message:'Action failed.');}finally{submitting.current=false;setBusy(false);}};
+  const send=()=>action(async()=>{if(!thread||!draft.trim())return;const id=thread.id,text=draft.trim();let operationId=crypto.randomUUID();
+    const key='dots.hub.pending.'+id;const old=localStorage.getItem(key);if(old){const p=JSON.parse(old) as {operationId:string;text:string};if(p.text!==text)throw Error('Check the previous pending message before sending another.');operationId=p.operationId as `${string}-${string}-${string}-${string}-${string}`;}else localStorage.setItem(key,JSON.stringify({operationId,text}));
+    const r=await api<HubRun>(`/v1/conversations/${id}/messages`,'POST',{operationId,text});
+    if(active.current===id){setRuns(old=>[r,...old.filter(v=>v.id!==r.id)]);if(r.state!=='unknown'){setDraft('');localStorage.removeItem('dots.hub.draft.'+id);}}
+    localStorage.removeItem(key);
+  });
+  const choose=(t:HubThread)=>{setThread(t);setError('');};
+  return <section className="hub-panel" aria-label="Dots and API">
+    <header className="hub-heading"><div><h1>Your Dots</h1><p>Independent agents. One workspace.</p></div><button onClick={()=>void action(()=>loadDots())}>Refresh</button></header>
+    {error&&<p role="alert" className="notice">{error}</p>}
+    <div className="hub-layout"><aside className="hub-directory"><h2>Agents</h2>{dots.map(d=><button key={d.id} aria-current={d.id===dotId?'page':undefined} className={d.id===dotId?'selected':''} onClick={()=>setDotId(d.id)}><strong>{d.name}</strong><small>{d.kind} · {d.archived?'Archived':d.readiness}{d.isDefault?' · Default':''}</small></button>)}{moreDots&&<button onClick={()=>void action(()=>loadDots(moreDots))}>More Dots</button>}
+      <details><summary>Agent settings</summary><label>Name<input value={rename} onChange={e=>setRename(e.target.value)} placeholder={dot?.name}/></label><button disabled={!rename.trim()||busy} onClick={()=>void action(async()=>{await api(`/v1/dots/${dotId}`,'PATCH',{name:rename.trim()});setRename('');await loadDots();})}>Rename</button><button disabled={!dot||dot.isDefault||busy} onClick={()=>void action(async()=>{await api(`/v1/dots/${dotId}`,'PATCH',{isDefault:true});await loadDots();})}>Make default</button><button disabled={!dot||busy} onClick={()=>void action(async()=>{await api(`/v1/dots/${dotId}`,'PATCH',{archived:!dot?.archived});await loadDots();})}>{dot?.archived?'Restore Dot':'Archive Dot'}</button><p>Additional runtimes are enrolled from the owner's local runtime manifest. Their private profiles and permissions stay separate.</p></details>
+      <h2>Conversations</h2><button disabled={!dot||dot.archived||busy} onClick={()=>void action(async()=>{const t=await api<HubThread>(`/v1/dots/${dotId}/conversations`,'POST',{operationId:crypto.randomUUID(),title:'A new thought'});if(t.state!=='ready')throw Error('Conversation creation is uncertain. Refresh before creating another.');setThreads(old=>[t,...old]);choose(t);})}>New chat</button>
+      {threads.map(t=><button key={t.id} aria-current={thread?.id===t.id?'page':undefined} onClick={()=>choose(t)}>{t.title}</button>)}{moreThreads&&<button onClick={()=>void action(async()=>{const r=await loadThreads(dotId,moreThreads);setThreads(old=>[...old,...r.items]);setMoreThreads(r.nextCursor);})}>More conversations</button>}
+    </aside><div className="hub-chat live-chat">
+      <header className="chat-persona"><div><strong>{dot?.name??'Select a Dot'}</strong><span>{thread?.title??'Choose or create a conversation'}</span></div></header>
+      <div ref={scroll} className="chat-transcript" data-has-messages={!!messages.length} onScroll={()=>{const e=scroll.current;if(e)follow.current=e.scrollHeight-e.scrollTop-e.clientHeight<100;}}>
+      {!thread?<div className="chat-welcome"><h1>What’s on your mind?</h1><p>Select a conversation or start a new one.</p></div>:!loaded?<p role="status">{error?'Conversation could not be loaded.':'Loading conversation…'}</p>:!messages.length?<div className="chat-welcome"><h1>What’s on your mind?</h1></div>:null}
+      {messages.map(m=><article className={'chat-bubble '+(m.role==='user'?'user':'assistant')} key={m.id}><small>{m.role==='user'?'You':dot?.name}</small><ReactMarkdown components={{img:({alt})=><span>{alt}</span>}}>{m.text}</ReactMarkdown></article>)}
+      {moreMessages&&<button onClick={()=>void action(async()=>{if(!thread)return;const r=await api<{items:HubMessage[];nextCursor:string|null}>(`/v1/conversations/${thread.id}/messages?cursor=${encodeURIComponent(moreMessages)}`);setMessages(old=>[...new Map([...old,...r.items].map(m=>[m.id,m])).values()]);setMoreMessages(r.nextCursor);})}>Load more history</button>}
+      {runs.filter(r=>!['completed','failed','cancelled'].includes(r.state)).map(r=><div key={r.id} className="notice" role="status"><p>{r.text}</p><strong>{label(r)}</strong>{r.detail&&<p>{r.detail}</p>}<button disabled={busy} onClick={()=>void action(async()=>{const update=await api<HubRun>(`/v1/runs/${r.id}`);setRuns(old=>old.map(v=>v.id===r.id?update:v));})}>Check status</button>{dot?.capabilities.cancel&&<button disabled={busy} onClick={()=>void action(async()=>{const update=await api<HubRun>(`/v1/runs/${r.id}/cancel`,'POST',{operationId:crypto.randomUUID()});setRuns(old=>old.map(v=>v.id===r.id?update:v));})}>Stop task</button>}</div>)}
+      </div>
+      {newMessages&&<button onClick={()=>{follow.current=true;scroll.current?.scrollTo({top:scroll.current.scrollHeight});setNewMessages(false);}}>New messages ↓</button>}
+      {thread&&<form className="chat-composer" onSubmit={e=>{e.preventDefault();void send();}}><textarea aria-label={`Message ${dot?.name??'Dot'}`} value={draft} onChange={e=>{setDraft(e.target.value);try{localStorage.setItem('dots.hub.draft.'+thread.id,e.target.value);}catch{/* keep in memory */}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void send();}} placeholder="Write a message…"/><button disabled={busy||!draft.trim()||dot?.archived||runs.some(r=>!['completed','failed','cancelled'].includes(r.state))}>{busy?'Sending…':'Send message'}</button></form>}
+      <details className="hub-activity"><summary>Task activity</summary>{runs.map(r=><div className="notice" key={r.id}><strong>{label(r)}</strong><p>{r.text}</p><time>{new Date(r.createdAt).toLocaleString()}</time><button onClick={()=>void action(async()=>{const result=await api<{supported:boolean;items:ChildRun[]}>(`/v1/runs/${r.id}/children`);setChildren(old=>({...old,[r.id]:result}));})}>Inspect delegated work</button>{children[r.id]&&(!children[r.id].supported?<p>This runtime does not expose child monitoring yet.</p>:children[r.id].items.length?children[r.id].items.map(c=><article key={c.id}><strong>{c.state}</strong><p>{c.task}</p>{c.result&&<p>{c.result}</p>}</article>):<p>No child tasks reported for this run.</p>)}</div>)}</details>
+    </div></div>
+    <details className="hub-api"><summary>API access</summary><p>Generate a separate credential for the selected Dot. Your app password stays unchanged.</p><code>http://127.0.0.1:4310/api/v1</code><label>Credential name<input value={name} onChange={e=>setName(e.target.value)}/></label><label><input type="checkbox" checked={write} onChange={e=>setWrite(e.target.checked)}/> Allow sending messages and cancellation</label><button disabled={!name.trim()||!dot||busy} onClick={()=>void action(async()=>{const r=await api<{token:string}>('/v1/credentials','POST',{name:name.trim(),dots:[dotId],write,lifetimeDays:90});setToken(r.token);setName('');})}>Create 90-day credential for {dot?.name}</button>{token&&<div className="notice"><p>Copy this credential now. It will not be shown again.</p><input aria-label="New API credential" value={token} readOnly/><button onClick={()=>setToken('')}>Dismiss secret</button></div>}<button onClick={()=>void action(async()=>setCredentials((await api<{items:Credential[]}>('/v1/credentials')).items))}>List credentials</button>{credentials.map(c=><div key={c.id}><strong>{c.name}</strong> · {c.revoked?'Revoked':new Date(c.expiresAt).toLocaleDateString()}<button disabled={!!c.revoked} onClick={()=>void action(async()=>{await api(`/v1/credentials/${c.id}/revoke`,'POST',{});setCredentials((await api<{items:Credential[]}>('/v1/credentials')).items);})}>Revoke</button></div>)}</details>
+  </section>;
+}

@@ -1,3 +1,4 @@
+import { HubPanel } from './HubPanel';
 import { ThemePicker } from './Themes';
 import { ImportedHistory } from './runtime/ImportedHistory';
 import { archivedHistoryLocation } from '../shared/runtime/legacy-history';
@@ -216,7 +217,7 @@ function WorkspaceApp({
   );
   const [selectedThread, setSelectedThread] = useState<string>();
   const [view, rawSetView] = useState<
-    'chat' | 'tasks' | 'memories' | 'space' | 'history'
+    'chat' | 'tasks' | 'memories' | 'space' | 'history' | 'hub'
   >('chat');
   const dirtyPage = useRef(false);
   const [spaceId, setSpaceId] = useState('');
@@ -707,6 +708,7 @@ function WorkspaceApp({
         )}
         <div className="sidebar-bottom">
           <ThemePicker />
+          <button className="nav-item" onClick={() => setView('hub')}>Dots & API</button>
           <button
             className={`nav-item ${view === 'history' ? 'active' : ''}`}
             onClick={() => {
@@ -838,7 +840,7 @@ function WorkspaceApp({
             </button>
           </div>
         )}
-        {view === 'history' ? (
+        {view === 'hub' ? (<HubPanel />) : view === 'history' ? (
           <ImportedHistory />
         ) : view === 'space' ? (
           <SpaceWorkspace

@@ -1,3 +1,5 @@
+import { readRuntimeManifest, enrollHermes } from './hub/config.js';
+import { realpathSync } from 'node:fs';
 import { DotHub } from './hub/service.js';
 import { HermesAdapter } from './hub/hermes.js';
 import { ApiCredentials } from './hub/credentials.js';
@@ -88,6 +90,11 @@ const platform = new SelfHostedPlatform(
 const hub = new DotHub(database);
 const apiCredentials = new ApiCredentials(database);
 if (launch) hub.register({ id: launch.dotId, name: workspace.dot(launch.dotId)?.name ?? 'Ryoko', kind: 'hermes', runtime: 'ryoko-primary' }, new HermesAdapter(platform, launch.dotId), true);
+const runtimeManifest = readRuntimeManifest(process.env.DOTS_RUNTIMES_PATH);
+const runtimeHomes = new Set(launch ? [realpathSync(launch.home)] : []);
+for (const entry of runtimeManifest.runtimes) {
+  if (entry.kind === 'hermes') enrollHermes(hub, entry, database, authConfig.ownerId, runtimeHomes);
+}
 const slack = createSlackRuntime({
   database,
   auth,
@@ -226,7 +233,7 @@ const shutdown = createOperationalShutdown({
       await platform.stop();
     }
   },
-  closeStorage: () => {
+  closeStorage: async () => {
     history?.close();
     diagnosticsDb.close();
     await hub.stop();
