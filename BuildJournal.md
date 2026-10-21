@@ -835,3 +835,14 @@ permissions. Documented v1 idempotency, uncertain delivery, and cursor-based
 polling semantics. Browser login remains password based. The runtime adapter and
 routing implementation follows in phase 3; this checkpoint is a foundation, not
 an assertion that the new endpoint is already deployed. Tests deferred.
+
+## 2026-10-21 — Phase 3: runtime adapters and durable API routing
+
+Implemented a common runtime adapter, wrapped the existing verified Hermes
+platform, and added an additive SQLite Dot/thread/run/event registry. Existing
+Ryoko state remains authoritative. The v1 routes use scoped credentials or the
+existing browser session and route through verified adapters. Immutable message
+IDs, persisted uncertain outcomes, bounded concurrent tasks, cursor polling,
+cancellation, and per-Dot authorization are wired. No provider retry is used to
+resolve an uncertain submission. API rate limits and OpenAPI discovery added.
+All runtime and integration validation remains pending until the final phase.

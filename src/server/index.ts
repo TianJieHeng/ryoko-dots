@@ -1,3 +1,6 @@
+import { DotHub } from './hub/service.js';
+import { HermesAdapter } from './hub/hermes.js';
+import { ApiCredentials } from './hub/credentials.js';
 import { stateGateDescriptor } from './operations/state-gate.js';
 import { loadVoiceMedia } from './runtime/voice-config.js';
 import { ComputerService } from './computer-service.js';
@@ -82,6 +85,9 @@ const platform = new SelfHostedPlatform(
     locallyPaused: () => store.settings().paused,
   },
 );
+const hub = new DotHub(database);
+const apiCredentials = new ApiCredentials(database);
+if (launch) hub.register({ id: launch.dotId, name: workspace.dot(launch.dotId)?.name ?? 'Ryoko', kind: 'hermes', runtime: 'ryoko-primary' }, new HermesAdapter(platform, launch.dotId), true);
 const slack = createSlackRuntime({
   database,
   auth,
@@ -156,6 +162,8 @@ console.log(
   }),
 );
 const app = createSelfHostedApp({
+  hub,
+  apiCredentials,
   store,
   auth,
   platform,
@@ -221,6 +229,8 @@ const shutdown = createOperationalShutdown({
   closeStorage: () => {
     history?.close();
     diagnosticsDb.close();
+    await hub.stop();
+    apiCredentials.close();
     auth.close();
     workspace.close();
     store.close();

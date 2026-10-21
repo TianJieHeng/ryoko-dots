@@ -1,3 +1,6 @@
+import type { DotHub } from './hub/service.js';
+import type { ApiCredentials } from './hub/credentials.js';
+import { hubRoutes } from './hub/routes.js';
 import { createSelfHostedSlackApp } from './runtime/slack-routes.js';
 import type { SelfHostedSlack } from './runtime/slack-service.js';
 import type { RuntimeOperations } from './operations/runtime-operations.js';
@@ -74,7 +77,11 @@ export function createSelfHostedApp({
   operations,
   history,
   slack,
+  hub,
+  apiCredentials,
 }: {
+  hub?: DotHub;
+  apiCredentials?: ApiCredentials;
   auth: OwnerAuth;
   platform: SelfHostedPlatform;
   store: Store;
@@ -119,6 +126,7 @@ export function createSelfHostedApp({
       onError: (c) => c.json({ error: 'Request is too large.' }, 413),
     }),
   );
+  if (hub && apiCredentials) app.route('/api/v1', hubRoutes(hub, apiCredentials, auth));
   app.use('/api/*', auth.middleware());
   if (operations) {
     app.get('/api/ops/readiness', async (c) => {
