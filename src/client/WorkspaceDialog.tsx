@@ -1,3 +1,4 @@
+import { ThemePicker } from './Themes';
 import { MigrationStatus } from './runtime/MigrationStatus';
 import { ChannelsPanel } from './runtime/ChannelsPanel';
 import { ScheduleForm } from './runtime/SchedulesPanel';
@@ -336,6 +337,7 @@ export function WorkspaceDialog({
                 memory access.
               </p>
             )}
+            {dialog.type === 'settings' && <ThemePicker />}
             {dialog.type === 'settings' && runtime && (
               <>
                 <RuntimeStatus connection={runtime} />

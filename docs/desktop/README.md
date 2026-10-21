@@ -6,7 +6,7 @@ browser instead; `DOTS_NO_BROWSER=1 ./run.sh start` starts the service alone.
 The desktop shell starts the installed user service, checks the local Dots health
 identity, and retains password-backed browser authentication. No secret is bundled.
 
-The **Appearance** selector offers Neon Relay, Redline Comms, and Blackout Channel.
+The **Appearance** selector in **Settings & setup** offers Neon Relay, Redline Comms, and Blackout Channel.
 Each uses its supplied background and design document under `docs/themes`.
 Selection persists on this device without restarting the agent. City art is
 restricted to the conversation area and darkened behind messages. Theme design

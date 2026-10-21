@@ -1,5 +1,4 @@
 import { HubPanel } from './HubPanel';
-import { ThemePicker } from './Themes';
 import { ImportedHistory } from './runtime/ImportedHistory';
 import { archivedHistoryLocation } from '../shared/runtime/legacy-history';
 import { MemoryLearning } from './runtime/MemoryLearning';
@@ -29,7 +28,6 @@ import {
   ArrowUpRight,
   BookOpen,
   Clock3,
-  Code2,
   Folder,
   Menu,
   MessageCircle,
@@ -731,7 +729,6 @@ function WorkspaceApp({
           </div>
         )}
         <div className="sidebar-bottom">
-          <ThemePicker />
           <button className="nav-item" onClick={() => setView('hub')}>
             Dots & API
           </button>
@@ -797,16 +794,6 @@ function WorkspaceApp({
             <LogOut size={17} />
             <span>Sign out</span>
           </button>
-          <a
-            className="nav-item"
-            href="https://github.com/TianJieHeng/ryoko-dots"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Code2 size={17} />
-            <span>Make it your own</span>
-            <ArrowUpRight size={13} />
-          </a>
           <div className="version">
             OPEN SOURCE TEMPLATE <span>v0.1</span>
           </div>

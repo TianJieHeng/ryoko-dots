@@ -964,3 +964,11 @@ checks opened Browser, Files and Terminal in each of the three themes, confirmed
 dark theme panel backgrounds, captured screenshots, and reported zero browser
 exceptions. Reviewed the populated Neon Relay computer-pane screenshot and
 captured the narrow layout. No backend or agent behavior changed; no CI used.
+
+## 2026-10-21 — Simplify sidebar appearance controls
+
+Moved Appearance/theme selection into the Settings & setup dialog and removed
+the Make it your own sidebar link. Theme changes still apply immediately and
+persist on the device. Updated desktop documentation. Frontend production build,
+ESLint and formatting checks passed; browser verification checks the Settings
+selector and the removed sidebar elements. No CI used.
