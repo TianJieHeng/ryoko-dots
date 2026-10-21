@@ -206,7 +206,13 @@ function WorkspaceApp({
 }) {
   const [state, setState] = useState<State>();
   const [workspace, setWorkspace] = useState<WorkspaceState>();
-  const [selectedDot, setSelectedDot] = useState('');
+  const [selectedDot, setSelectedDot] = useState(() => {
+    try {
+      return localStorage.getItem('dots.selectedDot') ?? '';
+    } catch {
+      return '';
+    }
+  });
   const runtime = useRuntime(selectedDot);
   const conversationList = useConversations(selectedDot, runtime);
   const specialists = useResource(
@@ -215,7 +221,25 @@ function WorkspaceApp({
     runtime,
     'specialists',
   );
-  const [selectedThread, setSelectedThread] = useState<string>();
+  const [selectedThread, setSelectedThread] = useState<string | undefined>(
+    () => {
+      try {
+        return localStorage.getItem('dots.selectedThread') ?? undefined;
+      } catch {
+        return undefined;
+      }
+    },
+  );
+  useEffect(() => {
+    try {
+      if (selectedDot) localStorage.setItem('dots.selectedDot', selectedDot);
+      if (selectedThread)
+        localStorage.setItem('dots.selectedThread', selectedThread);
+      else localStorage.removeItem('dots.selectedThread');
+    } catch {
+      /* Memory-only selection remains usable. */
+    }
+  }, [selectedDot, selectedThread]);
   const [view, rawSetView] = useState<
     'chat' | 'tasks' | 'memories' | 'space' | 'history' | 'hub'
   >('chat');
@@ -708,7 +732,9 @@ function WorkspaceApp({
         )}
         <div className="sidebar-bottom">
           <ThemePicker />
-          <button className="nav-item" onClick={() => setView('hub')}>Dots & API</button>
+          <button className="nav-item" onClick={() => setView('hub')}>
+            Dots & API
+          </button>
           <button
             className={`nav-item ${view === 'history' ? 'active' : ''}`}
             onClick={() => {
@@ -840,7 +866,9 @@ function WorkspaceApp({
             </button>
           </div>
         )}
-        {view === 'hub' ? (<HubPanel />) : view === 'history' ? (
+        {view === 'hub' ? (
+          <HubPanel />
+        ) : view === 'history' ? (
           <ImportedHistory />
         ) : view === 'space' ? (
           <SpaceWorkspace

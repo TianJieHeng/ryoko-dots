@@ -236,3 +236,9 @@ See [Contributing](CONTRIBUTING.md) for development guidance and [Security](SECU
 ## License
 
 [MIT](LICENSE).
+
+## Desktop and multiple Dots
+
+See [desktop setup](docs/desktop/README.md) for the desktop launcher, three themes,
+Dots & API workspace, and local packaging. The [versioned API](docs/api/README.md)
+uses credentials scoped to individual Dots. Ryoko/Hermes remains the default.

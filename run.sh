@@ -6,15 +6,16 @@ export PATH="$HOME/.local/bin:$PATH"
 unit=ryoko-dots.service
 action="${1:-start}"
 if (( $# > 1 )); then
-  echo 'Usage: ./run.sh [start|stop|restart|status|logs|build|help]' >&2
+  echo 'Usage: ./run.sh [start|browser|stop|restart|status|logs|build|help]' >&2
   exit 2
 fi
 case "$action" in
   help|--help|-h)
     cat <<'HELP'
-Usage: ./run.sh [start|stop|restart|status|logs|build|help]
+Usage: ./run.sh [start|browser|stop|restart|status|logs|build|help]
 
-start    Start the installed user service, wait for HTTP, and open the UI (default).
+start    Start the service and open the desktop app (browser fallback).
+browser  Start the service and open the UI in the system browser.
 stop     Stop the backend and its managed agent processes.
 restart  Restart after changing .env or the agent launch configuration.
 status   Show service status.

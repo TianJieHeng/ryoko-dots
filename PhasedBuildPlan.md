@@ -25,14 +25,14 @@ This plan supplements the existing build plans. It does not authorize removing e
 
 ## Target concepts
 
-| Concept | Meaning |
-| --- | --- |
-| Dot | Persistent user-facing agent identity, with a stable ID, display settings, runtime binding, and explicitly granted access. |
-| Runtime instance | Configured Hermes or other supported agent process/service with its own lifecycle and authentication reference. |
-| Conversation | Durable thread belonging to one Dot and its runtime binding. |
-| Run | One accepted task within a conversation, with its own status and execution budget. |
-| Child run | Delegated work linked to a parent run; not automatically a permanent Dot. |
-| Default Dot | The Dot selected initially by the interface; Ryoko remains the default. This is not a privilege level. |
+| Concept          | Meaning                                                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Dot              | Persistent user-facing agent identity, with a stable ID, display settings, runtime binding, and explicitly granted access. |
+| Runtime instance | Configured Hermes or other supported agent process/service with its own lifecycle and authentication reference.            |
+| Conversation     | Durable thread belonging to one Dot and its runtime binding.                                                               |
+| Run              | One accepted task within a conversation, with its own status and execution budget.                                         |
+| Child run        | Delegated work linked to a parent run; not automatically a permanent Dot.                                                  |
+| Default Dot      | The Dot selected initially by the interface; Ryoko remains the default. This is not a privilege level.                     |
 
 The backend remains the authority for bindings, permissions, command identity, and task state. Desktop windows and API clients use the same application services. Runtime-specific capabilities are advertised explicitly instead of pretending every backend supports the same features.
 
@@ -100,17 +100,17 @@ Implementation:
 
 Proposed public surface:
 
-| Route | Purpose |
-| --- | --- |
-| `GET /api/v1/dots` | List permitted Dots and readiness/capabilities. |
-| `GET /api/v1/dots/{dotId}` | Inspect one permitted Dot. |
-| `POST /api/v1/dots/{dotId}/conversations` | Create a thread for that Dot. |
-| `GET /api/v1/dots/{dotId}/conversations` | Page through that Dot's threads. |
-| `POST /api/v1/conversations/{conversationId}/messages` | Accept a new owner task with an idempotency key. |
-| `GET /api/v1/conversations/{conversationId}/messages` | Read paginated conversation history. |
-| `GET /api/v1/runs/{runId}` | Inspect normalized state and results. |
-| `GET /api/v1/runs/{runId}/events` | Resume an event stream from a cursor. |
-| `POST /api/v1/runs/{runId}/cancel` | Request cancellation and report its actual outcome. |
+| Route                                                  | Purpose                                             |
+| ------------------------------------------------------ | --------------------------------------------------- |
+| `GET /api/v1/dots`                                     | List permitted Dots and readiness/capabilities.     |
+| `GET /api/v1/dots/{dotId}`                             | Inspect one permitted Dot.                          |
+| `POST /api/v1/dots/{dotId}/conversations`              | Create a thread for that Dot.                       |
+| `GET /api/v1/dots/{dotId}/conversations`               | Page through that Dot's threads.                    |
+| `POST /api/v1/conversations/{conversationId}/messages` | Accept a new owner task with an idempotency key.    |
+| `GET /api/v1/conversations/{conversationId}/messages`  | Read paginated conversation history.                |
+| `GET /api/v1/runs/{runId}`                             | Inspect normalized state and results.               |
+| `GET /api/v1/runs/{runId}/events`                      | Resume an event stream from a cursor.               |
+| `POST /api/v1/runs/{runId}/cancel`                     | Request cancellation and report its actual outcome. |
 
 Acceptance:
 
@@ -256,18 +256,18 @@ Implementation:
 4. Update startup, desktop lifecycle, API, Dot enrollment, backend capability, and troubleshooting documentation.
 5. Record tested capacity and known limitations. Avoid advertising unlimited Dots or universal backend capabilities.
 
-| Scenario | Required evidence |
-| --- | --- |
-| Desktop close/reopen | Active task survives and history reloads. |
-| Existing Ryoko chat | Old history remains; new messages receive fresh task budgets. |
-| Multiple Dots | Correct UI/API routing and permission isolation. |
-| Native Codex | Real backend response, thread resumption, accurate capabilities. |
-| Submission retry | One durable task for one idempotent request. |
-| Restart/reconnect | No invented completion or automatic duplicate execution. |
-| Monitoring | Child state and parent relationships survive recovery where supported. |
-| Computer access | Existing qualified Ryoko computer flow still works. |
-| Authentication | Password login, scoped API access, and revocation behave correctly. |
-| Migration/rollback | Restored state and runtime bindings remain consistent. |
+| Scenario             | Required evidence                                                      |
+| -------------------- | ---------------------------------------------------------------------- |
+| Desktop close/reopen | Active task survives and history reloads.                              |
+| Existing Ryoko chat  | Old history remains; new messages receive fresh task budgets.          |
+| Multiple Dots        | Correct UI/API routing and permission isolation.                       |
+| Native Codex         | Real backend response, thread resumption, accurate capabilities.       |
+| Submission retry     | One durable task for one idempotent request.                           |
+| Restart/reconnect    | No invented completion or automatic duplicate execution.               |
+| Monitoring           | Child state and parent relationships survive recovery where supported. |
+| Computer access      | Existing qualified Ryoko computer flow still works.                    |
+| Authentication       | Password login, scoped API access, and revocation behave correctly.    |
+| Migration/rollback   | Restored state and runtime bindings remain consistent.                 |
 
 All checks run locally. Use the repository's documented test runners; Hermes tests use its prescribed runner. Run focused behavioral tests, typechecking, lint, production builds, adapter contract tests, and real application smoke checks appropriate to each change. Wait for the complete production build before restarting services. No CI workflows, external test pipelines, or remote dispatches.
 
@@ -284,3 +284,32 @@ Decisions to resolve during the corresponding implementation phase:
 - Remote access: leave disabled unless requested.
 
 Deferred beyond this plan's initial delivery: subagent configuration, delegation-policy changes, specialist team enrollment, automatic cross-backend delegation, team scheduling/synthesis, and autonomous agent provisioning.
+
+## Implementation record — 2026-10-21
+
+Phases 0–6 are implemented in this checkout: Electron desktop, three supplied
+visual themes, local v1 API, runtime registry, multi-Dot workspace, optional native
+Codex, and read-only delegated-work monitoring. Ryoko remains the default agent.
+Phase 7 is documented as an optional SSH tunnel; remote access is not enabled.
+Phase 8 includes the installed desktop launcher, local Linux shell package,
+paired database backups, local tests and live workstation checks. See
+`BuildJournal.md` for results and `docs/desktop/README.md` for use and installation.
+
+Delivery boundaries and validation limits:
+
+- The packaged Electron shell requires the installed backend and runtimes; it is
+  not a standalone installer for a new machine.
+- Independent Hermes profiles use the owner-maintained runtime manifest. Add Dot
+  currently enrolls approved Codex templates; it does not provision new Hermes
+  identities or copy provider credentials.
+- API events use cursor polling. OpenAPI discovery is provided, but exact response
+  field definitions also depend on the shared TypeScript contracts.
+- The registry is bounded to 500 entries, with four unfinished hub runs maximum
+  and one per conversation. These are conservative software limits, not measured
+  provider/workstation capacity claims.
+- Local validation covers Ryoko plus native Codex. No second-device remote test,
+  high-concurrency capacity benchmark, or standalone-machine installation is
+  claimed. Backup integrity and isolated restore checks do not constitute a
+  complete production rollback drill.
+- Monitoring exposes durable parent-linked evidence where the backend supports
+  it. No subagent configuration, team enrollment, or delegation policy changed.

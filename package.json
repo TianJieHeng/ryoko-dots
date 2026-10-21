@@ -27,7 +27,8 @@
     "test:operations": "python3 -m unittest discover -s tests -p \"test_*.py\"",
     "test:production-boot": "node scripts/test-production-boot.mjs",
     "desktop": "electron desktop/main.cjs",
-    "desktop:install": "node scripts/install-desktop.mjs"
+    "desktop:install": "node scripts/install-desktop.mjs",
+    "desktop:package": "node scripts/package-desktop.mjs"
   },
   "keywords": [],
   "author": "Atai Barkai",

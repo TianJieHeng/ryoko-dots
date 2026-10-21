@@ -91,7 +91,9 @@ export function createSelfHostedApp({
   slack?: SelfHostedSlack;
 }) {
   const app = new Hono();
-  app.get('/health/live', (c) => c.json({ alive: true, application: 'ryoko-dots' }));
+  app.get('/health/live', (c) =>
+    c.json({ alive: true, application: 'ryoko-dots' }),
+  );
   if (operations) {
     app.use('*', async (c, next) => {
       if (!c.req.path.startsWith('/api/') && c.req.path !== '/slack/events')
@@ -127,7 +129,8 @@ export function createSelfHostedApp({
       onError: (c) => c.json({ error: 'Request is too large.' }, 413),
     }),
   );
-  if (hub && apiCredentials) app.route('/api/v1', hubRoutes(hub, apiCredentials, auth));
+  if (hub && apiCredentials)
+    app.route('/api/v1', hubRoutes(hub, apiCredentials, auth));
   app.use('/api/*', auth.middleware());
   if (operations) {
     app.get('/api/ops/readiness', async (c) => {
@@ -803,10 +806,16 @@ export function createSelfHostedApp({
       ),
     );
   });
-  app.get('/api/runtime/conversations/:id/children', async c => {
+  app.get('/api/runtime/conversations/:id/children', async (c) => {
     const current = guard(c, platform);
-    const items = await hermesChildren(platform, id.parse(c.req.param('id')), null, current);
-    current(); return c.json({items});
+    const items = await hermesChildren(
+      platform,
+      id.parse(c.req.param('id')),
+      null,
+      current,
+    );
+    current();
+    return c.json({ items });
   });
   app.get('/api/runtime/conversations/:id/history', async (c) => {
     const input = readQuery.parse(query(c));

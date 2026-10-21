@@ -171,13 +171,10 @@ it('keeps internal-message omission flags out of the visible transcript', () => 
   expect(html).not.toContain('only partially loaded');
 });
 
-it('requires intentional connection while canonical storage is already readable', () => {
+it('keeps history readable while automatically connecting execution', () => {
   const html = render();
-  expect(html).toContain('Connect runtime');
-  expect(html).toContain('Refresh saved state');
-  expect(html).toContain(
-    'Saved history is available separately from runtime execution.',
-  );
+  expect(html).toContain('Connecting to');
+  expect(html).toContain('First visible text');
   expect(html).toContain('aria-label="Send message" disabled=""');
   expect(html).not.toContain('Reconnect and inspect');
 });
@@ -225,11 +222,10 @@ it('renders accepted inputs separately until stable canonical identity arrives a
     resumeInspection: vi.fn(),
   });
   let html = render();
-  expect(html).toContain(
-    'Accepted input, awaiting committed transcript: Accepted separate input',
-  );
-  expect(html).toContain('Request cancellation of run run-actual');
-  expect(html).toContain('Steer run run-actual');
+  expect(html).toContain('Accepted separate input');
+  expect(html).toContain('Message details');
+  expect(html).toContain('aria-label="Stop response"');
+  expect(html).toContain('run-actual');
   expect(html).not.toContain('mission-never-a-run');
   vi.mocked(useHistory).mockReturnValue(
     state({
@@ -243,6 +239,6 @@ it('renders accepted inputs separately until stable canonical identity arrives a
     }),
   );
   html = render();
-  expect(html).not.toContain('Accepted input, awaiting committed transcript:');
+  expect(html).not.toContain('Accepted separate input');
   expect(html).toContain('First visible text');
 });

@@ -396,7 +396,6 @@ Publication: BE05 source, typed subset, frontend, regressions, documentation and
 
 Status: integration in progress; no BE06 release acceptance claimed. Previous remote BE05 `ce681cc009ce2a39f4a5bf889f6e5b7703acc7f2`, exact tree `99ba2e2e59ea4824f53026f9eb5cca66e825e217` and journal blob `d683e961b15b7f1067c3428c4197c35e8c3d1aac` verified. Objective: actual managed specialist identity/session binding, isolated built-in specialist memory, primary personal-harness-only status, explicit evidence/workflow/evaluation/review/publication and pinned skill delivery/rollback. No personal-harness fallback, global memory injection, automatic legacy enrollment or LAYA activation. An actual workflow manifest review exposed a benign base64-JSON/JWT false positive in the pinned producer; publication remains fail-closed pending its narrowly scoped reviewed fix and new source pin.
 
-
 Implemented BE06:
 
 - Stable producer primary/specialist mappings, verified frozen session identity and explicit named handoff/status; display rename cannot grant authority. Copies get distinct memory namespaces and no inherited live project ACL. Configured project mappings are intersected with actual producer grants and page context is rechecked before command dispatch.
@@ -409,7 +408,6 @@ Producer prerequisite: published `3453afefce2b21947390fac0e03d9eaa67f326e9`, tre
 An isolated repo-prescribed PM environment now provides supported Python3.14.7, with frozen declared dev/test dependencies and a10-test canonical smoke. The existing3.12 evidence remains accurately labeled. Final BE06 consumer/actual-runtime checks follow before publication. No real credential, personal harness, external provider, migration, deployment or LAYA activation.
 
 The clean supported environment exposed a consumer dependency defect: isolated profile validation imported undeclared PyYAML. The validator now uses the producer-declared ruamel.yaml safe loader while retaining Python isolated mode and strict profile/owner validation. Actual workflow decline also proved that artifact-control reviews cannot use active-runtime-run approval resolution; decline now records the reviewed intent and cancels the exact original artifact-control command through its real contract, with no fabricated approval status.
-
 
 Final BE06 checks:
 
@@ -544,6 +542,7 @@ Final focused operational evidence:33 Python tests and27 TypeScript tests PASS (
 Final BE11 checks:
 
 -33 Python and27 focused TypeScript tests PASS, including retained local routes, archive provenance/quarantine, active-writer gates, corruption/storage failures, known process descendants and shutdown ordering. These are isolated synthetic resources, not user migration or restoration.
+
 - Clean production-only dependency installation and final gated frontend/server smoke PASS, including authenticated readiness, absence of managed credentials, orderly stop and ungated-start refusal. Full target images, TLS termination, age/key recovery and remote writer coverage remain unrun.
 - Parent final TypeScript, changed-source ESLint, changed-file Prettier, production build,67-module production boundary and diff checks PASS. Existing nonfatal bundle warning remains. Exact lockfile was rebuilt and its separately uploaded blob verified before tree assembly.
 
@@ -569,11 +568,9 @@ No deployment, live provider/credential/channel activation, external message, re
 
 Publication: this final local-qualification checkpoint is direct to main, with original local history preserved. Remote commit/tree/root journal equality and exact-commit GitHub Actions/status observations are checked after publication. The workflow exists; zero reported runs/statuses means external CI is unverified, never passed. The final commit hash is reported outside its own content to avoid a self-reference.
 
-
 ## Local implementation Phase 0 — Baseline — 2026-10-18
 
 Owner authorized phased implementation with local validation and Git/journal checkpoints; no CI. Baseline aaff582, Ubuntu 24.04.4 x86_64, Python 3.12.3. Node/npm absent from PATH. No matching Node/Python application processes or listeners on 4310/4173/5173 were observed; no Dots private config/state directory exists. Selected fresh owner-local state at /home/ryoko/.local/share/ryoko-dots, loopback port 4310; no existing state adopted. Git identity is configured. implementation_buildPlan.md is included in this checkpoint. Initial review operations run had 31 passes, one PID-marker race error and one skip; historical evidence is not a fresh pass. Phase 0 complete. Commits are local; no CI or remote publication performed.
-
 
 ## Local implementation Phase 1 — Dependencies — 2026-10-18
 
@@ -582,7 +579,6 @@ Completed host toolchain installation using Ubuntu apt (Git/curl/CA/xz/build-ess
 Audit reported six dependency vulnerabilities (four high/two critical): concurrently/shell-quote, source-map-js, and GraphQL development dependency chain. Saved machine-readable audit under ignored artifacts/local-build/npm-audit.json; remediation will be evaluated in Phase 2, not blindly applied. npm reported unapproved optional lifecycle scripts for scarf/esbuild; no blanket approval given; build validation follows.
 
 User steering: use existing Codex ChatGPT OAuth for testing where supported; custom agent installation/connection will occur with owner later. Inspected supplied /home/ryoko/Desktop/rhermes/ryoko-agent: clean HEAD a5ca09642c95d98702b3b21d004fe2551d4857ab; required historical producer commit exists locally. Codex login status reports ChatGPT login, without reading credentials. Dots currently accepts only openai/custom chat_completions profiles, while the supplied agent also documents Codex app-server; these are not interchangeable without explicit adapter qualification. Agent remains unmodified/uninstalled.
-
 
 ## Local implementation Phase 2 — Repairs and validation — 2026-10-18
 
@@ -596,13 +592,11 @@ Reviewed audit dry run, then applied compatible locked updates (no manifest rang
 
 Validation: full format/lint/typecheck/build passed before dependency correction; post-correction build/typecheck/full format and changed-file ESLint passed. Runtime baseline fixture integrity passed (no live producer claimed); 67-module production import boundary passed. Existing 1.2MB frontend bundle warning remains. Logs and audit evidence are under ignored artifacts/local-build. No CI used. Implementation plan now records the supplied agent path, PM installation procedure, changed schema and Codex app-server incompatibility; that repository remains untouched.
 
-
 ## Local implementation Phase 3 — Static frontend inspection — 2026-10-18
 
 Static preview passed at 1440x1000 and 390x844: rendered login/setup, keyboard focus, no horizontal overflow, expected API 503, zero uncaught page errors. Screenshots/evidence: artifacts/local-build/preview-{1440,390}.png and preview.json. Visually inspected the narrow screenshot. Preview server and browser closed cleanly.
 
 Fixed browser QA launcher portability: use Playwright's installed executable by default, with CHROMIUM_PATH retained as an override, rather than hard-coding /usr/bin/chromium. Changed-script format/ESLint pass. This enabled the older synthetic harness to run: 9 checks passed, 8 failed, one explicitly not run, followed by an uncaught narrow-scenario wait for hidden Dots navigation. Ten screenshots were produced. Failures include obsolete automatic-connect expectations and stale runtime fixtures; their full diagnosis/repair remains Phase 8 integration work, not a green browser acceptance claim. Log/evidence: artifacts/local-build/browser-synthetic.log and artifacts/runtime-browser/evidence.json. Static inspection phase complete; assembled runtime UI acceptance remains open.
-
 
 ## Local implementation Phase 4 — Authenticated workspace running — 2026-10-18
 
@@ -613,7 +607,6 @@ Actual Chromium/backend journey passed: anonymous readiness denied, owner login,
 Installed/enabled ryoko-dots.service under ~/.config/systemd/user using the reviewed deployment/dots-local.service.example, exact Node executable, private .env and supervised launcher, KillMode=control-group and 40s stop timeout. Service is active/running and liveness returns true. systemd unit verification passed. It starts with the user's session; lingering remains disabled, so unattended pre-login boot is not claimed. Operational controls, file paths, token location and limitations are documented in docs/local-startup.md and linked from README.
 
 Phase 4 complete. Phases 5–7 remain deferred by the owner's instruction to install/connect the custom agent later. The supplied agent remains clean at a5ca09642c95d98702b3b21d004fe2551d4857ab; its schema differences and Codex OAuth/profile adapter requirements are documented for handoff. Real runtime browser acceptance (including eight failed historical synthetic cases), optional services, paired recovery and production cutover are not complete. No CI, external message or Git push performed. Each completed phase has its own local commit and journal entry.
-
 
 ## 2026-10-21 — Local Ryoko ChatGPT-backed chat
 
@@ -646,7 +639,6 @@ agent initialization; reruns passed after fixing those deadlines. The executable
 controls. All work and checks were local; CI remains disabled. See
 `docs/local-startup.md` for paths and remaining optional integrations.
 
-
 Follow-up verification: the saved real reply survived a full supervised service
 restart and explicit browser reconnect. Repeated successful QA logins reached the
 existing ten-attempt login throttle; stopped the service and cleared only the
@@ -655,7 +647,6 @@ restarted. Owner credentials, browser-session records and conversations were not
 changed by this reset. Integration test ceilings were adjusted to accommodate the
 new bounded cold-start/agent-build deadlines; the voice fixture now waits for its
 actual first provider invocation instead of assuming it begins within five seconds.
-
 
 Final local results: all 16 stdio integration cases passed across the assembled
 run and focused reruns (the delivery rerun passed 1/1; controls, conversations,
@@ -887,3 +878,59 @@ exposure was enabled. A second-device deployment requires the owner's intended
 host/client setup; local release remains fully independent of that optional
 step. Network scenario validation is pending and will not be claimed as tested
 without an actual second device. No CI.
+
+## 2026-10-21 — Phase 8: installed release and local validation
+
+Finished the optional Codex integration after the owner's clarification to finish
+what was already implemented. Ryoko remains the default Hermes Dot and uses its
+existing profile/login. No subagent configuration changed. The Electron launcher
+is installed in the application menu and `./run.sh` opens it. The local Linux x64
+shell archive is under `artifacts/local-build`; it requires the installed backend.
+Added setup/API/client/packaging documentation and explicit delivery boundaries
+in the phased plan.
+
+Release fixes include persistent selected chats/drafts, readable author labels,
+copyable code, history-error visibility, scroll restoration/new-message handling,
+three complete background themes, narrow-window navigation, and theme contrast.
+The API now reconciles runs without an open window, guards concurrent submissions,
+retains uncertain outcomes without replay, and provides recent work across Dots.
+Native Codex threads remain isolated from unrelated CLI history. Read-only Hermes
+child inspection no longer connects/writes merely to read monitoring evidence.
+
+Validation performed locally at the end of implementation, with no CI:
+
+- TypeScript typechecking, ESLint, formatting, production client/server/computer
+  builds, and production import-boundary checks passed. The client build retains
+  a nonfatal large-chunk warning.
+- Python operations suite: 33 passed, including synthetic snapshot/restore checks.
+- Real Ryoko API message completed; duplicate operation IDs returned the same run.
+  A scoped credential was denied cross-Dot access and revoked after verification.
+- Real native Codex responses completed through both the adapter and installed UI;
+  committed history reopened after service restart without resending the prompt.
+- Electron launched with renderer sandbox and context isolation enabled and Node
+  integration disabled. Browser checks rendered all three supplied backgrounds,
+  reopened existing chats and showed no browser exceptions.
+- Dependency audit fixes reduced reported vulnerabilities to zero. Because the
+  lockfile changed, native computer qualification was rerun against the actual
+  build: all 16 actions passed. Installed UI checks then passed public navigation,
+  workspace file read, and a terminal command. Both user services are active.
+- Paired offline SQLite backups and private configuration were saved under
+  `~/.local/share/ryoko-dots/backups/20261021-151608`; integrity checks passed on
+  snapshots and isolated restored copies. This is not a full rollback drill or
+  backup of remote provider state/the complete computer workspace.
+- Runtime contract fixture integrity and explicit metadata checks passed; that
+  command's optional source/replay/live gates were not configured. The real Ryoko
+  message/computer checks above are separate workstation evidence.
+
+Initial full-suite UI failures exposed SSR theme access and stale expectations
+for manual connection/raw receipts; both were fixed. A subsequent interrupted
+full run also reported an audit-test timeout under competing compiler load. The
+final full suite is rerun with two workers; its final result is recorded below.
+Remote access remains documented but disabled and untested on a second device.
+Capacity/load benchmarking and additional live Hermes-profile enrollment are not
+claimed. Subagent configuration remains deferred.
+
+Final two-worker application suite: **789 passed, 11 skipped** across **110 passed,
+8 skipped test files**. The complete rerun passed, including the previously timed
+out audit test. Final installed UI recheck again reopened saved Codex history,
+verified all three theme backgrounds, and reported zero browser exceptions.

@@ -1,3 +1,4 @@
+import { CodeBlock } from './CodeBlock';
 import { openPageLink } from './page-navigation';
 import { Fragment, type ReactNode } from 'react';
 import { PhoneOff } from 'lucide-react';
@@ -38,7 +39,9 @@ export function ChatTranscript({
   messages,
   calls,
   renderTools,
+  assistantName = 'Assistant',
 }: {
+  assistantName?: string;
   messages: Message[];
   calls: CallReceipt[];
   renderTools?: (message: AssistantMessage) => ReactNode;
@@ -57,8 +60,10 @@ export function ChatTranscript({
         <Fragment key={message.id}>
           {typeof message.content === 'string' && message.content.trim() && (
             <div className={`chat-bubble ${message.role}`}>
+              <small>{message.role === 'user' ? 'You' : assistantName}</small>
               <ReactMarkdown
                 components={{
+                  pre: CodeBlock,
                   img: ({ alt }) => <span>{alt}</span>,
                   a: ({ href, children }) => (
                     <a

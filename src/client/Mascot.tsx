@@ -23,7 +23,11 @@ export function Mascot({
   decorative?: boolean;
 }) {
   return (
-    <span className={`mascot ${state} ${small ? 'small' : ''}`}>
+    <span
+      className={`mascot ${state} ${small ? 'small' : ''}`}
+      data-monogram={name.slice(0, 1).toUpperCase()}
+      aria-hidden={decorative ? true : undefined}
+    >
       <img
         className="dot-body"
         src={`/dots/${characterFor(identity)}.png`}

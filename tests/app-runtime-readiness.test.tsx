@@ -221,10 +221,10 @@ function renderWorkspace(
   return renderToStaticMarkup(<App />);
 }
 
-it('reaches the explicit Chat connection control before command execution is ready', () => {
+it('shows automatic connection progress before command execution is ready', () => {
   const html = renderWorkspace();
-  expect(html).toContain('Canonical conversation history');
-  expect(html).toMatch(/<button type="button">Connect runtime<\/button>/);
+  expect(html).toContain('Connecting…');
+  expect(html).toContain('Connecting to Dot');
   expect(html).toMatch(/aria-label="Send message" disabled=""/);
   expect(html).not.toContain('Your first conversation starts after setup.');
   expect(useRuntime().connect).not.toHaveBeenCalled();

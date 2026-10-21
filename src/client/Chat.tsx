@@ -355,6 +355,10 @@ export function Chat({
     });
   };
   const bottom = useRef<HTMLDivElement>(null);
+  const viewport = useRef<HTMLDivElement>(null);
+  const followMessages = useRef(true);
+  const restoredPosition = useRef(false);
+  const [unread, setUnread] = useState(false);
   const canonicalMessages = history.history?.messages ?? [];
   const pendingMessages = pendingChatMessages(
     commands.records,
@@ -400,8 +404,26 @@ export function Chat({
       content: currentSending.text,
     });
   useEffect(() => {
-    bottom.current?.scrollIntoView({ behavior: 'instant', block: 'end' });
-  }, [messages.length, progress?.text]);
+    const element = viewport.current;
+    if (!element || !messages.length) return;
+    if (!restoredPosition.current) {
+      restoredPosition.current = true;
+      try {
+        const saved = localStorage.getItem('dots.scroll.' + thread.id);
+        if (saved !== null) {
+          element.scrollTop = Number(saved);
+          followMessages.current =
+            element.scrollHeight - element.scrollTop - element.clientHeight <
+            100;
+          return;
+        }
+      } catch {
+        /* No saved position. */
+      }
+    }
+    if (followMessages.current) element.scrollTop = element.scrollHeight;
+    else setUnread(true);
+  }, [messages.length, thread.id]);
   return (
     <div className="live-chat">
       <TaskMonitor conversationId={thread.id} />
@@ -505,7 +527,27 @@ export function Chat({
           <button onClick={() => void history.reload()}>Reload history</button>
         </div>
       )}
-      <div className="chat-transcript" data-has-messages={!!history.history?.messages.length}>
+      <div
+        className="chat-transcript"
+        ref={viewport}
+        onScroll={() => {
+          const element = viewport.current;
+          if (!element) return;
+          followMessages.current =
+            element.scrollHeight - element.scrollTop - element.clientHeight <
+            100;
+          if (followMessages.current) setUnread(false);
+          try {
+            localStorage.setItem(
+              'dots.scroll.' + thread.id,
+              String(element.scrollTop),
+            );
+          } catch {
+            /* Session-only scroll position. */
+          }
+        }}
+        data-has-messages={!!history.history?.messages.length}
+      >
         {history.history?.truncated && (
           <p className="notice">
             The server reports that some conversation history is unavailable.
@@ -540,14 +582,18 @@ export function Chat({
         {history.history?.interruption && (
           <p className="notice">{history.history.interruption}</p>
         )}
-        {!messages.length && !history.loading && !history.error && history.history && (
-          <div className="chat-welcome">
-            <span className="eyebrow">A LITTLE SPACE TO THINK</span>
-            <h1>What’s on your mind?</h1>
-            <p>{dot.instructions}</p>
-          </div>
-        )}
+        {!messages.length &&
+          !history.loading &&
+          !history.error &&
+          history.history && (
+            <div className="chat-welcome">
+              <span className="eyebrow">A LITTLE SPACE TO THINK</span>
+              <h1>What’s on your mind?</h1>
+              <p>{dot.instructions}</p>
+            </div>
+          )}
         <ChatTranscript
+          assistantName={dot.name}
           messages={messages}
           calls={
             callHistory.data?.calls ??
@@ -643,6 +689,19 @@ export function Chat({
         dot={dot}
         voice={voice}
       />
+      {unread && (
+        <button
+          type="button"
+          onClick={() => {
+            followMessages.current = true;
+            if (viewport.current)
+              viewport.current.scrollTop = viewport.current.scrollHeight;
+            setUnread(false);
+          }}
+        >
+          New messages ↓
+        </button>
+      )}
       {!connected && !error && (
         <p className="chat-compose-note" role="status">
           Connecting to {dot.name}…

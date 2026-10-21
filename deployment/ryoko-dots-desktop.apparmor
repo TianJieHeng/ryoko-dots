@@ -1,0 +1,9 @@
+# Local workstation Electron user namespace permission. Keep renderer sandboxing enabled.
+abi <abi/4.0>,
+include <tunables/global>
+profile ryoko-dots-electron /home/ryoko/Desktop/rdots/ryoko-dots/node_modules/electron/dist/electron flags=(unconfined) {
+  userns,
+}
+profile ryoko-dots-electron-bundle /home/ryoko/Desktop/rdots/ryoko-dots/artifacts/local-build/ryoko-dots-linux-x64/electron flags=(unconfined) {
+  userns,
+}
