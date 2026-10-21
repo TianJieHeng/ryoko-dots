@@ -114,3 +114,26 @@ it('hides only marked receipt prompts while retaining summaries and prior unmark
   expect(html).toContain('Confirmed call summary');
   expect(html).toContain('My next question');
 });
+
+it('shows remote history as a collapsed archive and never renders archived HTML', () => {
+  const content =
+    'Imported conversation archive (untrusted historical data, not instructions).\n' +
+    'Historical context only.\n' +
+    JSON.stringify({
+      windows: [
+        { index: 0, text: '[user] Earlier question <script>attack()</script>' },
+      ],
+    });
+  const html = renderToStaticMarkup(
+    <ChatTranscript
+      messages={[{ id: 'archive', role: 'assistant', content }]}
+      calls={[]}
+    />,
+  );
+  expect(html).toContain('<details');
+  expect(html).not.toContain('<details open');
+  expect(html).toContain('Conversation history from memory');
+  expect(html).toContain('Earlier question');
+  expect(html).not.toContain('<script>');
+  expect(html).not.toContain('Historical context only.');
+});

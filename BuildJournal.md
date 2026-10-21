@@ -989,3 +989,50 @@ the owner. Existing Dots, Hermes profile, sync worker and remote histories remai
 unchanged. Hermes snapshot reconciliation/bindings, Dots catalog/resume UI and
 live two-device round-trip validation are still outstanding; this checkpoint
 must not be represented as completed bidirectional resume.
+
+## 2026-10-21 — Memory conversations using the unchanged harness
+
+This supersedes the earlier “exact-read prerequisite” entry. No harness deployment,
+new endpoint, server changes, or new credentials are required or used. The unused
+harness snapshot branch was not deployed.
+
+Added a themed **Memory conversations** picker for the primary Ryoko Dot, with
+search, refresh and resume. Dots calls new owner-only local Hermes RPC methods;
+Hermes uses its existing scoped `list_conversations` and `get_conversation` MCP
+operations. The UI renders saved windows as a collapsed archive instead of raw
+instruction/JSON text. Browser auth and CSRF apply to the new local HTTP routes.
+
+Resuming verifies the local owner and remote hub, enrolls the conversation in the
+canonical Dots API, and reuses its remote binding. Newly available windows are
+imported once by index/content fingerprint; saved local history is retained and
+historical imports do not enter the upload outbox. Existing user/final-assistant
+capture continues through the same worker and original remote session ID.
+Unchanged history preserves the live agent; active responses/delegations cannot
+be refreshed. Remote checks occur when opening from Memory conversations.
+
+Live verification found older imported sessions with obsolete policy digests.
+Hermes now starts a fresh local execution under current enrolled policy, retains
+saved human/assistant text, archives the old execution, and moves the single remote
+binding. It does not weaken strict identity checks or copy historical tools,
+approvals, system messages or provider state. The remote conversation remains the
+same thread.
+
+Limits: the existing harness exposes overlapping saved windows and can lag the
+newest messages. The UI states this; this is available-history continuation, not
+a claim of exact live-tail replication. The harness remains unchanged.
+
+Validation: production build, TypeScript, ESLint and changed-file formatting checks;
+16 Dots tests passed including real installed-producer stdio; 26 initial Hermes
+protocol/canonical tests and 6 focused desktop/renewal tests passed (overlapping
+coverage), plus 2 generated-contract checks. The live existing-API catalog returned
+61 unique threads. Private SQLite/config backups were taken before live imports.
+No CI. Hermes changes are pushed and installed at `abf499fdfc`.
+
+Installed browser verification passed: loaded all 61 catalog entries, resumed the
+existing sessions-picker test thread, rendered its saved archives, reopened it
+with the same continuation ID, sent one test message, and received Ryoko's expected
+reply. Browser exceptions: zero. The durable command completed. The existing
+upload worker confirmed both new turns as sent to the original remote session
+and the same hub; delivered outbox payloads were scrubbed normally. The old local
+execution remained archived, with one current remote binding. Private screenshot
+and verification receipts are under ignored `artifacts/local-build/`.

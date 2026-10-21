@@ -237,6 +237,28 @@ export function createSelfHostedApp({
     current();
     return c.json(value);
   });
+  app.get('/api/runtime/memory-conversations', async (c) => {
+    const dotId = id.parse(c.req.query('dotId'));
+    return c.json(await platform.memoryList(dotId, guard(c, platform)));
+  });
+  app.post('/api/runtime/memory-conversations/open', async (c) => {
+    const input = z
+      .object({
+        dotId: id,
+        source: z.string().min(1).max(512),
+        sessionId: z.string().min(1).max(512),
+      })
+      .strict()
+      .parse(await c.req.json());
+    return c.json(
+      await platform.memoryOpen(
+        input.dotId,
+        input.source,
+        input.sessionId,
+        guard(c, platform),
+      ),
+    );
+  });
   app.get('/api/runtime/conversations', async (c) => {
     const input = listQuery.parse(query(c));
     return c.json(

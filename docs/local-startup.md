@@ -159,3 +159,34 @@ The computer grants were enrolled in the existing Ryoko profile. Use the new
 conversations retain their original frozen policy and cannot acquire the new
 permissions. Pre-change profile and database backups are in the private
 `computer/profile-backup` directory. No prior sessions or snapshots were deleted.
+
+## Resume a memory conversation
+
+Select Ryoko, then **Memory conversations** in the sidebar. Search by title or
+session ID and select **Resume**. Dots reads the configured personal-memory MCP
+catalog and saved transcript windows through Hermes's existing scoped credentials.
+No harness deployment or additional API credential is required. The browser never
+receives either the MCP credential or the upload worker credential.
+
+A remote thread is bound once to a local Hermes conversation. Opening it again
+returns the same local ID, retains local messages, and imports only newly available
+windows. If an earlier local execution has an obsolete agent policy, Hermes creates
+a fresh local continuation, archives that execution, and moves the one existing
+remote binding to the continuation. Saved human/assistant text is retained; old
+tool permissions and provider state are not reused. Replies use the existing durable outbox with the original remote source
+and session ID; imported archives are not uploaded again. Open the thread from
+Memory conversations again to check for replies written on another device.
+An active response or child task must finish before refreshing its history.
+
+The existing harness returns overlapping saved windows, not a complete live-tail
+snapshot. The picker states this limitation, and archived history is collapsed in
+the chat. The adapter never invents missing messages or restores historical tool
+permissions. Unchanged history preserves the live agent; new archived context is
+loaded on the next normal resume. Existing local chat remains available if the
+harness is offline.
+
+Owner-cookie/CSRF protected local endpoints:
+`GET /api/runtime/memory-conversations?dotId=<primary-dot-id>` and
+`POST /api/runtime/memory-conversations/open` with
+`{ "dotId": "…", "source": "hermes", "sessionId": "…" }`.
+These endpoints are separate from the bearer-token `/api/v1` API.

@@ -1,3 +1,4 @@
+import { MemoryConversations } from './MemoryConversations';
 import { HubPanel } from './HubPanel';
 import { ImportedHistory } from './runtime/ImportedHistory';
 import { archivedHistoryLocation } from '../shared/runtime/legacy-history';
@@ -239,7 +240,13 @@ function WorkspaceApp({
     }
   }, [selectedDot, selectedThread]);
   const [view, rawSetView] = useState<
-    'chat' | 'tasks' | 'memories' | 'space' | 'history' | 'hub'
+    | 'chat'
+    | 'tasks'
+    | 'memories'
+    | 'space'
+    | 'history'
+    | 'hub'
+    | 'memory-conversations'
   >('chat');
   const dirtyPage = useRef(false);
   const [spaceId, setSpaceId] = useState('');
@@ -729,6 +736,16 @@ function WorkspaceApp({
           </div>
         )}
         <div className="sidebar-bottom">
+          <button
+            className={`nav-item ${view === 'memory-conversations' ? 'active' : ''}`}
+            onClick={() => {
+              setView('memory-conversations');
+              setMobile(false);
+            }}
+          >
+            <BookOpen size={17} />
+            <span>Memory conversations</span>
+          </button>
           <button className="nav-item" onClick={() => setView('hub')}>
             Dots & API
           </button>
@@ -853,7 +870,17 @@ function WorkspaceApp({
             </button>
           </div>
         )}
-        {view === 'hub' ? (
+        {view === 'memory-conversations' ? (
+          <MemoryConversations
+            key={selectedDot}
+            dotId={selectedDot}
+            onOpen={async (id) => {
+              await conversationList.reload();
+              setSelectedThread(id);
+              setView('chat');
+            }}
+          />
+        ) : view === 'hub' ? (
           <HubPanel />
         ) : view === 'history' ? (
           <ImportedHistory />

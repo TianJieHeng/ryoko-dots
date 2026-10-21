@@ -126,6 +126,26 @@ describe('self-hosted canonical conversation BFF', () => {
     const app = createSelfHostedApp({ ...f, platform });
     try {
       expect((await app.request(`${origin}/api/workspace`)).status).toBe(401);
+      expect(
+        (
+          await app.request(
+            `${origin}/api/runtime/memory-conversations?dotId=private`,
+          )
+        ).status,
+      ).toBe(401);
+      expect(
+        (
+          await app.request(`${origin}/api/runtime/memory-conversations/open`, {
+            method: 'POST',
+            headers: { origin, 'content-type': 'application/json' },
+            body: JSON.stringify({
+              dotId: 'private',
+              source: 'hermes',
+              sessionId: 'private',
+            }),
+          })
+        ).status,
+      ).toBe(401);
       const headers = await login(app);
       const setup = await (
         await app.request(

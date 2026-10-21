@@ -6,6 +6,8 @@ import {
 import Ajv from 'ajv';
 import { producerSchema } from '../../shared/runtime/producer/schema.generated.js';
 import type {
+  RuntimeMemoryListResult,
+  RuntimeMemoryOpenResult,
   ScheduleRecordResult,
   ScheduleSchedulerStatusResult,
   ClientCapabilitiesResult,
@@ -48,6 +50,8 @@ export interface ReadResults {
 }
 export type ReadMethod = keyof ReadResults;
 export interface ConversationResults extends ReadResults, Be06Results {
+  'runtime.memory.list': RuntimeMemoryListResult;
+  'runtime.memory.open': RuntimeMemoryOpenResult;
   'runtime.schedule.create': ScheduleRecordResult;
   'runtime.schedule.import': ScheduleRecordResult;
   'runtime.schedule.update': ScheduleRecordResult;

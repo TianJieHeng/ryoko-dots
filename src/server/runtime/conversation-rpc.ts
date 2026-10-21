@@ -322,6 +322,8 @@ export class ConversationRpc {
 }
 export const conversationMethods: ConversationMethod[] = [
   ...be06Methods,
+  'runtime.memory.list',
+  'runtime.memory.open',
   'runtime.schedule.create',
   'runtime.schedule.import',
   'runtime.schedule.update',

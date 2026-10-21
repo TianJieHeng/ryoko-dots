@@ -698,6 +698,53 @@ export class SelfHostedPlatform {
       identity: this.transport!.config.identity,
     });
   }
+  async memoryList(dotId: string, auth: Guard) {
+    const scope = await this.scope(dotId);
+    this.guard(scope, auth);
+    if (scope.privilegeClass !== 'primary')
+      throw new ConversationError(
+        'Memory conversations belong to the primary agent.',
+        403,
+      );
+    const result = await this.transport!.call('runtime.memory.list', {
+      schema_version: 1,
+    }).catch(() => {
+      throw new ConversationError(
+        'Could not read your memory conversations. Check the connection and try Refresh.',
+        503,
+      );
+    });
+    this.guard(scope, auth);
+    return result;
+  }
+  async memoryOpen(
+    dotId: string,
+    source: string,
+    sessionId: string,
+    auth: Guard,
+  ) {
+    const scope = await this.scope(dotId);
+    this.guard(scope, auth);
+    if (scope.privilegeClass !== 'primary')
+      throw new ConversationError(
+        'Memory conversations belong to the primary agent.',
+        403,
+      );
+    const result = await this.transport!.call('runtime.memory.open', {
+      schema_version: 1,
+      source,
+      session_id: sessionId,
+    }).catch(() => {
+      throw new ConversationError(
+        'Could not resume this memory conversation. If it is working, wait for the response to finish; otherwise refresh the list and try again. Your saved history is retained.',
+        409,
+      );
+    });
+    this.guard(scope, auth);
+    const conversation = this.map(result.conversation, scope);
+    await this.commands!.forgetLive(conversation.id);
+    return { conversation, notice: result.notice };
+  }
   async create(operationId: string, input: CreateIntent, auth: Guard) {
     const scope = await this.scope(input.dotId);
     this.guard(scope, auth);

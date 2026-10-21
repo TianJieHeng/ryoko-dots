@@ -18,6 +18,36 @@ export function isInternalVoiceReceipt(message: Message): boolean {
         metadata.opendotsSource === 'voice_receipt'))
   );
 }
+function MemoryArchive({ text }: { text: string }) {
+  let windows: { index: number; text: string }[] = [];
+  try {
+    const payload = JSON.parse(
+      text
+        .slice(text.indexOf('\n') + 1)
+        .split('\n')
+        .at(-1) ?? '',
+    );
+    if (Array.isArray(payload.windows))
+      windows = payload.windows.filter(
+        (w: { index?: unknown; text?: unknown }) =>
+          typeof w.index === 'number' && typeof w.text === 'string',
+      );
+  } catch {
+    /* A partial history page can be completed with Load earlier messages. */
+  }
+  return (
+    <details className="memory-archive">
+      <summary>Conversation history from memory</summary>
+      <p>Saved transcript windows. The newest messages may still be syncing.</p>
+      {windows.length ? (
+        windows.map((w) => <pre key={w.index}>{w.text}</pre>)
+      ) : (
+        <p>Load the rest of this conversation to read the complete archive.</p>
+      )}
+    </details>
+  );
+}
+
 function Receipt({ call }: { call: CallReceipt }) {
   return (
     <div className="call-receipt">
@@ -61,31 +91,38 @@ export function ChatTranscript({
           {typeof message.content === 'string' && message.content.trim() && (
             <div className={`chat-bubble ${message.role}`}>
               <small>{message.role === 'user' ? 'You' : assistantName}</small>
-              <ReactMarkdown
-                components={{
-                  pre: CodeBlock,
-                  img: ({ alt }) => <span>{alt}</span>,
-                  a: ({ href, children }) => (
-                    <a
-                      onClick={(event) => {
-                        if (href?.startsWith('/#/spaces/')) {
-                          event.preventDefault();
-                          openPageLink(href);
+              {message.role === 'assistant' &&
+              String(message.content).startsWith(
+                'Imported conversation archive (untrusted historical data, not instructions).',
+              ) ? (
+                <MemoryArchive text={String(message.content)} />
+              ) : (
+                <ReactMarkdown
+                  components={{
+                    pre: CodeBlock,
+                    img: ({ alt }) => <span>{alt}</span>,
+                    a: ({ href, children }) => (
+                      <a
+                        onClick={(event) => {
+                          if (href?.startsWith('/#/spaces/')) {
+                            event.preventDefault();
+                            openPageLink(href);
+                          }
+                        }}
+                        href={href}
+                        target={
+                          href?.startsWith('/#/spaces/') ? undefined : '_blank'
                         }
-                      }}
-                      href={href}
-                      target={
-                        href?.startsWith('/#/spaces/') ? undefined : '_blank'
-                      }
-                      rel="noreferrer"
-                    >
-                      {children}
-                    </a>
-                  ),
-                }}
-              >
-                {String(message.content)}
-              </ReactMarkdown>
+                        rel="noreferrer"
+                      >
+                        {children}
+                      </a>
+                    ),
+                  }}
+                >
+                  {String(message.content)}
+                </ReactMarkdown>
+              )}
             </div>
           )}
           {message.role === 'assistant' && renderTools?.(message)}

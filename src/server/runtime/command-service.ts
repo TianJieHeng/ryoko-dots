@@ -153,6 +153,10 @@ export class CommandService {
     this.projection.close();
     this.ledger.close();
   }
+  async forgetLive(id: string) {
+    await Promise.allSettled([this.binding.get(id), this.reads.get(id)]);
+    this.live.delete(id);
+  }
   private ensure(id: string, auth: Guard): Promise<Live> {
     for (const [key, live] of this.live)
       if (live.epoch !== (this.transport.epoch ?? 0)) this.live.delete(key);

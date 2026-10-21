@@ -110,11 +110,11 @@ const sha = (bytes: string | Buffer) =>
 const pins = [
   [
     'apps/shared/src/gateway-contract.generated.ts',
-    '38a8129a5d98bf222b8871cfa73683e123018b20ba0c534135b476eb6cebc54e',
+    'cb2135511817297dbf0ce74d508e5aa609df864109551893e53ae976d90d38e7',
   ],
   [
     'apps/shared/src/gateway-contract.openrpc.json',
-    '1086c496bd3180bd69de90c82f63a6aefebeba3f20150e468f39b3a9a602b902',
+    '93f35020cf08daecf39004db588f6f970bbb6521c3a6b19f8c8d825b5d33d822',
   ],
 ];
 /** No shell, inherited provider secrets, Python injection flags, or browser-selected paths. */
@@ -411,7 +411,7 @@ export class StdioConversationTransport implements ConversationTransport {
       stage = 'source_pin';
       verifyGitCheckout(
         this.config.checkout,
-        'a4dc372345eb4a4780f2e4301b2a474c73bc00b0',
+        'abf499fdfcb2f9bd98d65e5f39e9a8c4fc0dee3b',
       );
       for (const [file, expected] of pins)
         if (sha(readFileSync(join(this.config.checkout, file))) !== expected)
@@ -523,7 +523,11 @@ export class StdioConversationTransport implements ConversationTransport {
     this.checkProfile();
     if (!this.connected)
       throw new Error('Ryoko disconnected. Recovery remains read-only.');
-    return this.rpc!.call(method, params);
+    return this.rpc!.call(
+      method,
+      params,
+      method.startsWith('runtime.memory.') ? 190000 : undefined,
+    );
   }
   quiesce() {
     this.quiescing = true;

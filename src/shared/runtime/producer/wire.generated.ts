@@ -895,6 +895,29 @@ export interface RuntimeAdmissionJob {
   expires_at: number
   reason: string | null
 }
+export interface RuntimeMemoryListResult {
+  schema_version: 1
+  conversations: RuntimeMemoryConversation[]
+  notice: string
+}
+export interface RuntimeMemoryConversation {
+  source: string
+  session_id: string
+  title: string
+  turns: number | null
+  updated_at: number
+  unavailable: string
+}
+export interface RuntimeMemoryOpenParams {
+  schema_version: 1
+  source: string
+  session_id: string
+}
+export interface RuntimeMemoryOpenResult {
+  schema_version: 1
+  conversation: RuntimeConversation
+  notice: string
+}
 export interface MissionControlParams {
   session_id: string
   schema_version: 1

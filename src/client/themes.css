@@ -972,3 +972,85 @@
   background: transparent;
   border-color: transparent;
 }
+
+.memory-conversations {
+  overflow: auto;
+  padding: 30px;
+  color: var(--ink);
+  background: var(--canvas);
+}
+.memory-conversations header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.memory-conversations h1 {
+  margin: 0 0 8px;
+}
+.memory-conversations p,
+.memory-conversation-row small {
+  color: var(--muted);
+}
+.memory-conversations input {
+  width: 100%;
+  margin: 16px 0;
+  padding: 12px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.memory-conversation-list {
+  display: grid;
+  gap: 10px;
+}
+.memory-conversation-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--structure);
+  cursor: pointer;
+}
+.memory-conversation-row:hover:not(:disabled),
+.memory-conversation-row:focus-visible {
+  background: var(--raised);
+  border-color: var(--accent);
+}
+.memory-conversation-row > span:first-of-type {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.memory-conversation-row small {
+  overflow-wrap: anywhere;
+}
+.memory-conversation-row:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.memory-resume-label {
+  color: var(--accent);
+  margin-left: auto;
+}
+.memory-sync-note {
+  max-width: 75ch;
+  line-height: 1.6;
+}
+.memory-archive summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+.memory-archive pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
