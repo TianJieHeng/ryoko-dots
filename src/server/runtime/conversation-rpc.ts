@@ -15,6 +15,7 @@ export class RuntimeFailure extends Error {
   constructor(
     readonly kind: 'rejected' | 'unknown' | 'unavailable',
     readonly code?: number,
+    readonly reason?: string,
   ) {
     super(
       kind === 'rejected'
@@ -142,11 +143,37 @@ export class ConversationRpc {
       this.pending.delete(frame.id);
       clearTimeout(pending.timer);
       if ('error' in frame) {
-        const error = frame.error as { code?: unknown } | null;
+        const error = frame.error as {
+          code?: unknown;
+          data?: { code?: unknown };
+        } | null;
+        const reason = error?.data?.code;
+        const safeReasons = [
+          'stale_owner',
+          'revision_conflict',
+          'idempotency_conflict',
+          'queue_expired',
+          'admission_draining',
+          'queue_payload_limit',
+          'queue_full',
+          'principal_queue_full',
+          'queue_byte_limit',
+          'admission_disk_limit',
+          'owner_paused',
+          'unresolved_limit',
+          'claim_conflict',
+          'budget_blocked',
+          'invalid_budget',
+          'budget_parent_closed',
+          'budget_exhausted',
+        ];
         pending.reject(
           new RuntimeFailure(
             'rejected',
             typeof error?.code === 'number' ? error.code : undefined,
+            typeof reason === 'string' && safeReasons.includes(reason)
+              ? reason
+              : undefined,
           ),
         );
       } else if ('result' in frame) pending.resolve(frame.result);
@@ -243,6 +270,7 @@ export class ConversationRpc {
   async call<M extends ConversationMethod>(
     method: M,
     params: unknown,
+    timeoutMs = this.limits.timeoutMs,
   ): Promise<ConversationResults[M]> {
     // Runtime allowlist is necessary even for a cast/JS caller.
     if (!conversationMethods.includes(method))
@@ -262,7 +290,7 @@ export class ConversationRpc {
       const timer = setTimeout(() => {
         this.pending.delete(id);
         reject(new RuntimeFailure('unknown'));
-      }, this.limits.timeoutMs);
+      }, timeoutMs);
       this.pending.set(id, { resolve, reject, timer });
       this.output.write(bytes, (error) => {
         if (error) this.close();

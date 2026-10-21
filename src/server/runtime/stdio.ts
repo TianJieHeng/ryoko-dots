@@ -42,6 +42,15 @@ export const launchConfigSchema = z.strictObject({
   ownerId: id,
   dotId: id,
   gatewayId: id,
+  // Explicit enrollment of an existing owner profile. Hashes pin the reviewed
+  // configuration (including integrations); this is not a permissive default.
+  reviewedProfile: z
+    .strictObject({
+      configSha256: digest,
+      dotenvSha256: digest,
+      codexHome: path,
+    })
+    .optional(),
   providerEnvironment: z
     .strictObject({
       OPENAI_API_KEY: z.string().min(1).max(8192).optional(),
@@ -101,11 +110,11 @@ const sha = (bytes: string | Buffer) =>
 const pins = [
   [
     'apps/shared/src/gateway-contract.generated.ts',
-    '19fdf11f4aa587d7bcdd58927c0cdbbdec463cfdeaa90003e0ac6284266539d2',
+    '38a8129a5d98bf222b8871cfa73683e123018b20ba0c534135b476eb6cebc54e',
   ],
   [
     'apps/shared/src/gateway-contract.openrpc.json',
-    'fa7b08c3edd56190daadeef533928685113fd70a2ae8959b2fb7b61aee5051b2',
+    '1086c496bd3180bd69de90c82f63a6aefebeba3f20150e468f39b3a9a602b902',
   ],
 ];
 /** No shell, inherited provider secrets, Python injection flags, or browser-selected paths. */
@@ -119,6 +128,9 @@ export function childEnvironment(config: LaunchConfig): NodeJS.ProcessEnv {
     PYTHONNOUSERSITE: '1',
     PYTHONDONTWRITEBYTECODE: '1',
     PYTHONUNBUFFERED: '1',
+    ...(config.reviewedProfile
+      ? { CODEX_HOME: config.reviewedProfile.codexHome }
+      : {}),
     ...config.providerEnvironment,
   };
 }
@@ -129,6 +141,18 @@ export function verifyProviderScope(config: LaunchConfig) {
   if (existsSync(join(config.checkout, '.env')))
     throw new Error('Checkout dotenv configuration is not permitted.');
   const scopeFile = join(config.home, '.env');
+  if (config.reviewedProfile) {
+    if (config.providerEnvironment)
+      throw new Error(
+        'Reviewed OAuth profiles cannot inject provider credentials.',
+      );
+    const bytes = existsSync(scopeFile)
+      ? readFileSync(scopeFile)
+      : Buffer.alloc(0);
+    if (sha(bytes) !== config.reviewedProfile.dotenvSha256)
+      throw new Error('Reviewed profile credential scope changed.');
+    return;
+  }
   const scoped = Object.entries(config.providerEnvironment ?? {})
     .map(([key, value]) => `${key}=${JSON.stringify(value)}\n`)
     .join('');
@@ -212,6 +236,13 @@ export class StdioConversationTransport implements ConversationTransport {
     if (statSync(file).size > 65536)
       throw new Error('Ryoko profile exceeds the safe configuration bound.');
     const raw = readFileSync(file, 'utf8');
+    if (
+      this.config.reviewedProfile &&
+      sha(raw) !== this.config.reviewedProfile.configSha256
+    )
+      throw new Error(
+        'Reviewed profile configuration changed; review and re-enroll it.',
+      );
     if (this.profileHash && sha(raw) !== this.profileHash)
       throw new Error(
         'Ryoko profile changed; restart and verify the owner mapping.',
@@ -236,51 +267,70 @@ export class StdioConversationTransport implements ConversationTransport {
     );
     if (parsed.status !== 0) throw new Error('Invalid trusted YAML profile.');
     // Unknown startup integrations remain unavailable until their typed adapters are qualified.
-    const profile = z
-      .strictObject({
-        agent_identity: z.record(z.string(), z.unknown()),
-        mcp_servers: z.strictObject({}).optional(),
-        delegation: z
-          .strictObject({
-            specialists: z.record(z.string(), z.unknown()).optional(),
-            durable: z
-              .strictObject({
-                enabled: z.boolean(),
-                limits: z.strictObject({
-                  max_depth: z.number().int().positive(),
-                  max_total_children: z.number().int().positive(),
-                  max_concurrent_children: z.literal(1),
-                }),
-              })
-              .optional(),
-            max_iterations: z.number().int().positive().optional(),
-            max_concurrent_children: z.literal(1).optional(),
-          })
-          .optional(),
-        cron: z
-          .strictObject({
-            stdio_scheduler: z.strictObject({
+    const restrictedProfile = z.strictObject({
+      agent_identity: z.record(z.string(), z.unknown()),
+      mcp_servers: z.strictObject({}).optional(),
+      delegation: z
+        .strictObject({
+          specialists: z.record(z.string(), z.unknown()).optional(),
+          durable: z
+            .strictObject({
               enabled: z.boolean(),
-              interval_seconds: z.number().int().min(1).max(3600),
-            }),
-          })
-          .optional(),
-        runtime_budget: z.record(z.string(), z.unknown()).optional(),
-        onboarding: z
-          .strictObject({
-            seen: z.strictObject({ profile_build_offered: z.boolean() }),
-          })
-          .optional(),
-        model: z
-          .strictObject({
-            default: z.string().max(256),
-            provider: z.enum(['openai', 'custom']),
-            base_url: endpoint.optional(),
-            api_mode: z.literal('chat_completions').optional(),
-          })
-          .optional(),
-      })
-      .parse(JSON.parse(parsed.stdout));
+              limits: z.strictObject({
+                max_depth: z.number().int().positive(),
+                max_total_children: z.number().int().positive(),
+                max_concurrent_children: z.literal(1),
+              }),
+            })
+            .optional(),
+          max_iterations: z.number().int().positive().optional(),
+          max_concurrent_children: z.literal(1).optional(),
+        })
+        .optional(),
+      cron: z
+        .strictObject({
+          stdio_scheduler: z.strictObject({
+            enabled: z.boolean(),
+            interval_seconds: z.number().int().min(1).max(3600),
+          }),
+        })
+        .optional(),
+      runtime_budget: z.record(z.string(), z.unknown()).optional(),
+      onboarding: z
+        .strictObject({
+          seen: z.strictObject({ profile_build_offered: z.boolean() }),
+        })
+        .optional(),
+      model: z
+        .strictObject({
+          default: z.string().max(256),
+          provider: z.enum(['openai', 'custom']),
+          base_url: endpoint.optional(),
+          api_mode: z.literal('chat_completions').optional(),
+        })
+        .optional(),
+    });
+    const profile = (
+      this.config.reviewedProfile
+        ? z
+            .object({
+              agent_identity: z.record(z.string(), z.unknown()),
+              codex_auth_source: z.literal('codex_cli'),
+              model: z.strictObject({
+                provider: z.literal('openai-codex'),
+                default: z.string().min(1).max(256),
+              }),
+              onboarding: z
+                .object({
+                  seen: z.object({
+                    profile_build_offered: z.boolean().optional(),
+                  }),
+                })
+                .optional(),
+            })
+            .passthrough()
+        : restrictedProfile
+    ).parse(JSON.parse(parsed.stdout));
     if (
       this.config.providerEnvironment &&
       profile.onboarding?.seen.profile_build_offered !== true
@@ -361,7 +411,7 @@ export class StdioConversationTransport implements ConversationTransport {
       stage = 'source_pin';
       verifyGitCheckout(
         this.config.checkout,
-        '98b9eeb7d2afc02d0e0393fea285f010000a0378',
+        'a4dc372345eb4a4780f2e4301b2a474c73bc00b0',
       );
       for (const [file, expected] of pins)
         if (sha(readFileSync(join(this.config.checkout, file))) !== expected)
@@ -411,9 +461,13 @@ export class StdioConversationTransport implements ConversationTransport {
       child.once('exit', rpc.close);
       // Drain but never retain or log producer diagnostics (they may contain secrets).
       child.stderr.on('data', () => {});
-      const proof = await this.rpc.call('runtime.conversation.capabilities', {
-        schema_version: 1,
-      });
+      // Cold Python imports and the initial profile load can exceed an ordinary
+      // RPC deadline. Only the read-only startup handshake gets this allowance.
+      const proof = await this.rpc.call(
+        'runtime.conversation.capabilities',
+        { schema_version: 1 },
+        60000,
+      );
       stage = 'owner_identity';
       if (
         !identityMatches(this.config.identity, proof.identity) ||

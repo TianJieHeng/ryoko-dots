@@ -390,5 +390,6 @@ test.runIf(
       else rmSync(root, { recursive: true, force: true });
     }
   },
-  60000,
+  // Two cold producer launches plus agent construction have separate bounded deadlines.
+  180000,
 );

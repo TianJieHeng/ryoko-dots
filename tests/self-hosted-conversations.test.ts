@@ -385,7 +385,8 @@ describe('self-hosted canonical conversation BFF', () => {
         f.cleanup();
       }
     },
-    60000,
+    // Allow cold producer startup and restart recovery.
+    180000,
   );
   test.runIf(
     !!process.env.RYOKO_TEST_PYTHON && !!process.env.RYOKO_TEST_CHECKOUT,
@@ -449,7 +450,8 @@ describe('self-hosted canonical conversation BFF', () => {
         f.cleanup();
       }
     },
-    60000,
+    // Allow cold producer startup and restart recovery.
+    180000,
   );
   test('wrong configured owner fails before launch; RPC runtime allowlists cannot be widened by casts', async () => {
     const f = fixture();

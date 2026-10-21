@@ -2046,6 +2046,11 @@ export const producerSchema = {
             "title": "Target Run Id",
             "type": "string"
           },
+          "new_user_turn": {
+            "default": false,
+            "title": "New User Turn",
+            "type": "boolean"
+          },
           "payload": {
             "anyOf": [
               {
@@ -5388,6 +5393,7 @@ export const producerSchema = {
               "decision.tool_plan",
               "decision.policy",
               "decision.planner_miss",
+              "decision.bundle",
               "operations.repair_started",
               "operations.repair_finished",
               "operations.deletion_requested",
@@ -5461,6 +5467,17 @@ export const producerSchema = {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/DecisionPolicyRecord"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "decision_bundle": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecisionBundleRecord"
               },
               {
                 "type": "null"
@@ -5902,7 +5919,12 @@ export const producerSchema = {
                   "unclear",
                   "below_threshold",
                   "shadow_observation",
-                  "receipt_unavailable"
+                  "receipt_unavailable",
+                  "remote_completion_unknown",
+                  "native_batch_required",
+                  "batch_admission_key_required",
+                  "invalid_batch_usage",
+                  "planner_fence_failed"
                 ],
                 "type": "string"
               },
@@ -6044,7 +6066,8 @@ export const producerSchema = {
           },
           "families": {
             "items": {
-              "pattern": "^[A-Za-z0-9_.:-]{1,96}$",
+              "maxLength": 512,
+              "minLength": 1,
               "type": "string"
             },
             "maxItems": 16,
@@ -6053,7 +6076,8 @@ export const producerSchema = {
           },
           "verified_tool_ids": {
             "items": {
-              "pattern": "^[A-Za-z0-9_.:-]{1,96}$",
+              "maxLength": 512,
+              "minLength": 1,
               "type": "string"
             },
             "maxItems": 16,
@@ -6107,7 +6131,7 @@ export const producerSchema = {
               "pattern": "^[0-9a-f]{64}$",
               "type": "string"
             },
-            "maxItems": 50,
+            "maxItems": 62,
             "title": "Decision Receipt Ids",
             "type": "array"
           },
@@ -6115,6 +6139,66 @@ export const producerSchema = {
             "minimum": 0,
             "title": "Elapsed Ms",
             "type": "number"
+          },
+          "protocol_version": {
+            "default": 1,
+            "enum": [
+              1,
+              2
+            ],
+            "title": "Protocol Version",
+            "type": "integer"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/DecisionPlannerMetrics"
+          },
+          "context_digest": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Context Digest"
+          },
+          "renderer_version": {
+            "anyOf": [
+              {
+                "const": "dp16-systemone-v1",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Renderer Version"
+          },
+          "context_redactions": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Context Redactions",
+            "type": "integer"
+          },
+          "context_omissions": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Context Omissions",
+            "type": "integer"
+          },
+          "authorization_status": {
+            "default": "not_attempted",
+            "enum": [
+              "not_attempted",
+              "privacy_blocked",
+              "transport_attempted"
+            ],
+            "title": "Authorization Status",
+            "type": "string"
           }
         },
         "required": [
@@ -6132,6 +6216,62 @@ export const producerSchema = {
           "elapsed_ms"
         ],
         "title": "DecisionToolPlan",
+        "type": "object"
+      },
+      "DecisionPlannerMetrics": {
+        "additionalProperties": false,
+        "properties": {
+          "batch_count": {
+            "default": 0,
+            "maximum": 3,
+            "minimum": 0,
+            "title": "Batch Count",
+            "type": "integer"
+          },
+          "question_count": {
+            "default": 0,
+            "maximum": 62,
+            "minimum": 0,
+            "title": "Question Count",
+            "type": "integer"
+          },
+          "inference_ms": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Inference Ms",
+            "type": "number"
+          },
+          "receipt_ms": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Receipt Ms",
+            "type": "number"
+          },
+          "admission_ms": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Admission Ms",
+            "type": "number"
+          },
+          "input_tokens": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Output Tokens",
+            "type": "integer"
+          },
+          "remote_unknown": {
+            "default": false,
+            "title": "Remote Unknown",
+            "type": "boolean"
+          }
+        },
+        "title": "DecisionPlannerMetrics",
         "type": "object"
       },
       "DecisionPolicyRecord": {
@@ -6155,6 +6295,40 @@ export const producerSchema = {
             "pattern": "^DP(0[1-9]|1[0-6])$",
             "title": "Point Id",
             "type": "string"
+          },
+          "contract_version": {
+            "anyOf": [
+              {
+                "enum": [
+                  1,
+                  2
+                ],
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Contract Version"
+          },
+          "binding_digests": {
+            "anyOf": [
+              {
+                "patternProperties": {
+                  "^[A-Za-z0-9_.:-]{1,96}$": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Binding Digests"
           },
           "policy_digest": {
             "pattern": "^[0-9a-f]{64}$",
@@ -6392,6 +6566,90 @@ export const producerSchema = {
           "service_digest"
         ],
         "title": "DecisionReleaseBundle",
+        "type": "object"
+      },
+      "DecisionBundleRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "context_id": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Context Id",
+            "type": "string"
+          },
+          "boundary": {
+            "enum": [
+              "new_context",
+              "compression"
+            ],
+            "title": "Boundary",
+            "type": "string"
+          },
+          "scope_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Scope Digest",
+            "type": "string"
+          },
+          "catalog_version": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Catalog Version",
+            "type": "string"
+          },
+          "prefix_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Prefix Digest",
+            "type": "string"
+          },
+          "plan_bundle_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Bundle Id"
+          },
+          "receipt_ids": {
+            "items": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "maxItems": 62,
+            "title": "Receipt Ids",
+            "type": "array"
+          },
+          "turn_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Turn Id",
+            "type": "string"
+          },
+          "generation": {
+            "minimum": 1,
+            "title": "Generation",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "schema_version",
+          "context_id",
+          "boundary",
+          "scope_digest",
+          "catalog_version",
+          "prefix_digest",
+          "plan_bundle_id",
+          "receipt_ids",
+          "turn_id",
+          "generation"
+        ],
+        "title": "DecisionBundleRecord",
         "type": "object"
       },
       "DecisionPlannerMiss": {

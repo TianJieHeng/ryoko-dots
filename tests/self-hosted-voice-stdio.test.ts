@@ -304,9 +304,10 @@ test.runIf(
         compute.operationId,
       )!.commandId!;
       expect(commandId).not.toBe(compute.operationId);
-      for (let attempt = 0; attempt < 100 && executions === 0; attempt++)
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      expect(executions).toBe(1);
+      await vi.waitFor(() => expect(executions).toBe(1), {
+        timeout: 30000,
+        interval: 100,
+      });
       expect(modelInputs[0]).toContain('not user approval');
       expect(
         methods.filter((item) => item.method === 'runtime.command'),
@@ -439,5 +440,6 @@ test.runIf(
       else rmSync(root, { recursive: true, force: true });
     }
   },
-  60000,
+  // Allow cold producer startup, agent construction and restart recovery.
+  180000,
 );

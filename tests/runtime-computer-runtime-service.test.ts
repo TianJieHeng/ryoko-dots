@@ -736,7 +736,165 @@ it('requires a witnessed snapshot after control release; screen reads leave the 
   expect(f.brokerCall).not.toHaveBeenCalled();
 });
 
-it('retains an unknown snapshot admission and resume fence if target observation fails', async () => {
+it('presents real target directory entries and terminal stdout/stderr in owner results', async () => {
+  const f = await fixture();
+  const original = f.handler();
+  f.handle(async (...args) => {
+    if (args[0] === '/edge/observe')
+      return {
+        snapshotId: 0,
+        output: {
+          entries: [
+            { name: 'notes.txt', kind: 'file' },
+            { name: 'work', kind: 'folder' },
+          ],
+        },
+      };
+    const response = await original(...args);
+    if (args[0] === '/edge/execute') {
+      const receipt = response as EdgeReceipt;
+      receipt.result = {
+        stdout: 'terminal-ready',
+        stderr: 'diagnostic',
+        exitCode: 0,
+        privateExtra: 'omit',
+      };
+      receipt.resultSha256 = edgeDigest(receipt.result);
+    }
+    return response;
+  });
+  const listing = await f.service.ownerAction(
+    binding.executorId,
+    f.action('files_list', { path: '' }),
+    f.owner,
+  );
+  expect(listing.output).toEqual({ entries: ['notes.txt', 'work/'] });
+  const terminal = await f.service.ownerAction(
+    binding.executorId,
+    f.action('exec', { command: 'printf terminal-ready', timeoutMs: 30000 }),
+    f.owner,
+  );
+  expect(terminal.output).toEqual({
+    text: 'terminal-ready\ndiagnostic',
+    exitCode: 0,
+  });
+});
+
+it('serializes live screen capture behind observations while safety changes bypass the queue', async () => {
+  const f = await fixture();
+  const original = f.handler();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  f.handle(async (...args) => {
+    if (args[0] === '/edge/observe') await gate;
+    return original(...args);
+  });
+  const actor = {
+    kind: 'owner' as const,
+    ownerId: binding.ownerId,
+    authSessionId: f.owner.authSessionId,
+    authRevision: f.owner.authRevision,
+  };
+  const state = f.state();
+  const observed = f.edge!.observe(
+    'snapshot',
+    {},
+    {
+      signal: AbortSignal.timeout(5000),
+      authority: actor,
+      expectedGrantRevision: state.grantRevision,
+      expectedControlRevision: state.controlRevision,
+    },
+  );
+  await vi.waitFor(() => expect(f.request).toHaveBeenCalledTimes(1));
+  const screen = f.edge!.screen(
+    actor,
+    state.grantRevision,
+    state.controlRevision,
+    AbortSignal.timeout(5000),
+  );
+  await f.edge!.change(
+    {
+      operationId: randomUUID(),
+      actor,
+      expectedGrantRevision: state.grantRevision,
+      expectedControlRevision: state.controlRevision,
+      change: { kind: 'control', holder: 'human' },
+    },
+    AbortSignal.timeout(5000),
+    f.authenticate,
+  );
+  expect(f.request.mock.calls.map(([path]) => path)).toEqual([
+    '/edge/observe',
+    '/edge/change',
+  ]);
+  release();
+  await Promise.all([observed, screen]);
+  expect(f.request.mock.calls.map(([path]) => path)).toEqual([
+    '/edge/observe',
+    '/edge/change',
+    '/edge/screen',
+  ]);
+});
+
+it('keeps a verified target available during status polling and clears it on failure', async () => {
+  const f = await fixture();
+  let reject!: (error: Error) => void;
+  f.handle(
+    async () =>
+      new Promise((_, fail) => {
+        reject = fail;
+      }),
+  );
+  const refreshed = f.edge!.refresh(
+    {
+      kind: 'owner',
+      ownerId: binding.ownerId,
+      authSessionId: f.owner.authSessionId,
+      authRevision: f.owner.authRevision,
+    },
+    AbortSignal.timeout(5000),
+  );
+  expect(f.edge!.available()).toBe(true);
+  const failure = expect(refreshed).rejects.toThrow('offline');
+  reject(new Error('offline'));
+  await failure;
+  expect(f.edge!.available()).toBe(false);
+});
+
+it.each([
+  ['files_read', { path: 'notes.txt' }],
+  ['files_list', { path: '' }],
+  ['read', {}],
+] as const)(
+  'routes owner %s through observation without reserving a write',
+  async (action, input) => {
+    const f = await fixture();
+    const before = f.service.effects.fence();
+    const body = f.action(action, input);
+    const result = await f.service.ownerAction(
+      binding.executorId,
+      body,
+      f.owner,
+    );
+    expect(result.state).toBe('reconciled');
+    expect(f.request.mock.calls.map(([path]) => path)).toEqual([
+      '/edge/observe',
+    ]);
+    expect(f.service.effects.fence()).toEqual(before);
+    expect(
+      f.db
+        .prepare('SELECT COUNT(*) AS n FROM runtime_computer_owner_actions')
+        .get()?.n,
+    ).toBe(0);
+    await f.service.inspectOwner(body.operationId, f.owner);
+    expect(f.request).toHaveBeenCalledTimes(1);
+  },
+);
+
+it('reports an unavailable snapshot without clearing its resume fence or blocking later reads', async () => {
   const f = await fixture();
   const original = f.handler();
   f.handle(async (...args) => {
@@ -747,13 +905,23 @@ it('retains an unknown snapshot admission and resume fence if target observation
   const body = f.action('snapshot', {});
   expect(
     (await f.service.ownerAction(binding.executorId, body, f.owner)).state,
-  ).toBe('unknown');
+  ).toBe('failed');
   f.request.mockClear();
   expect((await f.service.inspectOwner(body.operationId, f.owner)).state).toBe(
-    'unknown',
+    'failed',
   );
   expect(f.service.effects.fence()).toEqual(before);
   expect(f.request).not.toHaveBeenCalled();
+  f.handle(original);
+  expect(
+    (
+      await f.service.ownerAction(
+        binding.executorId,
+        f.action('files_read', { path: 'notes.txt' }),
+        f.owner,
+      )
+    ).state,
+  ).toBe('reconciled');
 });
 
 it('recovers a lost control acknowledgment by inspection after restart without a second change', async () => {

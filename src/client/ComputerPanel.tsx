@@ -275,7 +275,33 @@ export function ComputerPanel({ dot }: { dot: Dot }) {
     setBusy(true);
     setError('');
     try {
-      const receipt = await runComputerOperation(status, action, payload);
+      let currentStatus = status;
+      // The target requires a fresh bot snapshot for all writes, including
+      // workspace/terminal writes whose tabs do not expose a snapshot button.
+      // Observe first; an unresolved observation must never dispatch the write.
+      let observation;
+      if (action === 'exec' || action === 'files_write') {
+        observation = await runComputerOperation(status, 'snapshot', {});
+        if (
+          !lifecycle.current.active ||
+          revision !== lifecycle.current.revision
+        )
+          return;
+        if (observation.state === 'reconciled')
+          currentStatus = await loadComputerStatus(
+            status.executorId,
+            status.scope,
+          );
+        if (
+          !lifecycle.current.active ||
+          revision !== lifecycle.current.revision
+        )
+          return;
+      }
+      const receipt =
+        observation && observation.state !== 'reconciled'
+          ? observation
+          : await runComputerOperation(currentStatus, action, payload);
       if (!lifecycle.current.active || revision !== lifecycle.current.revision)
         return;
       setEffectNotice(

@@ -93,7 +93,10 @@ export function useRuntime(dotId = '') {
   return {
     ...current,
     reload,
-    connect: async (conversationId: string) => {
+    connect: async (
+      conversationId: string,
+      onConnected?: (setup: RuntimeSetup) => void,
+    ) => {
       if (!current.setup?.scope)
         throw new Error(
           'Runtime authority is unavailable. Reload access before connecting.',
@@ -106,6 +109,9 @@ export function useRuntime(dotId = '') {
       );
       if (!fence.current.current(generation) || selector.current !== dotId)
         throw new Error('Runtime binding changed while connecting.');
+      // Let the selected conversation record the verified new scope before
+      // publishing it. First enrollment may advance the authority generation.
+      onConnected?.(setup);
       setValue({
         selector: dotId,
         setup,

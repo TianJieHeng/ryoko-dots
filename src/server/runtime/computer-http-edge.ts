@@ -65,6 +65,7 @@ export class NativeComputerHttpEdge implements NativeComputerEdge {
     return this.statusEvidence.read(0, this.available());
   }
   private verified = false;
+  private primitiveQueue: Promise<void> = Promise.resolve();
   get configured() {
     return this.transport.configured() && this.qualification !== null;
   }
@@ -84,7 +85,7 @@ export class NativeComputerHttpEdge implements NativeComputerEdge {
         : null;
     this.qualifiedActions = this.qualification?.actions ?? [];
   }
-  private request(
+  private async request(
     ...args: Parameters<ComputerProtocolTransport['request']>
   ): Promise<unknown> {
     const q = this.qualification;
@@ -95,26 +96,48 @@ export class NativeComputerHttpEdge implements NativeComputerEdge {
           evidence: q.evidence,
         }
       : null;
-    return this.transport.request(
-      args[0],
-      args[1],
-      args[2],
-      args[3],
-      args[4],
-      expectedTarget,
-    );
+    const send = () => {
+      args[3].throwIfAborted();
+      return this.transport.request(
+        args[0],
+        args[1],
+        args[2],
+        args[3],
+        args[4],
+        expectedTarget,
+      );
+    };
+    // Live-screen polling must not collide with an explicit snapshot or write.
+    // Safety control changes bypass this queue and can abort active primitives.
+    if (!['/edge/screen', '/edge/observe', '/edge/execute'].includes(args[0]))
+      return send();
+    const previous = this.primitiveQueue;
+    let release!: () => void;
+    this.primitiveQueue = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    try {
+      await previous;
+      return await send();
+    } finally {
+      release();
+    }
   }
   available() {
     return this.qualified && this.ready && this.transport.configured();
   }
   async refresh(actor: EdgeActor, signal: AbortSignal) {
-    this.ready = false;
     const raw = await this.request(
       '/edge/status',
       { actor },
       actor.kind,
       signal,
-    );
+    ).catch((error: unknown) => {
+      this.ready = false;
+      this.statusEvidence.record('unavailable', 0);
+      throw error;
+    });
+    this.ready = false;
     const status = z
       .object({
         protocol: z.literal('dots-computer-edge/1'),

@@ -43,6 +43,13 @@ import type {
 import type { ConversationTransport } from './stdio.js';
 import type { NativeMethod } from './wire.js';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
+const ownerObservation = z.enum([
+  'snapshot',
+  'screenshot',
+  'read',
+  'files_list',
+  'files_read',
+]);
 /** FE intents deliberately preserve Unicode, unlike producer ensure_ascii bytes. */
 export function computerIntentCanonical(v: unknown): string {
   if (Array.isArray(v)) return `[${v.map(computerIntentCanonical).join(',')}]`;
@@ -657,7 +664,7 @@ export class ComputerRuntimeService {
     const f = this.effects.fence();
     const audit = this.db
       .prepare(
-        `SELECT operationId AS id,action,'owner' AS actor,CASE state WHEN 'committed' THEN 'reconciled' WHEN 'not_applied' THEN 'failed' ELSE 'unknown' END AS outcome,NULL AS effectId,createdAt FROM runtime_computer_owner_ingress WHERE executorId=? UNION ALL SELECT operationId AS id,json_extract(identity,'$.scope_json') AS action,'agent' AS actor,CASE json_extract(receipt,'$.state') WHEN 'committed' THEN 'reconciled' WHEN 'not_applied' THEN 'failed' ELSE 'unknown' END AS outcome,effectId,createdAt FROM runtime_computer_effects WHERE executorId=? ORDER BY outcome DESC, createdAt DESC LIMIT 1000`,
+        `SELECT operationId AS id,action,'owner' AS actor,CASE state WHEN 'committed' THEN 'reconciled' WHEN 'not_applied' THEN 'failed' WHEN 'observation_unavailable' THEN 'failed' ELSE 'unknown' END AS outcome,NULL AS effectId,createdAt FROM runtime_computer_owner_ingress WHERE executorId=? UNION ALL SELECT operationId AS id,json_extract(identity,'$.scope_json') AS action,'agent' AS actor,CASE json_extract(receipt,'$.state') WHEN 'committed' THEN 'reconciled' WHEN 'not_applied' THEN 'failed' ELSE 'unknown' END AS outcome,effectId,createdAt FROM runtime_computer_effects WHERE executorId=? ORDER BY outcome DESC, createdAt DESC LIMIT 1000`,
       )
       .all(id, id)
       .map((r) => ({
@@ -735,7 +742,8 @@ export class ComputerRuntimeService {
       state:
         row.state === 'committed'
           ? 'reconciled'
-          : row.state === 'not_applied'
+          : row.state === 'not_applied' ||
+              row.state === 'observation_unavailable'
             ? 'failed'
             : 'unknown',
       output: this.output(output),
@@ -744,16 +752,39 @@ export class ComputerRuntimeService {
   private output(raw: unknown) {
     if (!raw || typeof raw !== 'object') return null;
     const r = raw as Record<string, unknown>;
+    const text =
+      typeof r.text === 'string'
+        ? r.text
+        : [r.stdout, r.stderr]
+            .filter((value): value is string => typeof value === 'string')
+            .join('\n');
+    const entries = Array.isArray(r.entries)
+      ? r.entries
+          .flatMap((value) => {
+            if (typeof value === 'string') return [value];
+            const entry = z
+              .object({
+                name: z.string().max(1024),
+                kind: z.enum(['file', 'folder']),
+              })
+              .safeParse(value);
+            return entry.success
+              ? [entry.data.name + (entry.data.kind === 'folder' ? '/' : '')]
+              : [];
+          })
+          .slice(0, 1000)
+      : undefined;
     return {
-      ...(typeof r.text === 'string' ? { text: r.text.slice(0, 100000) } : {}),
+      ...([r.text, r.stdout, r.stderr].some(
+        (value) => typeof value === 'string',
+      )
+        ? { text: text.slice(0, 100000) }
+        : {}),
       ...(typeof r.summary === 'string'
         ? { summary: r.summary.slice(0, 2000) }
         : {}),
       ...(typeof r.exitCode === 'number' ? { exitCode: r.exitCode } : {}),
-      ...(Array.isArray(r.entries) &&
-      r.entries.every((v) => typeof v === 'string')
-        ? { entries: r.entries.slice(0, 1000) }
-        : {}),
+      ...(entries ? { entries } : {}),
     };
   }
   async ownerAction(id: string, raw: unknown, owner: ComputerOwner) {
@@ -929,9 +960,9 @@ export class ComputerRuntimeService {
         );
         this.acknowledgeChange(change, state, owner.assertCurrent);
         this.setOwner(input.operationId, 'committed', null);
-      } else if (action === 'snapshot') {
+      } else if (ownerObservation.safeParse(action).success) {
         const result = await this.effects.ownerObserve(
-          'snapshot',
+          ownerObservation.parse(action),
           data,
           actor,
           owner.assertCurrent,
@@ -1017,7 +1048,11 @@ export class ComputerRuntimeService {
         this.setOwner(input.operationId, result.state, result.result);
       }
     } catch {
-      /* No response is not evidence of remote nonapplication. */
+      // A failed read has no write outcome to reconcile. Keep the existing
+      // snapshot fence; never treat failure as a successful observation.
+      if (ownerObservation.safeParse(action).success)
+        this.setOwner(input.operationId, 'observation_unavailable', null);
+      /* For writes, no response is not evidence of remote nonapplication. */
     }
     return this.ownerView(
       this.ownerRow(input.operationId)!,
@@ -1078,6 +1113,20 @@ export class ComputerRuntimeService {
     this.assertOwnerRow(row, owner.assertCurrent);
     const actor = this.ownerActor(owner);
     if (row.state === 'unknown') {
+      // Older versions admitted observations as unknown. Retain write-path
+      // recovery when such a row has a core write admission; otherwise report
+      // the unavailable read without replaying it or claiming a snapshot.
+      if (
+        ownerObservation.safeParse(row.action).success &&
+        !this.db
+          .prepare(
+            'SELECT 1 FROM runtime_computer_owner_actions WHERE operationId=?',
+          )
+          .get(id)
+      ) {
+        this.setOwner(id, 'observation_unavailable', null);
+        return this.ownerView(this.ownerRow(id)!, owner.assertCurrent);
+      }
       try {
         if (['start', 'stop', 'emergency_stop'].includes(String(row.action)))
           return this.ownerView(row, owner.assertCurrent);

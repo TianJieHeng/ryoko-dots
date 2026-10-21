@@ -179,7 +179,10 @@ export class CommandService {
   }
   private async bind(id: string, auth: Guard): Promise<Live> {
     const original = this.current(id, auth);
-    for (let attempt = 0; attempt < 60; attempt++) {
+    // Agent construction includes cold imports and scoped MCP discovery. Keep
+    // polling the same binding (never submit work) for a bounded minute.
+    const deadline = Date.now() + 60000;
+    while (Date.now() < deadline) {
       const bound = await this.transport.call('runtime.conversation.bind', {
         schema_version: 1,
         conversation_id: id,
@@ -234,7 +237,7 @@ export class CommandService {
         this.live.set(id, live);
         return live;
       }
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       if (this.closed) throw new ConversationError('Runtime is stopping.', 503);
     }
     throw new ConversationError(
@@ -333,7 +336,11 @@ export class CommandService {
       messageId: recovery?.accepted_input?.message_id ?? null,
       reason:
         status === 'outcome_unknown'
-          ? 'Original outcome is unknown; inspection never resubmits work.'
+          ? record.result &&
+            JSON.parse(record.result).reason ===
+              'This message exceeded its start deadline. Check message details before sending again.'
+            ? 'This message exceeded its start deadline. Check message details before sending again.'
+            : 'Original outcome is unknown; inspection never resubmits work.'
           : status === 'cancel_requested'
             ? 'Cancellation was requested. Provider acknowledgment and external effects remain separate.'
             : status === 'rejected'
@@ -423,7 +430,7 @@ export class CommandService {
           intent.operation === 'submit' ? null : intent.expectedRevision,
         operation: intent.operation,
         ...(intent.operation === 'submit'
-          ? {}
+          ? { new_user_turn: true }
           : { target_run_id: intent.runId }),
         payload: JSON.parse(admitted.record.payload),
       });
@@ -439,6 +446,15 @@ export class CommandService {
       this.guardRecord(admitted.record, auth);
       return result;
     } catch (error) {
+      console.warn(
+        JSON.stringify({
+          event: 'command_dispatch_unconfirmed',
+          dispatched,
+          kind: error instanceof RuntimeFailure ? error.kind : 'internal',
+          code: error instanceof RuntimeFailure ? error.code : undefined,
+          reason: error instanceof RuntimeFailure ? error.reason : undefined,
+        }),
+      );
       if (!settled) {
         if (!dispatched) {
           const rejected = this.receipt(admitted.record, scope, {
@@ -458,7 +474,13 @@ export class CommandService {
       if (error instanceof ConversationError) throw error;
       // A JSON-RPC error can occur after durable admission (for example a queue wake failure).
       // Only an explicit validated rejection receipt proves non-acceptance.
-      return this.receipt(admitted.record, scope);
+      const uncertain = this.receipt(admitted.record, scope);
+      if (error instanceof RuntimeFailure && error.reason === 'queue_expired') {
+        uncertain.reason =
+          'This message exceeded its start deadline. Check message details before sending again.';
+        this.ledger.settle(operationId, 'outcome_unknown', uncertain);
+      }
+      return uncertain;
     }
   }
   async list(id: string, cursor: string | undefined, auth: Guard) {

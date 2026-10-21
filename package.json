@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "concurrently -k \"node --env-file-if-exists=.env scripts/start-self-hosted.mjs --development\" \"vite\"",
-    "build": "vite build && tsc -p tsconfig.server.json",
+    "build": "vite build && tsc -p tsconfig.server.json && tsc -p tsconfig.computer.json",
     "start": "node --env-file-if-exists=.env scripts/start-self-hosted.mjs",
     "browser": "node --env-file-if-exists=.env --import tsx src/browser/index.ts",
     "browser:start": "node --env-file-if-exists=.env dist/server/browser/index.js",

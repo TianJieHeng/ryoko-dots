@@ -694,6 +694,7 @@ test('authenticated single command ingress: duplicates never dispatch, lost resp
           session_id: conversationId,
         };
       if (method === 'runtime.command') {
+        expect(params.new_user_turn).toBe(true);
         executions++;
         const receipt = {
           schema_version: 1,

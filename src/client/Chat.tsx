@@ -4,6 +4,8 @@ import {
   mayClearSubmittedDraft,
 } from './runtime/drafts';
 import { canUse } from '../shared/runtime/contracts';
+import { ApiError } from './api';
+import { chatProgress, pendingChatMessages } from './runtime/chat-presentation';
 import { ConversationOrigins } from './runtime/ChannelsPanel';
 import { useVoice } from './useVoice';
 import { CallView } from './CallView';
@@ -17,7 +19,6 @@ import { runtimeAction } from './runtime/actions';
 import { useCommands } from './runtime/use-commands';
 import {
   commandIsAdmitted,
-  hasCommittedInput,
   controllableRuns,
   type RecoveredCommand,
 } from './runtime/command-recovery';
@@ -88,6 +89,11 @@ export function Chat({
     canStartRealtime(media.data, runtime.setup.scope);
   const [draft, setDraft] = useState(initialPrompt ?? '');
   const [source, setSource] = useState('');
+  const [sending, setSending] = useState<{
+    key: string;
+    text: string;
+    startedAt: number;
+  } | null>(null);
   const draftGeneration = useRef(0);
   const editSource = (value: string) => {
     draftGeneration.current++;
@@ -107,6 +113,7 @@ export function Chat({
   const [error, setError] = useState('');
   const [connectedKey, setConnectedKey] = useState('');
   const connecting = useRef(false);
+  const connectionBlocked = useRef(false);
   const contextGeneration = useRef(0);
   const [steerRun, setSteerRun] = useState('');
   const commands = useCommands(thread.id, runtime);
@@ -141,7 +148,8 @@ export function Chat({
   useEffect(() => {
     contextGeneration.current++;
     connecting.current = false;
-    setConnectedKey('');
+    connectionBlocked.current = false;
+    setConnectedKey((key) => (key === scopeKey ? key : ''));
     setBusy(false);
     setSteerRun('');
     setError('');
@@ -164,8 +172,10 @@ export function Chat({
         setDraft(saved?.text ?? '');
         setSource(saved?.source ?? '');
         setSourceOpen(!!saved?.source);
-      } else if (initialPrompt) {
-        storeDraft(draftKey, initialPrompt, '');
+      } else if (draft || source) {
+        // Text can be entered while the initial agent scope is still loading.
+        // Persist that draft as soon as its verified storage key is available.
+        storeDraft(draftKey, draft, source);
       }
     } catch {
       setError(
@@ -195,10 +205,12 @@ export function Chat({
     setBusy(true);
     setError('');
     try {
-      const setup = await runtime.connect(thread.id);
+      const setup = await runtime.connect(thread.id, (verified) => {
+        if (valid() && canUse(verified, 'commands'))
+          setConnectedKey(JSON.stringify([verified.scope, thread.id]));
+      });
       if (!valid()) return;
-      if (canUse(setup, 'commands')) setConnectedKey(scopeKey);
-      else
+      if (!canUse(setup, 'commands'))
         setError(
           setup.features.commands.reason ||
             'This runtime is not ready to execute commands.',
@@ -207,12 +219,15 @@ export function Chat({
       commands.resumeInspection();
       await history.reload();
     } catch (cause) {
-      if (valid())
+      if (valid()) {
+        connectionBlocked.current =
+          cause instanceof ApiError && [401, 403, 404].includes(cause.status);
         setError(
           cause instanceof Error
             ? cause.message
             : 'Runtime connection could not be verified.',
         );
+      }
     } finally {
       if (valid()) {
         connecting.current = false;
@@ -220,6 +235,50 @@ export function Chat({
       }
     }
   };
+  // Opening the selected chat is enough to connect. Retry only connection
+  // setup; accepted messages and uncertain operations are never resubmitted.
+  const automaticConnection = useRef({
+    connect,
+    runtime,
+    connected,
+    busy,
+    liveError,
+  });
+  automaticConnection.current = {
+    connect,
+    runtime,
+    connected,
+    busy,
+    liveError,
+  };
+  useEffect(() => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const maintain = async () => {
+      const current = automaticConnection.current;
+      if (!active) return;
+      if (!current.busy && !connecting.current && !connectionBlocked.current) {
+        if (current.liveError && current.connected) {
+          setConnectedKey('');
+          current.runtime.reload();
+        } else if (!current.connected) {
+          if (
+            current.runtime.setup?.scope &&
+            current.runtime.available('conversations')
+          )
+            await current.connect();
+          else if (['disconnected', 'degraded'].includes(current.runtime.state))
+            current.runtime.reload();
+        }
+      }
+      if (active) timer = setTimeout(() => void maintain(), 5000);
+    };
+    void maintain();
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [scopeKey]);
   const runs = controllableRuns(commands.records);
   const selectedRun = runs.find((record) => record.receipt?.runId === steerRun);
   const send = async (text: string) => {
@@ -232,6 +291,7 @@ export function Chat({
       return;
     }
     const submittedDraftGeneration = draftGeneration.current;
+    setSending({ key: scopeKey, text, startedAt: Date.now() });
     setError('');
     const next = await commands.submit(
       selectedRun?.receipt?.runId
@@ -249,7 +309,9 @@ export function Chat({
             sourceUrl: source.trim() || null,
           },
     );
-    if (!mounted.current || activeScope.current !== scopeKey || !next) return;
+    if (!mounted.current || activeScope.current !== scopeKey) return;
+    setSending(null);
+    if (!next) return;
     if (commandIsAdmitted(next)) {
       if (
         mayClearSubmittedDraft(
@@ -292,6 +354,18 @@ export function Chat({
     });
   };
   const bottom = useRef<HTMLDivElement>(null);
+  const canonicalMessages = history.history?.messages ?? [];
+  const pendingMessages = pendingChatMessages(
+    commands.records,
+    canonicalMessages,
+  );
+  const currentSending = sending?.key === scopeKey ? sending : null;
+  const progress = chatProgress(
+    commands.records,
+    canonicalMessages,
+    dot.name,
+    !!currentSending,
+  );
   const messages: Message[] = (history.history?.messages ?? [])
     .filter((message) => !message.internal)
     .map((message) => ({
@@ -302,9 +376,31 @@ export function Chat({
         .map((part) => part.text)
         .join('\n'),
     }));
+  for (const record of pendingMessages) {
+    if (record.pending.intent.operation !== 'cancel')
+      messages.push({
+        id: `pending:${record.pending.operationId}`,
+        role: 'user',
+        content: record.pending.intent.text,
+      });
+  }
+  if (
+    currentSending &&
+    !commands.records.some(
+      (record) =>
+        record.pending.createdAt >= currentSending.startedAt &&
+        record.pending.intent.operation !== 'cancel' &&
+        record.pending.intent.text === currentSending.text,
+    )
+  )
+    messages.push({
+      id: 'sending',
+      role: 'user',
+      content: currentSending.text,
+    });
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: 'instant', block: 'end' });
-  }, [messages.length]);
+  }, [messages.length, progress?.text]);
   return (
     <div className="live-chat">
       <header className="chat-persona">
@@ -312,14 +408,16 @@ export function Chat({
           identity={dot.id}
           name={dot.name}
           small
-          state={paused ? 'paused' : 'idle'}
+          state={paused ? 'paused' : progress?.thinking ? 'thinking' : 'idle'}
         />
         <div>
           <strong>{dot.name}</strong>
           <span>
-            {history.loading
+            {history.loading && !history.history
               ? 'Loading saved conversation…'
-              : 'Canonical conversation history'}
+              : connected
+                ? 'Connected'
+                : 'Connecting…'}
           </span>
         </div>
         <div className="chat-persona-actions">
@@ -465,9 +563,7 @@ export function Chat({
                       </strong>
                       <p>{part.summary}</p>
                       {part.name.startsWith('computer_') && onComputer && (
-                        <button onClick={onComputer}>
-                          Open scoped computer
-                        </button>
+                        <button onClick={onComputer}>Open computer</button>
                       )}
                     </div>
                   ) : part.kind === 'source' ? (
@@ -494,10 +590,26 @@ export function Chat({
             disabled={history.loading || history.limitReached}
             onClick={() => void history.loadMore()}
           >
-            {history.loading
+            {history.loading && !history.history
               ? 'Loading more conversation…'
               : 'Load more conversation'}
           </button>
+        )}
+        {progress && (
+          <div
+            className={`chat-progress${progress.thinking ? ' thinking' : ''}`}
+            role="status"
+            aria-live="polite"
+          >
+            {progress.thinking && (
+              <span className="thinking-dots" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+            )}
+            <span>{progress.text}</span>
+          </div>
         )}
         <div ref={bottom} />
       </div>
@@ -529,86 +641,55 @@ export function Chat({
         dot={dot}
         voice={voice}
       />
-      <div className="notice" role="status">
-        {connected
-          ? 'Runtime execution is connected for this conversation.'
-          : 'Saved history is available separately from runtime execution. Connect intentionally to send or control work.'}
-        <button
-          type="button"
-          disabled={busy || !scope || !runtime.available('conversations')}
-          onClick={() => void connect()}
-        >
-          {localBusy
-            ? 'Connecting runtime…'
-            : connected
-              ? 'Reconnect runtime'
-              : 'Connect runtime'}
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => {
-            runtime.reload();
-            void commands.refreshRecovery();
-            commands.resumeInspection();
-            void history.reload();
-          }}
-        >
-          Refresh saved state
-        </button>
-      </div>
-      {commands.records.map((record) => {
-        const receipt = record.receipt;
-        const linked = hasCommittedInput(
-          record,
-          history.history?.messages ?? [],
-        );
-        return (
-          <div className="notice" key={record.pending.operationId}>
-            <p role="status">
-              {record.pending.intent.operation} ·{' '}
-              {receipt?.executionStatus ??
-                receipt?.status ??
-                'admission unknown'}
-              {receipt?.runId ? ` · Run ${receipt.runId}` : ''}
-            </p>
-            {commandIsAdmitted(receipt) &&
-              !linked &&
-              record.pending.intent.operation !== 'cancel' && (
-                <p>
-                  Accepted input, awaiting committed transcript:{' '}
-                  {record.pending.intent.text}
-                </p>
-              )}
-            {receipt?.reason && <small>{receipt.reason}</small>}
+      {!connected && !error && (
+        <p className="chat-compose-note" role="status">
+          Connecting to {dot.name}…
+        </p>
+      )}
+      {error && (
+        <div className="chat-error" role="alert">
+          {error}
+        </div>
+      )}
+      {(commands.records.length > 0 || commands.error || liveError) && (
+        <details className="chat-message-details">
+          <summary>Message details</summary>
+          {(commands.error || liveError) && (
+            <p>{commands.error || liveError}</p>
+          )}
+          {commands.records.map((record) => (
+            <div className="notice" key={record.pending.operationId}>
+              <p>
+                {record.pending.intent.operation} ·{' '}
+                {record.receipt?.executionStatus ??
+                  record.receipt?.status ??
+                  'Checking delivery'}
+              </p>
+              <small>Message ID: {record.pending.operationId}</small>
+              {record.receipt?.reason && <p>{record.receipt.reason}</p>}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  const result = await commands.inspect(record.pending);
+                  if (result) await history.reload();
+                  commands.resumeInspection();
+                }}
+              >
+                Check message status
+              </button>
+            </div>
+          ))}
+          {commands.recoveryCursor && (
             <button
               type="button"
               disabled={busy}
-              onClick={async () => {
-                const result = await commands.inspect(record.pending);
-                if (result) await history.reload();
-                commands.resumeInspection();
-              }}
+              onClick={() => void commands.recoverMore()}
             >
-              Inspect {record.pending.intent.operation}{' '}
-              {record.pending.operationId}
+              Load older message details
             </button>
-          </div>
-        );
-      })}
-      {commands.recoveryCursor && (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void commands.recoverMore()}
-        >
-          Load more saved commands
-        </button>
-      )}
-      {(error || commands.error || liveError) && (
-        <div className="chat-error" role="alert">
-          {error || commands.error || liveError}
-        </div>
+          )}
+        </details>
       )}
       {history.history?.pageContext && (
         <div className="page-chat-context">
@@ -629,19 +710,19 @@ export function Chat({
       >
         {runs.length > 0 && (
           <label className="chat-compose-note">
-            Message target
+            Send as
             <select
               value={steerRun}
               onChange={(event) => setSteerRun(event.target.value)}
               disabled={busy || !connected}
             >
               <option value="">New message</option>
-              {runs.map((record) => (
+              {runs.map((record, index) => (
                 <option
                   key={record.receipt!.runId}
                   value={record.receipt!.runId!}
                 >
-                  Steer run {record.receipt!.runId}
+                  Update ongoing reply{runs.length > 1 ? ` ${index + 1}` : ''}
                 </option>
               ))}
             </select>
@@ -702,8 +783,8 @@ export function Chat({
               key={record.receipt!.runId}
               type="button"
               className="icon-button"
-              aria-label={`Request cancellation of run ${record.receipt!.runId}`}
-              title={`Cancel run ${record.receipt!.runId}; closing this view only detaches`}
+              aria-label="Stop response"
+              title="Stop this response"
               disabled={
                 busy ||
                 !connected ||
@@ -725,13 +806,13 @@ export function Chat({
           </button>
         </div>
         <div className="chat-compose-note">
-          {busy
-            ? 'Waiting for a durable receipt…'
-            : !contextReady
-              ? 'Waiting for authoritative conversation context.'
-              : !connected
-                ? 'Connect runtime to send. Your draft stays here.'
-                : 'Closing this view detaches. Accepted work continues.'}
+          {!connected
+            ? `Connecting to ${dot.name}. Your draft stays here.`
+            : currentSending
+              ? 'Sending…'
+              : !contextReady
+                ? 'Loading conversation…'
+                : 'Enter to send · Shift+Enter for a new line'}
         </div>
       </form>
     </div>

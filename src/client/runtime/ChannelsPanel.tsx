@@ -31,9 +31,7 @@ export function ConversationOrigins({
     'slack',
   );
   if (!provenance.data || provenance.data.conversationId !== conversationId)
-    return provenance.error ? (
-      <p className="notice">Conversation provenance is unavailable.</p>
-    ) : null;
+    return null;
   return (
     <section className="page-chat-context" aria-label="Conversation origin">
       {provenance.data.origins.map((origin, index) => (

@@ -41,7 +41,7 @@ export function connectionState(setup: RuntimeSetup): ConnectionState {
   return 'ready';
 }
 
-/** Explicit user action only. Reading setup/history never initializes execution. */
+/** Bind the selected chat through authenticated POST; history reads stay read-only. */
 export async function connectConversation(
   conversationId: string,
   scope: RuntimeScope,

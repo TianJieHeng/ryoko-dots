@@ -131,9 +131,7 @@ export function App() {
       <main className="unlock">
         <Mascot />
         <h1>Your own little corner.</h1>
-        <p>
-          Enter the owner access token configured on this template’s server.
-        </p>
+        <p>Enter your password to open Ryoko Dots.</p>
         <form
           onSubmit={async (event) => {
             event.preventDefault();
@@ -150,7 +148,7 @@ export function App() {
               setError(
                 cause instanceof Error
                   ? cause.message
-                  : 'Access token was not accepted.',
+                  : 'Password was not accepted.',
               );
             } finally {
               pending.current = false;
@@ -160,15 +158,17 @@ export function App() {
         >
           <input
             type="password"
-            aria-label="Owner access token"
-            autoComplete="off"
+            aria-label="Password"
+            name="password"
+            placeholder="Password"
+            autoComplete="current-password"
             value={auth}
             disabled={busy}
             onChange={(event) => setAuth(event.target.value)}
             required
           />
           <button className="primary" disabled={busy}>
-            {busy ? 'Please wait…' : 'Unlock OpenDots'}
+            {busy ? 'Please wait…' : 'Sign in'}
           </button>
         </form>
         {error && (
@@ -183,10 +183,7 @@ export function App() {
             )}
           </>
         )}
-        <p className="muted">
-          The server keeps your session in an HttpOnly cookie. OpenDots does not
-          save your access token in browser storage.
-        </p>
+        <p className="muted">Your private workspace with Ryoko.</p>
       </main>
     );
   return (

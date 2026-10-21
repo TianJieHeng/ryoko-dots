@@ -163,6 +163,7 @@ export interface RuntimeCommandParams {
   expected_revision: number | null
   operation: 'submit' | 'steer' | 'cancel' | 'approval'
   target_run_id?: string
+  new_user_turn?: boolean
   payload: RuntimeTextPayload | RuntimeCancelPayload | RuntimeApprovalPayload
 }
 export interface RuntimeTextPayload {
@@ -677,7 +678,7 @@ export interface RuntimeEventEnvelope {
   delivery_id: string | null
   approval_id: string | null
   occurred_at: number
-  type: 'command.accepted' | 'command.claimed' | 'command.completed' | 'command.failed' | 'command.blocked' | 'command.cancelled' | 'checkpoint.published' | 'runtime.output' | 'runtime.state' | 'approval.requested' | 'approval.resolved' | 'effect.recorded' | 'model.started' | 'model.completed' | 'model.failed' | 'tool.started' | 'tool.completed' | 'tool.failed' | 'decision.observed' | 'decision.outcome' | 'decision.tool_plan' | 'decision.policy' | 'decision.planner_miss' | 'operations.repair_started' | 'operations.repair_finished' | 'operations.deletion_requested' | 'operations.deletion_finished'
+  type: 'command.accepted' | 'command.claimed' | 'command.completed' | 'command.failed' | 'command.blocked' | 'command.cancelled' | 'checkpoint.published' | 'runtime.output' | 'runtime.state' | 'approval.requested' | 'approval.resolved' | 'effect.recorded' | 'model.started' | 'model.completed' | 'model.failed' | 'tool.started' | 'tool.completed' | 'tool.failed' | 'decision.observed' | 'decision.outcome' | 'decision.tool_plan' | 'decision.policy' | 'decision.planner_miss' | 'decision.bundle' | 'operations.repair_started' | 'operations.repair_finished' | 'operations.deletion_requested' | 'operations.deletion_finished'
   payload: RuntimeEventPayload
 }
 export interface RuntimeEventPayload {
@@ -685,6 +686,7 @@ export interface RuntimeEventPayload {
   decision_outcome?: DecisionOutcomeLabel | null
   decision_tool_plan?: DecisionToolPlan | null
   decision_policy?: DecisionPolicyRecord | null
+  decision_bundle?: DecisionBundleRecord | null
   decision_planner_miss?: DecisionPlannerMiss | null
   command_id?: string | null
   operation?: 'submit' | 'steer' | 'cancel' | 'approval' | 'artifact' | null
@@ -724,7 +726,7 @@ export interface DecisionReceipt {
   selected: string | null
   unclear: boolean
   actual_route: 'incumbent' | 'advisory' | 'qualified_recommendation'
-  fallback: 'off' | 'privacy_not_qualified' | 'private_transport_unqualified' | 'private_destination_authorization_required' | 'point_gate_required' | 'durable_receipt_required' | 'transport_unconfigured' | 'deadline_exceeded' | 'node_capacity' | 'node_unavailable' | 'node_http_error' | 'circuit_open' | 'invalid_response_schema' | 'response_binding_mismatch' | 'bundle_mismatch' | 'invalid_distribution_options' | 'invalid_probability' | 'invalid_distribution_sum' | 'invalid_selection' | 'invalid_unclear' | 'selection_not_argmax' | 'invalid_latency' | 'unclear' | 'below_threshold' | 'shadow_observation' | 'receipt_unavailable' | null
+  fallback: 'off' | 'privacy_not_qualified' | 'private_transport_unqualified' | 'private_destination_authorization_required' | 'point_gate_required' | 'durable_receipt_required' | 'transport_unconfigured' | 'deadline_exceeded' | 'node_capacity' | 'node_unavailable' | 'node_http_error' | 'circuit_open' | 'invalid_response_schema' | 'response_binding_mismatch' | 'bundle_mismatch' | 'invalid_distribution_options' | 'invalid_probability' | 'invalid_distribution_sum' | 'invalid_selection' | 'invalid_unclear' | 'selection_not_argmax' | 'invalid_latency' | 'unclear' | 'below_threshold' | 'shadow_observation' | 'receipt_unavailable' | 'remote_completion_unknown' | 'native_batch_required' | 'batch_admission_key_required' | 'invalid_batch_usage' | 'planner_fence_failed' | null
   incumbent: string
   latency_ms: number
   node_latency_ms: number | null
@@ -751,11 +753,30 @@ export interface DecisionToolPlan {
   fallback: string | null
   decision_receipt_ids: string[]
   elapsed_ms: number
+  protocol_version?: 1 | 2
+  metrics?: DecisionPlannerMetrics
+  context_digest?: string | null
+  renderer_version?: 'dp16-systemone-v1' | null
+  context_redactions?: number
+  context_omissions?: number
+  authorization_status?: 'not_attempted' | 'privacy_blocked' | 'transport_attempted'
+}
+export interface DecisionPlannerMetrics {
+  batch_count?: number
+  question_count?: number
+  inference_ms?: number
+  receipt_ms?: number
+  admission_ms?: number
+  input_tokens?: number
+  output_tokens?: number
+  remote_unknown?: boolean
 }
 export interface DecisionPolicyRecord {
   kind: 'point_policy'
   operation: 'observer' | 'promote' | 'rollback'
   point_id: string
+  contract_version?: 1 | 2 | null
+  binding_digests?: Record<string, unknown> | null
   policy_digest: string
   scope_digest: string
   mode?: 'off' | 'shadow' | 'advisory' | 'enforce' | null
@@ -775,6 +796,18 @@ export interface DecisionReleaseBundle {
   model_digest: string
   calibration_digest: string
   service_digest: string
+}
+export interface DecisionBundleRecord {
+  schema_version: 1
+  context_id: string
+  boundary: 'new_context' | 'compression'
+  scope_digest: string
+  catalog_version: string
+  prefix_digest: string
+  plan_bundle_id: string | null
+  receipt_ids: string[]
+  turn_id: string
+  generation: number
 }
 export interface DecisionPlannerMiss {
   kind: 'planner_miss'

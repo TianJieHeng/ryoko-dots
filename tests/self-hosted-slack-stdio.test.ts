@@ -443,5 +443,6 @@ test.runIf(
       else rmSync(root, { recursive: true, force: true });
     }
   },
-  60000,
+  // Allow cold producer startup, agent construction and restart recovery.
+  180000,
 );

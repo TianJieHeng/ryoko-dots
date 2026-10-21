@@ -1,0 +1,18 @@
+[Unit]
+Description=Ryoko native computer supervisor and sandboxed browser
+After=network.target
+PartOf=ryoko-dots.service
+
+[Service]
+Type=simple
+# Replace these paths for the workstation installation.
+WorkingDirectory=/home/ryoko/Desktop/rdots/ryoko-dots
+ExecStart=/home/ryoko/.local/bin/node --env-file=/home/ryoko/.config/ryoko-dots/computer.env scripts/local-computer-supervisor.mjs
+Restart=on-failure
+RestartSec=3
+KillMode=control-group
+TimeoutStopSec=15
+UMask=0077
+
+[Install]
+WantedBy=default.target

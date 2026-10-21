@@ -56,6 +56,20 @@ function fixture(
   return { auth, app, login, origin };
 }
 describe('single-owner cookie sessions', () => {
+  it('accepts a configured password, rejects a wrong password, and issues a protected session', async () => {
+    const password = 'test-pass-1';
+    const f = fixture({ ownerToken: password });
+    expect((await f.login('wrong-pass-1')).response.status).toBe(401);
+    const session = await f.login(password);
+    expect(session.response.status).toBe(200);
+    expect(session.response.headers.get('set-cookie')).toContain('HttpOnly');
+    expect(
+      (await f.app.request('/api/private', { headers: session.headers }))
+        .status,
+    ).toBe(200);
+    expect(JSON.stringify(session.data)).not.toContain(password);
+  });
+
   it('has no owner-token bearer bypass, does not disclose secrets, and sets secure cookie policy', async () => {
     const f = fixture({ origin: 'https://dots.example' });
     expect(
@@ -287,7 +301,7 @@ describe('single-owner cookie sessions', () => {
     expect((await f.login()).response.status).toBe(503);
     expect((await f.app.request('/api/auth/session')).status).toBe(503);
     expect(() => fixture({ origin: 'http://dots.example' })).toThrow('HTTPS');
-    expect(() => fixture({ ownerToken: 'weak' })).toThrow('24');
+    expect(() => fixture({ ownerToken: 'weak' })).toThrow('8 to 4096');
   });
   it('fences a delayed read after session revocation', async () => {
     const f = fixture();

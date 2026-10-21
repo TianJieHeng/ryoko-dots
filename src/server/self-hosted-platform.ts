@@ -1,4 +1,5 @@
 import { RuntimeVoiceService } from './runtime/voice-service.js';
+import { chatInputText } from './runtime/chat-input.js';
 import { OpenAIRealtimeMedia, type VoiceMedia } from './runtime/voice-media.js';
 import {
   ComputerRuntimeService,
@@ -1012,7 +1013,18 @@ export class SelfHostedPlatform {
         revision: 0,
         commandId: message.command_id,
         role: message.role,
-        parts: [{ kind: 'text', text: message.text }],
+        parts: [
+          {
+            kind: 'text',
+            text: chatInputText(
+              id,
+              message,
+              message.command_id
+                ? this.commands?.ledger.get(message.command_id)
+                : undefined,
+            ),
+          },
+        ],
         internal: false,
         committed: true,
         chunk: {
@@ -1036,8 +1048,7 @@ export class SelfHostedPlatform {
       sessionSequence: state?.sequence ?? 0,
       runtimeCursor: state?.cursor ?? null,
       truncated: false,
-      interruption:
-        'Safe committed text only. Private tool details and uncommitted provider output are omitted; accepted input appears only after canonical commit.',
+      interruption: null,
     });
   }
   async *export(id: string, auth: Guard, signal: AbortSignal) {

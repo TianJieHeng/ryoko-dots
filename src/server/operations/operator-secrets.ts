@@ -37,7 +37,7 @@ export function ownerTokenFromEnvironment(
     )
       throw new Error('Unsafe owner token file.');
     const token = readFileSync(fd, 'utf8').replace(/\r?\n$/, '');
-    if (token.length < 24 || token.length > 4096 || /[\r\n\0]/.test(token))
+    if (token.length < 8 || token.length > 4096 || /[\r\n\0]/.test(token))
       throw new Error('Invalid owner token file.');
     return token;
   } finally {

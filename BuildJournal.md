@@ -613,3 +613,202 @@ Actual Chromium/backend journey passed: anonymous readiness denied, owner login,
 Installed/enabled ryoko-dots.service under ~/.config/systemd/user using the reviewed deployment/dots-local.service.example, exact Node executable, private .env and supervised launcher, KillMode=control-group and 40s stop timeout. Service is active/running and liveness returns true. systemd unit verification passed. It starts with the user's session; lingering remains disabled, so unattended pre-login boot is not claimed. Operational controls, file paths, token location and limitations are documented in docs/local-startup.md and linked from README.
 
 Phase 4 complete. Phases 5–7 remain deferred by the owner's instruction to install/connect the custom agent later. The supplied agent remains clean at a5ca09642c95d98702b3b21d004fe2551d4857ab; its schema differences and Codex OAuth/profile adapter requirements are documented for handoff. Real runtime browser acceptance (including eight failed historical synthetic cases), optional services, paired recovery and production cutover are not complete. No CI, external message or Git push performed. Each completed phase has its own local commit and journal entry.
+
+
+## 2026-10-21 — Local Ryoko ChatGPT-backed chat
+
+Installed a PM-built Python 3.14 environment in the clean `dots-runtime` worktree
+under the supplied `/home/ryoko/Desktop/rhermes` folder. Existing `hermes` CLI and
+active `ryoko` profile retained; original checkout's banner edit preserved. Dots
+now uses that existing profile and its read-only Codex CLI OAuth credential path.
+The private launch JSON pins reviewed YAML/dotenv hashes. No credentials are
+committed or copied to Dots, and no root installation was necessary.
+
+Reviewed producer `a2ba75b2304a48fbdc106b252ead23d60a3a4c98` against the old pin:
+RPC method/callback definitions unchanged; decision-event/schema additions only.
+Regenerated exact consumer contracts and retained source/hash validation. Added
+explicit owner-profile enrollment, extended cold handshake/agent-build deadlines,
+and preserved the browser's verified connection through authority enrollment.
+The canonical primary display name is now Ryoko.
+
+Live browser evidence: owner login, existing profile connection, one text request,
+completed real `gpt-6-astra`/`openai-codex` reply, fresh browser login and history
+reload. Producer logged one model request and zero tool turns. Conversation:
+`20261021_125650_849947`; command operation:
+`2a41fe9c-ca69-473a-9aec-de5ecab30bb6`. Reply: “I can hear you, Botwin. Your Dots
+message came through.” Screenshots are local ignored artifacts.
+
+Validation: typecheck, lint, frontend/server builds, production boundary, production
+boot smoke, canonical conversation and command integration cases, and 33 focused
+runtime regressions passed. Initial old-deadline runs failed at cold startup and
+agent initialization; reruns passed after fixing those deadlines. The executable
+`run.sh` starts/reuses the installed user service, opens the UI and exposes service
+controls. All work and checks were local; CI remains disabled. See
+`docs/local-startup.md` for paths and remaining optional integrations.
+
+
+Follow-up verification: the saved real reply survived a full supervised service
+restart and explicit browser reconnect. Repeated successful QA logins reached the
+existing ten-attempt login throttle; stopped the service and cleared only the
+QA-generated `browser_login_rate` row under the canonical lifetime gate, then
+restarted. Owner credentials, browser-session records and conversations were not
+changed by this reset. Integration test ceilings were adjusted to accommodate the
+new bounded cold-start/agent-build deadlines; the voice fixture now waits for its
+actual first provider invocation instead of assuming it begins within five seconds.
+
+
+Final local results: all 16 stdio integration cases passed across the assembled
+run and focused reruns (the delivery rerun passed 1/1; controls, conversations,
+Slack and voice rerun passed 7/7 after correcting test deadlines). This includes
+synthetic optional-service fixtures, not activation of those services. The 33
+focused runtime regressions, typecheck, lint, repository format check, build,
+production boundary and boot smoke passed. The final browser check confirmed
+explicit reconnect after service restart and the unchanged saved real reply.
+The service remains active, and `./run.sh` opened the workstation UI.
+
+### Password sign-in (2026-10-21)
+
+Changed the login screen to a password field with password-manager support and
+Sign in wording. Owner credentials now accept 8–4096 characters while preserving
+cookie, CSRF, and rate-limit protections. Rotated the local private credential to
+`owner-password`, restarted the service, and verified browser sign-in opens the
+workspace. The old token returned 401 and its obsolete file was removed. No
+credential value is stored in the repository. Local auth/operations tests passed
+(21 tests), and the production build passed.
+
+### Local native computer installation (2026-10-21)
+
+The Computer button failed because the launch profile had no nativeComputer
+binding or computer service. Installed a single-Dot loopback supervisor using the
+existing signed edge and durable control protocol, with a persistent Playwright
+browser/workspace and bubblewrap shell. Added the standalone target to the normal
+build and a user-service template. The installed computer service follows Dots
+start/stop/restart. Ubuntu AppArmor now permits namespaces for the exact installed
+Chromium executables and bubblewrap; browser sandboxing stays enabled.
+
+Actual host checks exercised all 16 driver actions, public navigation, browser
+refs/click/type, PNG capture, workspace reads/writes/listing, shell isolation and
+timeout, symlink refusal, and private-address refusal. Saved a private report and
+matching target fingerprint before enabling the adapter. Enrolled the existing
+Ryoko profile's computer grants, backed up both databases/profile, and retained
+prior immutable session snapshots while enrolling a new configuration head and
+refreshing the same-owner directory authority. A new conversation successfully
+used the real model to read `computer-check.txt` and capture the browser snapshot.
+
+The real UI test also exposed owner file reads being sent through the write
+protocol. Routed all owner observations through the existing observation path,
+with regression coverage for file reads/listing and page reads. Workspace writes
+and terminal commands now obtain a fresh observed snapshot before admission,
+matching the target fence even when the Browser tab is not open. An earlier
+rejected test read was reconciled from its exact target nonapplication receipt;
+no unknown outcome was manually cleared or retried.
+
+Restart/UI qualification additionally found live screenshot polling colliding
+with explicit observations. The HTTP edge now serializes screen/observe/execute
+primitives while safety controls bypass the queue. Status polling preserves the
+last verified liveness until the response arrives, avoiding false cancellation
+of in-flight actions. Failed observations are recorded as observation_unavailable
+and shown as failed reads; they never clear the snapshot fence or claim remote
+write nonapplication. Historical read-only admissions can be inspected into that
+state without replay; actual write admissions still require exact target proof.
+Regression tests cover queue ordering, safety bypass, polling failure, and read
+failure recovery. The owner result adapter now exposes bounded terminal output
+and real target directory entries in the existing frontend result schema.
+
+Final verification passed after a full Dots/computer service restart: the live
+Computer panel showed Running, browser navigation completed, the Files tab read
+the real workspace file, and Terminal displayed `computer-terminal-ready` with
+exit code 0. The saved real Ryoko response confirms agent-side file observation
+and browser snapshot access. Local build, typecheck, focused lint/format, and
+regressions passed (71 core/governed tests before the final three added cases;
+38 coordinator tests passed in the final focused run). Both user services remain
+active. No CI was used.
+
+### Automatic chat connection (2026-10-21)
+
+Opening a selected chat now connects its agent automatically. Connection-only
+maintenance retries temporary failures every five seconds and rebinds after live
+updates fail; authentication/authority denials stop automatic admission. Existing
+scope/generation fences remain in place, and no message or uncertain operation is
+resubmitted. Removed the Connect/Reconnect runtime buttons and manual-connection
+instructions. Text entered before initial scope discovery is persisted when its
+verified draft key becomes available. Updated launcher and startup documentation.
+
+Local connection/authentication/draft tests passed (13 tests); production and
+frontend builds, focused lint, and formatting passed. Real browser checks passed
+for automatic initial binding, a forced 503 followed by successful retry, reopening
+chat after reload with its draft intact, and recovery from interrupted event
+requests. The checks witnessed zero command submissions. The updated application
+is installed and both Dots and its computer service remain active.
+
+## 2026-10-21 — Chat feedback and clean transcript display
+
+Display the user's original submitted text by matching each committed UTF-8
+source chunk against immutable ingress, hiding only context appended by Dots.
+Keep source offsets, cursors, and the agent's complete input unchanged. Literal
+context markers typed by the user are retained. Pending user bubbles appear
+immediately and are replaced by committed input; delivery, thinking, cancellation,
+and failure states use plain language. Raw operation receipts and identifiers
+are available in collapsed Message details instead of filling the conversation.
+
+Live checks also found that the pinned Hermes producer retains the first run's
+budget ceiling across subsequent messages in a conversation. Its queue deadline
+caps that ceiling at five minutes, after which submit returns queue_expired.
+Preserve this execution fence and uncertain-operation recovery; do not reset
+budgets or resubmit messages. Add a clear expired-session message directing the
+owner to New chat and restricted diagnostic codes without message contents.
+
+Validation: production build, final TypeScript check, focused ESLint, chat-input,
+chat-presentation, command recovery, history chunk, RPC, and command inspection
+checks passed (one pre-existing command test skipped). A real fresh chat showed
+Sending, then received/thinking feedback, then Ryoko's committed reply, “I’m
+here. Your message came through.” The source database confirmed one accepted
+command for that test chat. Internal context and raw receipts were absent from
+the visible conversation; the thinking indicator cleared on completion. An
+initial browser request-count assertion used the wrong URL matcher; corrected
+the test harness and verified the actual command count from the runtime store.
+Reopening the saved chat also passed the browser checks. Visual review found an
+older composer label using general inspection activity as “Sending”; changed it
+to actual submission state and kept the header stable during background history
+refresh. The final frontend build and focused lint passed.
+
+## 2026-10-21 — Remove five-minute chat expiration
+
+The previous expiry warning exposed a producer bug: every later chat message
+inherited the first run's budget, whose deadline had been capped by a queue TTL.
+Implemented an explicit owner-user-turn marker in Hermes's typed command wire,
+immutable command record, admission deadline, and budget-account creation.
+New owner messages receive separate task budgets within the same conversation.
+Queue start deadlines remain enforced; original budgets and automatic/child
+inheritance are preserved, and duplicate commands cannot renew their accounts.
+Dots supplies the marker only on authenticated new-message submits.
+
+Installed local producer commit a4dc372345eb4a4780f2e4301b2a474c73bc00b0 in the
+pinned runtime and fast-forwarded the source checkout, preserving the owner's
+unrelated banner edit. Regenerated the contract and reviewed/re-pinned both
+contract subsets and producer checks. Existing conversations need no migration.
+
+Validation: the regression reproduced on the old producer. Both new behavioral
+tests pass (expired-session follow-up with a real agent/store, original-account
+preservation and idempotency; owned A→B→A RPC admission and child rejection).
+Existing budget-store, RPC, and generated-contract checks passed. The broad
+agent-budget test file hit the runner time limit; the five relevant inherited
+budget, child, configuration, and crash/retry tests were rerun and passed.
+Dots command/recovery checks passed (10 tests, one existing opt-in integration
+skip), as did production build, TypeScript, and focused lint. No CI was used.
+
+Live verification reopened the existing “testing this. you there” conversation
+with its first budget already expired. A new message completed and Ryoko replied:
+“Still here, Botwin. I can answer in this chat.” SQLite inspection verified that
+the old expired account remains intact, the new command has its own root budget,
+its deadline is the configured 3,600 seconds from acceptance, and the independent
+queue start TTL remains 300 seconds. Both user services are active.
+
+## 2026-10-21 — Phased desktop build: phase 0
+
+Captured the existing installed Ryoko work and phased implementation plan as the
+baseline. Inspected production entry points, identity bindings, authenticated
+routes, and the three supplied design specifications. Added baseline/migration
+notes. Existing primary identity and history are preserved. The owner explicitly
+requested testing only at the end, so baseline/recovery checks are pending.
+Subagent configuration remains deferred; monitoring is in scope. No CI.

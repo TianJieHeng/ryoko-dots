@@ -61,9 +61,9 @@ export class OwnerAuth {
       throw new Error('A bounded owner identity is required.');
     if (
       options.ownerToken !== undefined &&
-      (options.ownerToken.length < 24 || options.ownerToken.length > 4096)
+      (options.ownerToken.length < 8 || options.ownerToken.length > 4096)
     )
-      throw new Error('OWNER_TOKEN must contain 24 to 4096 characters.');
+      throw new Error('Owner password must contain 8 to 4096 characters.');
     this.origin = origin.origin;
     this.cookieName =
       origin.protocol === 'https:' ? '__Host-dots-session' : 'dots-session';
@@ -265,9 +265,9 @@ export class OwnerAuth {
           await c.req.json().catch(() => null),
         );
         if (!body.success)
-          return c.json({ error: 'Provide only an owner access token.' }, 400);
+          return c.json({ error: 'Provide your password.' }, 400);
         if (!equal(body.data.ownerToken, this.options.ownerToken!))
-          return c.json({ error: 'Owner access token was not accepted.' }, 401);
+          return c.json({ error: 'Password was not accepted.' }, 401);
         const previous = this.session(c);
         const token = secret();
         const csrfToken = secret();
@@ -318,10 +318,7 @@ export class OwnerAuth {
       const session = this.session(c);
       if (!session) {
         // A late 401 must not erase a newer login cookie set by another response.
-        return c.json(
-          { error: 'Enter your owner access token to unlock Dots.' },
-          401,
-        );
+        return c.json({ error: 'Enter your password to sign in.' }, 401);
       }
       if (
         mutation &&

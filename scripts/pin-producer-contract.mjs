@@ -18,9 +18,9 @@ const raw = readFileSync(
 );
 if (
   hash(source) !==
-    '19fdf11f4aa587d7bcdd58927c0cdbbdec463cfdeaa90003e0ac6284266539d2' ||
+    '38a8129a5d98bf222b8871cfa73683e123018b20ba0c534135b476eb6cebc54e' ||
   hash(raw) !==
-    'fa7b08c3edd56190daadeef533928685113fd70a2ae8959b2fb7b61aee5051b2'
+    '1086c496bd3180bd69de90c82f63a6aefebeba3f20150e468f39b3a9a602b902'
 )
   throw new Error('Producer pin changed; explicit review required.');
 const rpc = JSON.parse(raw);
@@ -165,7 +165,7 @@ writeFileSync(
     JSON.stringify(
       {
         repository: 'TianJieHeng/ryoko-agent',
-        commit: '98b9eeb7d2afc02d0e0393fea285f010000a0378',
+        commit: 'a4dc372345eb4a4780f2e4301b2a474c73bc00b0',
         typescriptSha256: hash(source),
         openrpcSha256: hash(raw),
         methods: names,

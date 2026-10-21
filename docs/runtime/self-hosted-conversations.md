@@ -33,7 +33,38 @@ The original BE02 passive profile restriction was: `config.yaml` must contain JS
 
 The launcher uses an absolute Python interpreter, fixed `-u -m tui_gateway.entry`, no shell, an isolated HOME/profile/runtime directory, fixed PATH and a small explicit environment. It does not inherit API keys, owner tokens, Python injection variables or provider settings. Diagnostics are drained without retention or forwarding. The exact Git HEAD, staged/unstaged tracked-tree cleanliness (including hidden index flags), configuration and both generated-schema hashes are checked before spawning; profile bytes are rechecked before each call. The configured checkout/Python/profile are trusted owner inputs, not a sandbox for arbitrary code. Git uses a fixed `/usr/bin/git` executable without a shell; this check is not cryptographic attestation of the Python environment, untracked dependencies, or entire host. Target-host filesystem/process isolation remains a separate deployment gate.
 
-Exact producer pin: `98b9eeb7d2afc02d0e0393fea285f010000a0378`; TypeScript `19fdf11f4aa587d7bcdd58927c0cdbbdec463cfdeaa90003e0ac6284266539d2`; OpenRPC `fa7b08c3edd56190daadeef533928685113fd70a2ae8959b2fb7b61aee5051b2`. `scripts/pin-producer-contract.mjs` extracts the transitive exact schemas/types. The three-method read-only adapter remains separately allowlisted. The BE03 allowlist adds explicit canonical bind, durable command submission, canonical receipt inspection and bounded runtime journal reads. Conversation storage and history remain independent of agent construction.
+Exact producer pin: `a4dc372345eb4a4780f2e4301b2a474c73bc00b0`; TypeScript `38a8129a5d98bf222b8871cfa73683e123018b20ba0c534135b476eb6cebc54e`; OpenRPC `1086c496bd3180bd69de90c82f63a6aefebeba3f20150e468f39b3a9a602b902`. `scripts/pin-producer-contract.mjs` extracts the transitive exact schemas/types. The three-method read-only adapter remains separately allowlisted. The BE03 allowlist adds explicit canonical bind, durable command submission, canonical receipt inspection and bounded runtime journal reads. Conversation storage and history remain independent of agent construction.
+
+## Existing owner-managed ChatGPT profile
+
+The local workstation uses the existing Ryoko profile instead of creating a second
+persona. Its private launch JSON adds:
+
+```json
+{
+  "reviewedProfile": {
+    "configSha256": "<SHA-256 of the reviewed config.yaml bytes>",
+    "dotenvSha256": "<SHA-256 of the reviewed .env bytes, or empty bytes if absent>",
+    "codexHome": "/absolute/existing/codex-home"
+  }
+}
+```
+
+This explicit enrollment accepts the existing profile's additional configuration
+only when both hashes match. The model must be `provider: openai-codex` with an
+explicit `default`, and `codex_auth_source` must be `codex_cli`. The profile's
+principal/profile/primary-agent identity and returned policy/configuration digests
+must still match. `providerEnvironment` is forbidden in this mode. No credentials
+are inherited from the backend process or copied to a new store. The producer
+uses its existing read-only Codex credential resolver; an expired login requires
+renewing the Codex login before reconnecting.
+
+Review integrations, secret sources and identity policy before computing these
+hashes. Changes require re-enrollment and restart; the launcher does not silently
+approve new profile bytes. The owner-managed interpreter, profile code, skills and
+configured secret loader remain trusted local code. This mode does not claim the
+minimal profile's isolation or independently qualify optional Dots integrations.
+See [local startup](../local-startup.md) for the installed profile and validation.
 
 ## Browser routes
 
@@ -66,3 +97,14 @@ npm run test:runtime-stdio
 ```
 
 The test creates temporary owner/profile/runtime databases, launches the actual producer entrypoint through Node pipes, checks identity and schema, creates/lists/reads canonical conversations, exercises metadata CAS and concurrent page reservation, restarts and recovers the original operation. No generic session bind, model/provider invocation, new credentials, production data migration or deployment is requested. Run repository lint/typecheck/format/test/build against the final assembled changes. Actual browser interaction and target-host/live-provider qualification remain distinct gates.
+
+### Explicit user turns keep conversations usable after idle
+
+Dots marks each newly submitted user message with `new_user_turn: true` in the
+owner-authenticated producer command. Hermes stores that marker with the command
+and creates an independent task budget in the same conversation. The queue's
+five-minute start TTL no longer becomes the chat's lifetime or the execution
+limit for these turns; the accepted profile task policy remains authoritative.
+Steering, cancellation, automatic work, children, and retries do not receive a
+fresh budget. Existing transcripts, prior budget accounting, and command IDs
+remain intact. No data migration or new chat is required for an old conversation.
