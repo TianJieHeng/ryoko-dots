@@ -934,3 +934,15 @@ Final two-worker application suite: **789 passed, 11 skipped** across **110 pass
 8 skipped test files**. The complete rerun passed, including the previously timed
 out audit test. Final installed UI recheck again reopened saved Codex history,
 verified all three theme backgrounds, and reported zero browser exceptions.
+
+## 2026-10-21 — Desktop menu launch repair
+
+The installed launcher used Electron's npm wrapper, whose `/usr/bin/env node`
+shebang failed in the graphical desktop's PATH (Node is installed under the
+owner's local bin directory). Reproduced with PATH=/usr/bin:/bin: exit 127,
+Node not found. Changed installation to execute the actual Electron binary
+directly and retain startup output in a private desktop.log under
+`${XDG_STATE_HOME:-~/.local/state}/ryoko-dots`. Reinstalled the menu launcher.
+Verified a cold launch with PATH=/usr/bin:/bin through the installed wrapper:
+the window loaded http://127.0.0.1:4310/ and reported visible. Formatting and
+ESLint checks passed. Closed the diagnostic launch before reopening normally.

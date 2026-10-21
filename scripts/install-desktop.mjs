@@ -17,7 +17,7 @@ mkdirSync(apps, { recursive: true });
 const quote = (s) => "'" + s.replaceAll("'", "'\\''") + "'";
 writeFileSync(
   resolve(bin, 'ryoko-dots'),
-  `#!/bin/sh\nunset ELECTRON_RUN_AS_NODE\nexec ${quote(resolve(root, 'node_modules/.bin/electron'))} ${quote(resolve(root, 'desktop/main.cjs'))} "$@"\n`,
+  `#!/bin/sh\nunset ELECTRON_RUN_AS_NODE\nlog_dir="\${XDG_STATE_HOME:-$HOME/.local/state}/ryoko-dots"\nmkdir -p "$log_dir"\numask 077\nexec ${quote(resolve(root, 'node_modules/electron/dist/electron'))} ${quote(resolve(root, 'desktop/main.cjs'))} "$@" >>"$log_dir/desktop.log" 2>&1\n`,
 );
 chmodSync(resolve(bin, 'ryoko-dots'), 0o755);
 writeFileSync(
