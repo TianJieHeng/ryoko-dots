@@ -972,3 +972,20 @@ the Make it your own sidebar link. Theme changes still apply immediately and
 persist on the device. Updated desktop documentation. Frontend production build,
 ESLint and formatting checks passed; browser verification checks the Settings
 selector and the removed sidebar elements. No CI used.
+
+## 2026-10-21 — Cross-device harness resume: exact-read prerequisite
+
+Live investigation confirmed all five nonempty canonical Ryoko/Dots chats are
+already mirrored through the existing Hermes outbox, with one remote hub each.
+The existing window reader cannot establish an exact resume timeline. Prepared
+and pushed memory-harness branch `feat/exact-conversation-snapshots` (add86d1):
+source-qualified stable-ID snapshot reads including unsealed turns, visibility
+checks, completeness/revision metadata, explicit size bounds, and an additive
+read-only MCP wrapper. Local verification: 20 conversation API tests, 29 MCP
+tests, and focused snapshot/client typechecks passed. No CI.
+
+Not deployed. The live harness host/deployment access has been requested from
+the owner. Existing Dots, Hermes profile, sync worker and remote histories remain
+unchanged. Hermes snapshot reconciliation/bindings, Dots catalog/resume UI and
+live two-device round-trip validation are still outstanding; this checkpoint
+must not be represented as completed bidirectional resume.
