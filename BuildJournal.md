@@ -878,3 +878,12 @@ Added child inspection in the multi-runtime task panel and owner-only Codex
 approval controls. No subagent configuration, enrollment, or limit was changed.
 Codex child summaries reflect parent-recorded evidence, not a claimed live child
 connection. Fixture/reconnect and visibility checks are pending final validation.
+
+## 2026-10-21 — Phase 7: optional remote access
+
+Documented a private SSH tunnel preserving loopback Host/origin and scoped API
+credentials. No public listener, SSH daemon, remote computer grant, or network
+exposure was enabled. A second-device deployment requires the owner's intended
+host/client setup; local release remains fully independent of that optional
+step. Network scenario validation is pending and will not be claimed as tested
+without an actual second device. No CI.
