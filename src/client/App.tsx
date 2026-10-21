@@ -1,3 +1,4 @@
+import { ThemePicker } from './Themes';
 import { ImportedHistory } from './runtime/ImportedHistory';
 import { archivedHistoryLocation } from '../shared/runtime/legacy-history';
 import { MemoryLearning } from './runtime/MemoryLearning';
@@ -705,6 +706,7 @@ function WorkspaceApp({
           </div>
         )}
         <div className="sidebar-bottom">
+          <ThemePicker />
           <button
             className={`nav-item ${view === 'history' ? 'active' : ''}`}
             onClick={() => {

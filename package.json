@@ -25,7 +25,9 @@
     "test:runtime-stdio": "node scripts/test-runtime-stdio.mjs",
     "check:production-boundary": "node scripts/check-production-boundary.mjs .",
     "test:operations": "python3 -m unittest discover -s tests -p \"test_*.py\"",
-    "test:production-boot": "node scripts/test-production-boot.mjs"
+    "test:production-boot": "node scripts/test-production-boot.mjs",
+    "desktop": "electron desktop/main.cjs",
+    "desktop:install": "node scripts/install-desktop.mjs"
   },
   "keywords": [],
   "author": "Atai Barkai",
@@ -66,6 +68,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "concurrently": "^10.0.5",
+    "electron": "45.0.0",
     "eslint": "^10.11.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "^3.9.9",

@@ -812,3 +812,17 @@ routes, and the three supplied design specifications. Added baseline/migration
 notes. Existing primary identity and history are preserved. The owner explicitly
 requested testing only at the end, so baseline/recovery checks are pending.
 Subagent configuration remains deferred; monitoring is in scope. No CI.
+
+## 2026-10-21 — Phase 1: desktop shell and three themes
+
+Added an Electron shell with isolated sandboxed renderer, single-instance focus,
+service startup, listener identity check, retry screen, external-link handling,
+and explicit permission prompts. Closing the window leaves the service running.
+Added a Linux menu installer and desktop-first run.sh with browser fallback.
+Imported all three source backgrounds and design documents, with persistent
+Neon Relay, Redline Comms, and Blackout Channel selection and distinct chrome.
+Kept automatic connection behavior over the mockups' older manual-connect copy.
+Fixed failed history rendering as a false empty greeting. Installation, visual
+checks, and desktop compatibility tests are deferred to the final phase.
+Owner clarified that every Git checkpoint must also be pushed to origin. CI
+workflows remain disabled; no CI was invoked.

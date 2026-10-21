@@ -83,7 +83,7 @@ export function createSelfHostedApp({
   slack?: SelfHostedSlack;
 }) {
   const app = new Hono();
-  app.get('/health/live', (c) => c.json({ alive: true }));
+  app.get('/health/live', (c) => c.json({ alive: true, application: 'ryoko-dots' }));
   if (operations) {
     app.use('*', async (c, next) => {
       if (!c.req.path.startsWith('/api/') && c.req.path !== '/slack/events')

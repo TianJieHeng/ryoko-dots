@@ -503,7 +503,7 @@ export function Chat({
           <button onClick={() => void history.reload()}>Reload history</button>
         </div>
       )}
-      <div className="chat-transcript">
+      <div className="chat-transcript" data-has-messages={!!history.history?.messages.length}>
         {history.history?.truncated && (
           <p className="notice">
             The server reports that some conversation history is unavailable.
@@ -538,7 +538,7 @@ export function Chat({
         {history.history?.interruption && (
           <p className="notice">{history.history.interruption}</p>
         )}
-        {!messages.length && !history.loading && (
+        {!messages.length && !history.loading && !history.error && history.history && (
           <div className="chat-welcome">
             <span className="eyebrow">A LITTLE SPACE TO THINK</span>
             <h1>What’s on your mind?</h1>

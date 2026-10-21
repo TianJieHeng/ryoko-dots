@@ -30,6 +30,7 @@ HELP
   stop|status) exec systemctl --user "$action" "$unit" ;;
   logs) exec journalctl --user -u "$unit" -n 60 -f ;;
   build) exec npm run build ;;
+  browser) action=start; export DOTS_BROWSER_ONLY=1 ;;
   start|restart) ;;
   *) echo "Unknown action: $action (use ./run.sh help)" >&2; exit 2 ;;
 esac
@@ -80,6 +81,8 @@ if (process.env.OWNER_TOKEN_FILE) {
   console.log('Sign in with your Dots password.');
 }
 JS
-if [[ "${DOTS_NO_BROWSER:-0}" != 1 ]] && command -v xdg-open >/dev/null; then
+if [[ "${DOTS_NO_BROWSER:-0}" != 1 && "${DOTS_BROWSER_ONLY:-0}" != 1 ]] && command -v ryoko-dots >/dev/null; then
+  ryoko-dots >/dev/null 2>&1 &
+elif [[ "${DOTS_NO_BROWSER:-0}" != 1 ]] && command -v xdg-open >/dev/null; then
   xdg-open "$url" >/dev/null 2>&1 &
 fi
