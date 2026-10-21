@@ -101,3 +101,7 @@
 .hub-panel button { min-height:40px; }
 .hub-directory details p { font-size:12px; }
 @media(max-width:900px){.hub-layout{grid-template-columns:1fr;height:auto}.hub-directory{max-height:220px}.hub-chat{height:70vh}.hub-panel{padding:12px}}
+.task-monitor { padding:8px 24px; background:var(--surface); max-height:280px; overflow:auto; flex-shrink:0; }
+.task-monitor summary { cursor:pointer; min-height:28px; }
+.task-monitor article { margin:10px 0; padding:12px; border-left:3px solid var(--accent); background:var(--raised); }
+.task-monitor p { margin:6px 0; }

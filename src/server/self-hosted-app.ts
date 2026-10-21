@@ -1,3 +1,4 @@
+import { hermesChildren } from './hub/hermes-children.js';
 import type { DotHub } from './hub/service.js';
 import type { ApiCredentials } from './hub/credentials.js';
 import { hubRoutes } from './hub/routes.js';
@@ -801,6 +802,11 @@ export function createSelfHostedApp({
         guard(c, platform),
       ),
     );
+  });
+  app.get('/api/runtime/conversations/:id/children', async c => {
+    const current = guard(c, platform);
+    const items = await hermesChildren(platform, id.parse(c.req.param('id')), null, current);
+    current(); return c.json({items});
   });
   app.get('/api/runtime/conversations/:id/history', async (c) => {
     const input = readQuery.parse(query(c));

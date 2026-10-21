@@ -10,6 +10,7 @@ export function HubPanel(){
   const [credentials,setCredentials]=useState<Credential[]>([]),[token,setToken]=useState(''),[name,setName]=useState(''),[write,setWrite]=useState(false),[rename,setRename]=useState('');
   const [moreDots,setMoreDots]=useState<string|null>(null),[moreThreads,setMoreThreads]=useState<string|null>(null),[moreMessages,setMoreMessages]=useState<string|null>(null);
   const [children,setChildren]=useState<Record<string,{supported:boolean;items:ChildRun[]}>>({});
+  const [approvals,setApprovals]=useState<{id:string;description:string}[]>([]);
   const [loaded,setLoaded]=useState(false);
   const active=useRef(''); active.current=thread?.id??'';
   const submitting=useRef(false),scroll=useRef<HTMLDivElement>(null),follow=useRef(true);
@@ -24,8 +25,9 @@ export function HubPanel(){
     const refresh=async()=>{try{
       const list=await api<{items:HubRun[]}>(`/v1/conversations/${id}/runs`);
       const updated=await Promise.all(list.items.map(r=>['completed','failed','cancelled'].includes(r.state)?r:api<HubRun>(`/v1/runs/${r.id}`)));
+      const approvals=await api<{items:{id:string;description:string}[]}>(`/v1/conversations/${id}/approvals`);
       const history=await api<{items:HubMessage[];nextCursor:string|null}>(`/v1/conversations/${id}/messages`);
-      if(current){setRuns(updated);setMessages(old=>{const map=new Map(old.map(m=>[m.id,m]));history.items.forEach(m=>map.set(m.id,m));return [...map.values()];});setMoreMessages(history.nextCursor);setLoaded(true);setError('');}
+      if(current){setApprovals(approvals.items);setRuns(updated);setMessages(old=>{const map=new Map(old.map(m=>[m.id,m]));history.items.forEach(m=>map.set(m.id,m));return [...map.values()];});setMoreMessages(history.nextCursor);setLoaded(true);setError('');}
     }catch(e){if(current)setError(e instanceof Error?e.message:'Could not refresh conversation.');}};
     void refresh();const timer=setInterval(()=>{if(!document.hidden)void refresh();},3000);return()=>{current=false;clearInterval(timer);};
   },[thread]);
@@ -54,6 +56,7 @@ export function HubPanel(){
       {runs.filter(r=>!['completed','failed','cancelled'].includes(r.state)).map(r=><div key={r.id} className="notice" role="status"><p>{r.text}</p><strong>{label(r)}</strong>{r.detail&&<p>{r.detail}</p>}<button disabled={busy} onClick={()=>void action(async()=>{const update=await api<HubRun>(`/v1/runs/${r.id}`);setRuns(old=>old.map(v=>v.id===r.id?update:v));})}>Check status</button>{dot?.capabilities.cancel&&<button disabled={busy} onClick={()=>void action(async()=>{const update=await api<HubRun>(`/v1/runs/${r.id}/cancel`,'POST',{operationId:crypto.randomUUID()});setRuns(old=>old.map(v=>v.id===r.id?update:v));})}>Stop task</button>}</div>)}
       </div>
       {newMessages&&<button onClick={()=>{follow.current=true;scroll.current?.scrollTo({top:scroll.current.scrollHeight});setNewMessages(false);}}>New messages ↓</button>}
+      {thread&&approvals.map(a=><div key={a.id} className="notice" role="alert"><strong>Codex requests approval</strong><pre>{a.description}</pre><button disabled={busy} onClick={()=>void action(async()=>{await api(`/v1/conversations/${thread.id}/approvals/${a.id}`,'POST',{accept:true});setApprovals(old=>old.filter(v=>v.id!==a.id));})}>Approve once</button><button disabled={busy} onClick={()=>void action(async()=>{await api(`/v1/conversations/${thread.id}/approvals/${a.id}`,'POST',{accept:false});setApprovals(old=>old.filter(v=>v.id!==a.id));})}>Decline</button></div>)}
       {thread&&<form className="chat-composer" onSubmit={e=>{e.preventDefault();void send();}}><textarea aria-label={`Message ${dot?.name??'Dot'}`} value={draft} onChange={e=>{setDraft(e.target.value);try{localStorage.setItem('dots.hub.draft.'+thread.id,e.target.value);}catch{/* keep in memory */}} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void send();}} placeholder="Write a message…"/><button disabled={busy||!draft.trim()||dot?.archived||runs.some(r=>!['completed','failed','cancelled'].includes(r.state))}>{busy?'Sending…':'Send message'}</button></form>}
       <details className="hub-activity"><summary>Task activity</summary>{runs.map(r=><div className="notice" key={r.id}><strong>{label(r)}</strong><p>{r.text}</p><time>{new Date(r.createdAt).toLocaleString()}</time><button onClick={()=>void action(async()=>{const result=await api<{supported:boolean;items:ChildRun[]}>(`/v1/runs/${r.id}/children`);setChildren(old=>({...old,[r.id]:result}));})}>Inspect delegated work</button>{children[r.id]&&(!children[r.id].supported?<p>This runtime does not expose child monitoring yet.</p>:children[r.id].items.length?children[r.id].items.map(c=><article key={c.id}><strong>{c.state}</strong><p>{c.task}</p>{c.result&&<p>{c.result}</p>}</article>):<p>No child tasks reported for this run.</p>)}</div>)}</details>
     </div></div>

@@ -867,3 +867,14 @@ its existing supported login home without copying authentication material.
 Other Codex threads are not imported into a Dot. Computer access remains an
 unsupported capability for this backend. Added manifest enrollment. Real model,
 restart, approval, and isolation tests are deferred to final validation.
+
+## 2026-10-21 — Phase 6: read-only delegated-work monitoring
+
+Added a delegated-work panel to existing Ryoko chats, backed by a read-only
+projection of the pinned producer's durable handoff schema. Reads are restricted
+to the verified parent session and principal/profile, with no child transcript or
+memory access. Existing states and last-recorded timestamps remain explicit.
+Added child inspection in the multi-runtime task panel and owner-only Codex
+approval controls. No subagent configuration, enrollment, or limit was changed.
+Codex child summaries reflect parent-recorded evidence, not a claimed live child
+connection. Fixture/reconnect and visibility checks are pending final validation.

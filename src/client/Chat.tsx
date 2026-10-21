@@ -1,3 +1,4 @@
+import { TaskMonitor } from './TaskMonitor';
 import {
   storeDraft,
   restoreDraft,
@@ -403,6 +404,7 @@ export function Chat({
   }, [messages.length, progress?.text]);
   return (
     <div className="live-chat">
+      <TaskMonitor conversationId={thread.id} />
       <header className="chat-persona">
         <Mascot
           identity={dot.id}

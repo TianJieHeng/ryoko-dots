@@ -1,3 +1,4 @@
+import { hermesChildren } from './hermes-children.js';
 import type { RuntimeAdapter, Guard, RunSnapshot } from './adapter.js';
 import type { SelfHostedPlatform } from '../self-hosted-platform.js';
 import { canonicalCommand } from '../runtime/command-ledger.js';
@@ -7,7 +8,7 @@ const snapshot = (r: CommandReceipt): RunSnapshot => ({nativeId:r.runId,state:r.
 export class HermesAdapter implements RuntimeAdapter {
   readonly capabilities;
   constructor(readonly platform: SelfHostedPlatform, readonly dotId: string, private owned=false) {
-    this.capabilities={chat:true,cancel:true,computer:!!platform.nativeComputers,children:false,approvals:false};
+    this.capabilities={chat:true,cancel:true,computer:!!platform.nativeComputers,children:true,approvals:false};
   }
   readiness(){return this.platform.transport?.connected?'ready':'disconnected';}
   async create(id:string,title:string,guard:Guard){const r=await this.platform.create(id,{dotId:this.dotId,title,pageId:null,spaceId:null},guard);return r.conversation.id;}
@@ -21,6 +22,6 @@ export class HermesAdapter implements RuntimeAdapter {
   async submit(id:string,operationId:string,text:string,guard:Guard){return snapshot(await this.command(id,operationId,{operation:'submit',conversationId:id,text,sourceUrl:null},guard));}
   async inspect(_id:string,operationId:string,_runId:string|null,guard:Guard){return snapshot(await this.platform.commands!.inspect(operationId,guard));}
   async cancel(id:string,operationId:string,_runId:string|null,cancelId:string,guard:Guard){const r=await this.platform.commands!.inspect(operationId,guard);if(!r.runId)throw Error('Run identity is not yet known.');await this.command(id,cancelId,{operation:'cancel',conversationId:id,runId:r.runId,expectedRevision:r.durableRevision},guard);return this.inspect(id,operationId,r.runId,guard);}
-  async children(_id:string,_runId:string|null,guard:Guard){guard();return [];}
+  async children(id:string,runId:string|null,guard:Guard){return hermesChildren(this.platform,id,runId,guard); }
   async stop(){if(this.owned)await this.platform.stop();}
 }
