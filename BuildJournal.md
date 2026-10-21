@@ -826,3 +826,12 @@ Fixed failed history rendering as a false empty greeting. Installation, visual
 checks, and desktop compatibility tests are deferred to the final phase.
 Owner clarified that every Git checkpoint must also be pushed to origin. CI
 workflows remain disabled; no CI was invoked.
+
+## 2026-10-21 — Phase 2: public API foundation
+
+Added common public Dot/thread/run/message types and a dedicated hashed,
+expiring, revocable API credential store with explicit Dot scopes and write
+permissions. Documented v1 idempotency, uncertain delivery, and cursor-based
+polling semantics. Browser login remains password based. The runtime adapter and
+routing implementation follows in phase 3; this checkpoint is a foundation, not
+an assertion that the new endpoint is already deployed. Tests deferred.
