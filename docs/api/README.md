@@ -38,3 +38,23 @@ It admits four active API runs globally, one unfinished run per conversation.
 These are conservative configured limits, not measured capacity promises. The
 legacy specialist interface retains its existing contract bounds; it is not
 used as the persistent multi-runtime Dot catalog. No subagent setup is performed.
+
+## Codex adapter
+
+The adapter uses the installed Codex 0.163.0 `app-server --listen stdio://`
+protocol, inspected using `app-server generate-ts`. It initializes the app server,
+starts/resumes persistent threads, starts/interrupts turns, and reads committed
+history. Unknown mutation outcomes are never replayed. Only threads created by
+this Dot are listed or readable through its adapter; other Codex sessions in the
+same credential home are not imported. Login is managed by `codex login` using
+the configured CODEX_HOME. No OAuth token is copied into Dots.
+
+Threads use workspace-write sandboxing and on-request approvals. Command/file
+approval requests are surfaced to the signed-in owner; unsupported interactive
+request types fail explicitly. Computer access is not advertised. Child summaries
+come from the parent's recorded collaboration items and may not be live child
+telemetry. Existing Codex configuration and provider account limits still apply.
+
+Protocol references: https://developers.openai.com/codex/app-server and the
+installed CLI's generated definitions. The app-server protocol is experimental;
+requalify the adapter before upgrading the CLI.

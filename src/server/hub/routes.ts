@@ -1,3 +1,4 @@
+import { CodexAdapter } from './codex.js';
 import { Hono, type Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
@@ -41,6 +42,8 @@ export function hubRoutes(hub:DotHub,credentials:ApiCredentials,auth:OwnerAuth){
   app.get('/runs/:id/events',async c=>{const guard=runGuard(c);await hub.inspect(c.req.param('id'),guard);const n=z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER).parse(c.req.query('cursor')??0);return c.json(hub.events(c.req.param('id'),n));});
   app.get('/runs/:id/children',async c=>c.json(await hub.children(c.req.param('id'),runGuard(c))));
   app.post('/runs/:id/cancel',async c=>{const guard=runGuard(c,true);const input=z.strictObject({operationId:operation}).parse(await c.req.json());return c.json(await hub.cancel(c.req.param('id'),input.operationId,guard));});
+  app.get('/conversations/:id/approvals',c=>{threadGuard(c);const t=hub.thread(c.req.param('id'));const a=hub.adapter(t.dotId);return c.json({items:a instanceof CodexAdapter&&t.nativeId?a.pendingApprovals(t.nativeId):[]});});
+  app.post('/conversations/:id/approvals/:approvalId',async c=>{const guard=threadGuard(c,true);authorize(c,undefined,true,true);const input=z.strictObject({accept:z.boolean()}).parse(await c.req.json());const t=hub.thread(c.req.param('id'));const a=hub.adapter(t.dotId);if(!(a instanceof CodexAdapter)||!t.nativeId)throw new HTTPException(409,{message:'Approvals unavailable.'});a.approve(t.nativeId,c.req.param('approvalId'),input.accept,guard);return c.json({resolved:true});});
   app.get('/credentials',c=>{authorize(c,undefined,false,true);return c.json({items:credentials.list()});});
   app.post('/credentials',async c=>{authorize(c,undefined,true,true);const input=z.strictObject({name:z.string().trim().min(1).max(80),dots:z.array(id).min(1).max(100),write:z.boolean(),lifetimeDays:z.number().int().min(1).max(365)}).parse(await c.req.json());input.dots.forEach(d=>hub.dot(d));return c.json(credentials.create(input.name,input.dots,input.write,input.lifetimeDays),201);});
   app.post('/credentials/:id/revoke',c=>{authorize(c,undefined,true,true);credentials.revoke(c.req.param('id'));return c.json({revoked:true});});

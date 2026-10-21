@@ -856,3 +856,14 @@ Hermes profiles with separate workspace databases and duplicate-home rejection.
 The paginated persistent registry does not repurpose Hermes specialist authority
 or remove its primary constraint. Legacy specialist catalog bounds stay intact.
 Practical concurrency measurement, migration checks, and UI tests are deferred.
+
+## 2026-10-21 — Phase 5: native Codex adapter
+
+Implemented native Codex app-server stdio integration against installed 0.163.0
+protocol definitions and official documentation. Added persistent thread/turn
+mapping, committed history, explicit uncertain-delivery recovery, cancellation,
+workspace-write policy, and owner-reviewed command/file approvals. Codex uses
+its existing supported login home without copying authentication material.
+Other Codex threads are not imported into a Dot. Computer access remains an
+unsupported capability for this backend. Added manifest enrollment. Real model,
+restart, approval, and isolation tests are deferred to final validation.

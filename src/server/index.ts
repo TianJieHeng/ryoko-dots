@@ -1,3 +1,6 @@
+import { CodexAdapter } from './hub/codex.js';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { readRuntimeManifest, enrollHermes } from './hub/config.js';
 import { realpathSync } from 'node:fs';
 import { DotHub } from './hub/service.js';
@@ -94,6 +97,11 @@ const runtimeManifest = readRuntimeManifest(process.env.DOTS_RUNTIMES_PATH);
 const runtimeHomes = new Set(launch ? [realpathSync(launch.home)] : []);
 for (const entry of runtimeManifest.runtimes) {
   if (entry.kind === 'hermes') enrollHermes(hub, entry, database, authConfig.ownerId, runtimeHomes);
+  else {
+    const directory = join(dirname(database), 'runtimes', entry.id);
+    mkdirSync(directory, {recursive:true, mode:0o700});
+    hub.register({id:entry.id, name:entry.name, kind:'codex', runtime:entry.id}, new CodexAdapter(entry, join(directory, 'codex.sqlite')));
+  }
 }
 const slack = createSlackRuntime({
   database,
