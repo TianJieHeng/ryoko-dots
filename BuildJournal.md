@@ -1070,3 +1070,24 @@ units and updated cloudflared ingress validated. Live gateway checks verified
 missing-key 401, foreign-Dot 403, UI/admin 404, scoped conversation reads, and an
 actual message/reply with Ryoko through the gateway. No DNS, tunnel creation,
 Quick Tunnel, external publication or CI. Next: login/approval handoff.
+
+## 2026-10-22 — Cloudflare API tunnel, phase 3: login/approval handoff
+
+Prepared private pending ingress and installed the disabled tunnel unit. Added a
+local-only configuration helper that accepts an approved tunnel UUID, requires
+its matching private credential file, writes mode-0600 config without copying the
+secret, and refuses overwrites. Documented activation, rollback and mobile client
+setup. The real connector config remains absent until tunnel creation is approved.
+User-service lingering is already enabled on this workstation.
+
+Verified the helper against isolated synthetic credentials (valid ingress, no
+secret copy, overwrite refusal and unsafe-permission rejection), checked route
+matching for login/foreign host rejection, and verified formatting/ESLint and no
+mobile key in tracked files. Local gateway is active at 127.0.0.1:4313; the named
+tunnel connector is disabled/inactive. No CI.
+
+Started cloudflared tunnel login and opened the Cloudflare authorization page for
+the owner. Stopping at the requested approval boundary: no tunnel create, DNS route,
+Quick Tunnel or connector start has been performed. Public HTTPS checks remain
+pending owner authorization and activation. Browser callback links, account
+certificates and app/tunnel secrets are not recorded in Git.

@@ -59,3 +59,45 @@ Origin and forwarding headers, bounds request bodies, and refuses HTML responses
 It never proxies arbitrary paths or destinations. The existing per-key API rate
 limit still applies. Cloudflare carries HTTPS to the tunnel; local hops use HTTP
 only over loopback. The machine must be on and online for mobile access.
+
+## Approval handoff and activation
+
+Prepared hostname: `dots.ryoko.okinawa`. Proposed tunnel name: `ryoko-dots-api`.
+Private pending ingress: `~/.config/ryoko-dots/cloudflare/pending-config.yml`.
+The real `config.yml` is intentionally absent until an approved tunnel exists;
+the installed connector unit is disabled and cannot use the placeholder UUID.
+User-service lingering is enabled, so services can run while the desktop is logged
+out; they do not run while this computer is asleep or powered off.
+
+1. Run `cloudflared tunnel login` as the desktop user and use its browser link to
+   log in to Cloudflare and authorize the `ryoko.okinawa` zone. The account
+   certificate stays in `~/.cloudflared/cert.pem` and must never enter Git.
+2. Stop for the owner's explicit approval to create the named tunnel and attach
+   `dots.ryoko.okinawa`. Login itself does not create a tunnel or publish a route.
+3. Only after that approval:
+
+   ```sh
+   cloudflared tunnel create ryoko-dots-api
+   node scripts/prepare-cloudflare-config.mjs <returned-tunnel-uuid>
+   cloudflared tunnel --config "$HOME/.config/ryoko-dots/cloudflare/config.yml" ingress validate
+   cloudflared tunnel --config "$HOME/.config/ryoko-dots/cloudflare/config.yml" ingress rule https://dots.ryoko.okinawa/api/v1/dots
+   cloudflared tunnel --config "$HOME/.config/ryoko-dots/cloudflare/config.yml" ingress rule https://dots.ryoko.okinawa/
+   cloudflared tunnel route dns <returned-tunnel-uuid> dots.ryoko.okinawa
+   systemctl --user enable --now ryoko-dots-tunnel.service
+   ```
+
+   Review existing DNS before adding the route; do not overwrite an unrelated
+   record. The configuration helper requires the matching private credential file
+   and refuses to overwrite an existing config. It does not create tunnels, edit
+   DNS or start services.
+
+4. Verify public HTTPS: `/` and owner/admin paths return 404, an unauthenticated
+   API request fails, the app key sees only Ryoko, and a message completes. Confirm
+   no redirect to a website/login page. Those external checks are **pending** until
+   the owner approves activation.
+
+To close remote access: `systemctl --user disable --now ryoko-dots-tunnel.service`.
+Local Dots continues working. Keep the gateway and backend bound to loopback.
+
+The mobile client connection metadata is prepared with the final HTTPS URL, but
+that URL must not be considered live until the external verification above passes.
