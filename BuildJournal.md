@@ -1101,3 +1101,20 @@ overwrite flags. Enabled and started ryoko-dots-tunnel.service. The existing
 Ryoko-only mobile API key remains in its private mode-0600 file; no duplicate key
 was minted or secret added to Git. UI/login/admin routes remain excluded.
 Public HTTPS message verification is running and will be recorded next. No CI.
+
+## 2026-10-22 — Cloudflare API tunnel, phase 5: public verification and app handoff
+
+Verified through public HTTPS at dots.ryoko.okinawa (not the loopback endpoint):
+website, login and administration paths return 404; missing bearer returns 401;
+a foreign Dot returns 403; the scoped key lists only Ryoko and reads conversations.
+Sent one verification message into the existing verification conversation, polled
+its accepted run to completed, and fetched Ryoko's DOTS_PUBLIC_TUNNEL_OK reply.
+The operation receipt remains in ignored local artifacts. Confirmed the tunnel
+service is enabled/active and Cloudflare reports four connected edge sessions.
+
+Created the owner-requested ~/Desktop/dots_apispecs.md with the live app secret,
+URL, Dot ID, expiry/scope, route/request/response contracts, pagination, safe retry
+and resume rules, browser-origin constraints, and a Python client example. The
+file is mode 0600 and outside Git; only this handoff description is committed.
+Validated the example's Python syntax without sending another message. Scanned
+tracked repository files for the live key; none contain it. No CI.

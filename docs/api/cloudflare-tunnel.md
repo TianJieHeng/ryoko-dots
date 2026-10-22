@@ -1,6 +1,8 @@
 # Ryoko mobile API tunnel
 
-Target API base: `https://dots.ryoko.okinawa/api/v1`.
+Live API base: `https://dots.ryoko.okinawa/api/v1`.
+Public HTTPS verified on 2026-10-22: scoped authentication, blocked UI/admin
+routes, and a completed Ryoko message/reply. The connector is enabled on boot.
 This is an API-only tunnel to the existing local Ryoko instance. No website is
 uploaded or hosted. The local Dots UI, owner login, credential administration,
 computer endpoints and non-v1 routes are excluded.
