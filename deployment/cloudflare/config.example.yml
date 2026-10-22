@@ -1,0 +1,15 @@
+# Prepared only. Replace UUID and credential path after owner-approved creation.
+# This publishes an API route only, never the Dots website or owner login.
+tunnel: 00000000-0000-0000-0000-000000000000
+credentials-file: /home/ryoko/.cloudflared/00000000-0000-0000-0000-000000000000.json
+metrics: 127.0.0.1:49312
+loglevel: info
+
+ingress:
+  - hostname: dots.ryoko.okinawa
+    path: ^/api/v1/.*$
+    service: http://127.0.0.1:4311
+    originRequest:
+      httpHostHeader: dots.ryoko.okinawa
+      connectTimeout: 10s
+  - service: http_status:404

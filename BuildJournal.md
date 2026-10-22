@@ -1036,3 +1036,16 @@ upload worker confirmed both new turns as sent to the original remote session
 and the same hub; delivered outbox payloads were scrubbed normally. The old local
 execution remained archived, with one current remote binding. Private screenshot
 and verification receipts are under ignored `artifacts/local-build/`.
+
+## 2026-10-22 — Cloudflare API tunnel, phase 1: installation and boundary
+
+Installed cloudflared 2026.10.3 on this workstation using Cloudflare's signed APT
+repository. Prepared a named-tunnel ingress example for dots.ryoko.okinawa:
+only /api/v1/ reaches a separate loopback gateway on port 4311; all other paths
+and hostnames return 404. Added a disabled-by-default user-service template and
+private credential ignore rules. Existing browser origin/login stays local.
+
+Validated the ingress configuration and checked API/root route matching with the
+installed cloudflared. No account login, tunnel creation, DNS changes, Quick
+Tunnel or external publication occurred. Next: gateway and scoped mobile key.
+No CI. Package/setup references are recorded in docs/api/cloudflare-tunnel.md.

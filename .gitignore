@@ -22,3 +22,9 @@ data/
 # Python operational fixture caches
 __pycache__/
 *.py[cod]
+
+# Cloudflare account certificates, tunnel credentials and mobile app keys stay private.
+.cloudflared/
+cloudflare-private/
+*.pem
+mobile-api-key*
