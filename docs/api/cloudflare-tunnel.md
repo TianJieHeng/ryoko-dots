@@ -29,7 +29,7 @@ Cloudflare installation and setup references:
 - `ryoko-dots.service`: existing UI/backend, loopback port 4310.
 - `ryoko-dots-api-edge.service`: enabled API-only gateway, loopback port 4313.
   Port 4311 belongs to an existing local component and is not used for this tunnel.
-- `ryoko-dots-tunnel.service`: installed but **disabled**, pending approval.
+- `ryoko-dots-tunnel.service`: **enabled and active**, following owner approval.
 - Gateway config: `~/.config/ryoko-dots/api-edge.json`.
 - App secret: `~/.config/ryoko-dots/mobile-api-key` (mode 0600).
 - App connection metadata: `~/.config/ryoko-dots/mobile-api-client.json` (0600).
@@ -60,12 +60,13 @@ It never proxies arbitrary paths or destinations. The existing per-key API rate
 limit still applies. Cloudflare carries HTTPS to the tunnel; local hops use HTTP
 only over loopback. The machine must be on and online for mobile access.
 
-## Approval handoff and activation
+## Activation and recovery
 
 Prepared hostname: `dots.ryoko.okinawa`. Proposed tunnel name: `ryoko-dots-api`.
-Private pending ingress: `~/.config/ryoko-dots/cloudflare/pending-config.yml`.
-The real `config.yml` is intentionally absent until an approved tunnel exists;
-the installed connector unit is disabled and cannot use the placeholder UUID.
+Active private ingress: `~/.config/ryoko-dots/cloudflare/config.yml`.
+The owner approved activation on 2026-10-22. The named tunnel and hostname route
+are created, and the connector is enabled. The steps below document initial setup;
+do not recreate an existing tunnel or rotate its credentials during recovery.
 User-service lingering is enabled, so services can run while the desktop is logged
 out; they do not run while this computer is asleep or powered off.
 
@@ -93,11 +94,10 @@ out; they do not run while this computer is asleep or powered off.
 
 4. Verify public HTTPS: `/` and owner/admin paths return 404, an unauthenticated
    API request fails, the app key sees only Ryoko, and a message completes. Confirm
-   no redirect to a website/login page. Those external checks are **pending** until
-   the owner approves activation.
+   no redirect to a website/login page. Record the external check results in BuildJournal.md after activation.
 
 To close remote access: `systemctl --user disable --now ryoko-dots-tunnel.service`.
 Local Dots continues working. Keep the gateway and backend bound to loopback.
 
-The mobile client connection metadata is prepared with the final HTTPS URL, but
-that URL must not be considered live until the external verification above passes.
+The mobile client connection metadata uses the final HTTPS URL. The connector
+starts automatically through the enabled user service when this machine boots.

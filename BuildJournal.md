@@ -1091,3 +1091,13 @@ the owner. Stopping at the requested approval boundary: no tunnel create, DNS ro
 Quick Tunnel or connector start has been performed. Public HTTPS checks remain
 pending owner authorization and activation. Browser callback links, account
 certificates and app/tunnel secrets are not recorded in Git.
+
+## 2026-10-22 — Cloudflare API tunnel, phase 4: approved activation
+
+Owner completed Cloudflare login and explicitly authorized tunnel creation,
+activation and public message testing. Created the named ryoko-dots-api tunnel,
+prepared its private ingress, validated it, and added dots.ryoko.okinawa without
+overwrite flags. Enabled and started ryoko-dots-tunnel.service. The existing
+Ryoko-only mobile API key remains in its private mode-0600 file; no duplicate key
+was minted or secret added to Git. UI/login/admin routes remain excluded.
+Public HTTPS message verification is running and will be recorded next. No CI.
