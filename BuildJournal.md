@@ -1049,3 +1049,24 @@ Validated the ingress configuration and checked API/root route matching with the
 installed cloudflared. No account login, tunnel creation, DNS changes, Quick
 Tunnel or external publication occurred. Next: gateway and scoped mobile key.
 No CI. Package/setup references are recorded in docs/api/cloudflare-tunnel.md.
+
+## 2026-10-22 — Cloudflare API tunnel, phase 2: app gateway and credential
+
+Implemented and installed the API-only loopback gateway. Final port is 4313:
+4311, initially proposed in phase 1, was already occupied by an existing local
+component and was left untouched. The gateway allowlists chat v1 methods/routes,
+requires a bearer app key, strips browser cookies/Origin/forwarded authority,
+rewrites only to the fixed local backend, bounds bodies, blocks HTML and supports
+explicit optional CORS origins. Website, login, administration and non-v1 routes
+are blocked. Existing Dots password/origin configuration was not changed.
+
+Provisioned one 365-day read/write app credential scoped only to Ryoko via the
+existing local owner-authenticated API. Secret and connection metadata live in
+mode-0600 files under ~/.config/ryoko-dots, outside Git; no key value was printed.
+Enabled only ryoko-dots-api-edge.service. The tunnel service remains disabled.
+
+Validation: 7 gateway tests passed, focused ESLint/formatting passed, systemd
+units and updated cloudflared ingress validated. Live gateway checks verified
+missing-key 401, foreign-Dot 403, UI/admin 404, scoped conversation reads, and an
+actual message/reply with Ryoko through the gateway. No DNS, tunnel creation,
+Quick Tunnel, external publication or CI. Next: login/approval handoff.

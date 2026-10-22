@@ -1,0 +1,19 @@
+[Unit]
+Description=Ryoko Dots API-only loopback gateway
+After=ryoko-dots.service
+Requires=ryoko-dots.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ryoko/Desktop/rdots/ryoko-dots
+Environment=DOTS_API_EDGE_CONFIG=%h/.config/ryoko-dots/api-edge.json
+ExecStart=%h/.local/bin/node scripts/dots-api-edge.mjs
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

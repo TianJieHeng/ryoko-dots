@@ -1,0 +1,6 @@
+{
+  "upstream": "http://127.0.0.1:4310",
+  "hostname": "dots.ryoko.okinawa",
+  "port": 4313,
+  "allowedOrigins": []
+}
