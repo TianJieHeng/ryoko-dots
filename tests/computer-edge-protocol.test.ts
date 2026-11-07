@@ -457,3 +457,26 @@ it('returns persisted proof after a real loopback HTTP response is lost without 
     await new Promise<void>((r) => server.close(() => r()));
   }
 });
+it('uses the approval window for shell commands while retaining short visual freshness', async () => {
+  const f = await fixture();
+  f.store.save({ ...f.store.state(), snapshotAt: Date.now() - 30000 });
+  const shell = f.command('approved-shell', owner);
+  shell.action = 'exec';
+  shell.input = { command: 'pwd', timeoutMs: 1000 };
+  const result = await f.call('/edge/execute', shell, 'owner');
+  expect(result.body.state).toBe('committed');
+  await f.snapshot();
+  f.store.save({ ...f.store.state(), snapshotAt: Date.now() - 30000 });
+  expect(
+    (await f.call('/edge/execute', f.command('old-file', owner), 'owner')).body
+      .state,
+  ).toBe('not_applied');
+  await f.snapshot();
+  f.store.save({ ...f.store.state(), snapshotAt: Date.now() - 300001 });
+  const expired = f.command('expired-shell', owner);
+  expired.action = 'exec';
+  expired.input = { command: 'pwd', timeoutMs: 1000 };
+  expect((await f.call('/edge/execute', expired, 'owner')).body.state).toBe(
+    'not_applied',
+  );
+});

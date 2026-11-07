@@ -580,6 +580,44 @@ export class ComputerRuntimeService {
       )
       .run(result.state, JSON.stringify(result), row.operationId);
   }
+  async inspectEffect(conversationId: string, effectId: string, auth: Guard) {
+    const b = this.bound(conversationId, auth, 'read');
+    const proof = await this.transport.call('runtime.effect.get', {
+      schema_version: 1,
+      session_id: b.binding.liveSessionId,
+      effect_id: effectId,
+    });
+    this.fence(b, auth, 'read');
+    if (
+      proof.effect.effect_id !== effectId ||
+      proof.effect.operation_type !== 'dots_computer_action'
+    )
+      throw new ConversationError(
+        'Not a computer effect in this conversation.',
+        403,
+      );
+    const result = await this.transport.call('runtime.dots.effect.reconcile', {
+      schema_version: 1,
+      session_id: b.binding.liveSessionId,
+      effect_id: effectId,
+    });
+    this.fence(b, auth, 'read');
+    if (
+      result.effect_id !== effectId ||
+      result.operation_id !== proof.effect.operation_id ||
+      (result.receipt &&
+        (result.receipt.identity.adapter_id !==
+          this.effects.binding.executorId ||
+          result.receipt.identity.adapter_kind !== 'computer' ||
+          result.receipt.identity.runtime_session_id !==
+            b.scope.durableSessionId ||
+          result.receipt.identity.principal_id !== b.scope.principalId ||
+          result.receipt.identity.profile_id !== b.scope.profileId ||
+          result.receipt.identity.agent_id !== b.scope.agentId))
+    )
+      throw new ConversationError('Computer receipt scope mismatch.', 403);
+    return result;
+  }
   async inspectNative(
     conversationId: string,
     operationId: string,

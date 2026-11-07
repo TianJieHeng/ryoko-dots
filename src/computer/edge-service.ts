@@ -139,7 +139,8 @@ export class ComputerEdgeService {
           state.snapshotSha256 !== f.snapshotSha256 ||
           state.snapshotAt === null ||
           state.snapshotAt > this.now() ||
-          this.now() - state.snapshotAt > 15000))
+          this.now() - state.snapshotAt >
+            (request.action === 'exec' ? 300000 : 15000)))
     )
       throw new Fenced('Target dispatch fenced.');
     if (

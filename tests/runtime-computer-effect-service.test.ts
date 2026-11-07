@@ -451,7 +451,11 @@ it('requires fresh snapshot exact digest and control revision before every mutat
     'stale_snapshot',
   );
   await f.snapshot();
-  const r = f.request({ id: 'fresh' });
+  const r = f.request({
+    id: 'fresh',
+    action: 'files_write',
+    input: { path: 'test.txt', contents: 'test', append: false },
+  });
   f.advance(15001);
   expect((await f.service.dispatch(r, f.peer)).reason).toBe('stale_snapshot');
   await f.snapshot();
@@ -861,4 +865,29 @@ it('owner GET recovery is authenticated, scoped and read-only, with result integ
     'integrity',
   );
   expect(f.edge.execute).toHaveBeenCalledTimes(1);
+});
+
+it('allows shell approval latency but expires it and preserves control fences', async () => {
+  const f = fixture();
+  await f.snapshot();
+  f.advance(20000);
+  const input = { command: 'pwd', timeoutMs: 1000 };
+  expect(
+    (
+      await f.service.dispatch(
+        f.request({ id: 'shell-delay', action: 'exec', input }),
+        f.peer,
+      )
+    ).state,
+  ).toBe('committed');
+  await f.snapshot();
+  f.advance(300001);
+  expect(
+    (
+      await f.service.dispatch(
+        f.request({ id: 'shell-expired', action: 'exec', input }),
+        f.peer,
+      )
+    ).reason,
+  ).toBe('stale_snapshot');
 });

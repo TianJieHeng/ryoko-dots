@@ -81,6 +81,8 @@ export class HermesAdapter implements RuntimeAdapter {
     const commands = this.platform.commands;
     if (!commands) throw Error('Hermes commands unavailable.');
     await commands.connect(id, guard);
+    await this.platform.identities?.connected(id, guard);
+    await this.platform.nativePages?.connect(id, guard);
     const scope = this.platform.workspace.runtimeBindings.resolveConversation(
       id,
       'write',

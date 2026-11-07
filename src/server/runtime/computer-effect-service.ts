@@ -1,3 +1,4 @@
+import { ComputerTargetRejected } from './computer-http-edge.js';
 import { initializeOperationRegistry } from './operation-registry.js';
 import {
   edgeProofRequest,
@@ -704,7 +705,10 @@ export class ComputerEffectService {
       f.snapshotId !== proposal.snapshot_id ||
       f.snapshotSha256 !== proposal.snapshot_sha256 ||
       f.snapshotAt === null ||
-      this.now() - f.snapshotAt > 15000 ||
+      // Shell commands do not target visual coordinates. Allow the bounded
+      // approval window while retaining exact snapshot and control fences.
+      this.now() - f.snapshotAt >
+        (proposal.action === 'exec' ? 300000 : 15000) ||
       f.snapshotAt > this.now()
     )
       return 'stale_snapshot';
@@ -925,7 +929,20 @@ export class ComputerEffectService {
         });
         return receipt;
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof ComputerTargetRejected) {
+        // The HTTP edge already verified the operation, actor and exact bytes.
+        return this.tx(() =>
+          this.finish(
+            identity,
+            error.receipt.reason === 'busy'
+              ? 'conflict'
+              : error.receipt.reason === 'unavailable'
+                ? 'unavailable'
+                : 'grant_revoked',
+          ),
+        );
+      }
       if (!sent && denied) return this.tx(() => this.finish(identity, denied!));
       // An exception, timeout, lost response, malformed result or post-send revoke
       // is never proof of non-application. Durable admission remains inspect-only.

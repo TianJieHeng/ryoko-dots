@@ -621,6 +621,17 @@ export function createSelfHostedApp({
       ),
     ),
   );
+  app.get(
+    '/api/runtime/conversations/:id/computer-effects/:effectId',
+    async (c) =>
+      c.json(
+        await computers().inspectEffect(
+          id.parse(c.req.param('id')),
+          id.parse(c.req.param('effectId')),
+          guard(c, platform),
+        ),
+      ),
+  );
   app.post('/api/runtime/conversations/:id/computer-actions', async (c) =>
     c.json(
       await computers().prepare(

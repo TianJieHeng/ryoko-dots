@@ -34,3 +34,27 @@ Installation on another workstation requires provisioning a Codex-only API key
 through the local owner API, saving it at the private path above with mode 0600,
 copying SKILL.md into the correct Hermes profile, and creating the helper launcher
 with that workstation's repository path. No credentials are included here.
+
+## Terminal inside the Dots computer
+
+Ryoko uses the existing native computer `exec` action: observe a snapshot,
+propose the exact command, then read its confirmed result. This terminal runs
+inside the computer's isolated `/workspace`; commands require the existing
+owner approval. It is not unrestricted access to the host filesystem or network.
+API-originated Hermes commands now register identity and native computer tools
+before submission, matching the normal conversation connection path.
+
+The workspace contains `dots-codex`, copied from `scripts/dots-codex-client.py`.
+It talks through the private `.dots-codex.sock` Unix socket to
+`scripts/dots-codex-bridge.py`, managed by the supplied user systemd service.
+Only submit/status/wait/cancel/list are accepted. The host bridge holds the
+Codex-only credential; neither the isolated terminal nor the model receives it.
+The computer sandbox and Hermes profile permissions remain unchanged.
+
+For installation, copy the client into the configured computer workspace as
+`dots-codex` with mode 0755, adjust the service's repository/workspace paths,
+install it under `~/.config/systemd/user/`, run `systemctl --user daemon-reload`,
+and enable/start `ryoko-dots-codex-bridge.service`. The socket is mode 0600.
+Submitting and waiting can share one approved command. Subsequent status commands
+also follow normal computer approval. Codex's own requested approvals appear in
+its conversation. Ryoko must inspect actual completion before claiming success.

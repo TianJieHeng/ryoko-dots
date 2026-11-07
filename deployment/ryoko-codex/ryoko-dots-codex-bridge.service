@@ -1,0 +1,16 @@
+[Unit]
+Description=Ryoko isolated computer to Codex delegation bridge
+After=ryoko-dots.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ryoko/Desktop/rdots/ryoko-dots
+ExecStart=/usr/bin/python3 scripts/dots-codex-bridge.py --socket /home/ryoko/.local/share/ryoko-dots/computer/workspace/.dots-codex.sock
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

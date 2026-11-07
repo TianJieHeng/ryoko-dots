@@ -89,5 +89,18 @@ class DelegationTests(unittest.TestCase):
             module.Delegator(self.root)
 
 
+
+class BridgeBoundaryTests(unittest.TestCase):
+    def test_rejects_arbitrary_operations_and_extra_parameters(self):
+        spec = importlib.util.spec_from_file_location('bridge', Path(__file__).parents[1] / 'scripts/dots-codex-bridge.py')
+        bridge = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(bridge)
+        client = Mock()
+        for request in [{'action': 'exec', 'command': 'whoami'}, {'action':'status','id':'x','url':'https://example.com'}, {'action':'wait','id':'x','seconds':1000}]:
+            with self.assertRaises(ValueError):
+                bridge.dispatch(client, request)
+        self.assertEqual(client.mock_calls, [])
+
+
 if __name__ == '__main__':
     unittest.main()

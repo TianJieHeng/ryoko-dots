@@ -1213,3 +1213,22 @@ password login, avoiding unnecessary login throttling when reopening the app.
 Verified the actual Electron workspace opens without a password prompt; all four
 focused desktop authentication tests passed. Public API authentication remains
 intact. No CI; no credentials included in this change.
+
+## 2026-11-07 — Delegation phase 2: native terminal connection and approval handling
+
+API-originated Hermes turns now register identity and native computer tools before
+submission. Installed a narrow Unix-socket bridge in the isolated computer
+workspace for Codex submission/status/results/cancellation. Credentials stay on
+the host, with a Codex-only key. Hermes profile permissions remain unchanged.
+
+Live testing exposed a 15-second snapshot lifetime that expired during owner
+approval. Shell commands now use a bounded five-minute observation window at
+both host and executor; visual/file actions retain 15 seconds, and all exact
+snapshot, grant, takeover and control revision checks still apply. Verified
+executor rejection receipts are retained as non-application. Added a scoped
+read-only computer-effect reconciliation endpoint for uncertain receipts.
+
+Forty focused native-connection/computer tests and seven helper tests passed.
+Actual host qualification passed all 16 computer actions, including isolated
+shell execution and filesystem/network boundary checks. Full Ryoko-to-Codex
+verification continues after deploying these fixes. No CI; no secrets committed.
