@@ -1343,3 +1343,19 @@ and egress checks; no harness/configuration changes. Source-pin and identity-ser
 checks: 30 passed. Sequential server build passed under the existing fixed limits.
 The real four-provider acceptance rerun is recorded in Agent Chat's build journal.
 No CI and no Pi deployment.
+
+### Phase 7 acceptance completed
+
+Real Ryoko → Codex → Claude → Kimi → Ryoko coordination passed on the desktop
+against a disposable local Agent Chat hub. Each provider used a distinct native
+conversation in the same existing shared workspace. Codex created fixture commit
+`51fb8117be111e250793018ad6514adb856cca0c`; Claude independently reviewed it;
+Kimi ran two unit tests successfully; Ryoko received all reports and summarized.
+Native approvals were inspected in Dots and remained enforced. Test profiles were
+archived and the scoped test API credential revoked. The installed memory catalog
+still returns HTTP 200 (94 conversations); no harness service/schema changes or
+personal-history rewrites. Agent Chat's acceptance document records the bounded
+full-suite/browser checks and private local evidence locations. Full Dots server
+TypeScript checking retains the previously recorded heap-cap limitation; the
+complete build, targeted checks, 30 pin/identity regressions and live runtime pass
+are the actual verification evidence. No CI or Pi deployment.
