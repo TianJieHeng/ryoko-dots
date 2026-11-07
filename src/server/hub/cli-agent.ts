@@ -4,7 +4,12 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { accessSync, constants } from 'node:fs';
 import { query } from '@anthropic-ai/claude-agent-sdk';
-import { ClientApp, ndJsonStream } from '@agentclientprotocol/sdk';
+import {
+  ClientApp,
+  ndJsonStream,
+  type ToolCall,
+  type ToolCallUpdate,
+} from '@agentclientprotocol/sdk';
 import type { RuntimeAdapter, Guard, RunSnapshot } from './adapter.js';
 import type { HubMessage, RunState } from '../../shared/hub/types.js';
 export interface CliAgentConfig {
@@ -30,6 +35,33 @@ interface Pending {
   turnId: string;
   description: string;
   resolve: (accept: boolean) => void;
+}
+/** Kimi sends the full JSON input in cumulative tool updates before requesting permission. */
+export function kimiApprovalDescription(
+  tool: ToolCallUpdate,
+  prior?: ToolCallUpdate,
+) {
+  const shown = { ...prior, ...tool };
+  let input = tool.rawInput ?? prior?.rawInput;
+  if (input === undefined) {
+    const text = (prior?.content ?? [])
+      .flatMap((c) =>
+        c.type === 'content' && c.content.type === 'text'
+          ? [c.content.text]
+          : [],
+      )
+      .join('');
+    try {
+      input = JSON.parse(text);
+    } catch {
+      throw Error('Kimi did not supply complete tool input for review.');
+    }
+  }
+  return JSON.stringify({
+    toolCallId: shown.toolCallId,
+    tool: shown.title,
+    input,
+  });
 }
 /** Durable admission around the providers' own sessions. Lost executions are never replayed. */
 export class CliAgentAdapter implements RuntimeAdapter {
@@ -295,7 +327,11 @@ export class CliAgentAdapter implements RuntimeAdapter {
         }
         if (event.type === 'result') {
           confirmed = true;
-          if (event.subtype === 'success' && !event.is_error) {
+          if (
+            event.subtype === 'success' &&
+            !event.is_error &&
+            !abort.signal.aborted
+          ) {
             this.message(
               id + ':assistant',
               threadId,
@@ -333,9 +369,19 @@ export class CliAgentAdapter implements RuntimeAdapter {
     child.once('error', (error) => child.stdout.destroy(error));
     let content = '',
       prompting = false;
+    const toolCalls = new Map<string, ToolCall | ToolCallUpdate>();
     const app = new ClientApp();
     app.onNotification('session/update', ({ params }) => {
       const update = params.update;
+      if (
+        update.sessionUpdate === 'tool_call' ||
+        update.sessionUpdate === 'tool_call_update'
+      ) {
+        toolCalls.set(update.toolCallId, {
+          ...toolCalls.get(update.toolCallId),
+          ...update,
+        });
+      }
       if (
         prompting &&
         update.sessionUpdate === 'agent_message_chunk' &&
@@ -349,7 +395,10 @@ export class CliAgentAdapter implements RuntimeAdapter {
       const accept = await this.permission(
         threadId,
         id,
-        JSON.stringify(params.toolCall),
+        kimiApprovalDescription(
+          params.toolCall,
+          toolCalls.get(params.toolCall.toolCallId),
+        ),
         signal,
       );
       const option = params.options.find(

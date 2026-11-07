@@ -127,3 +127,66 @@ it('does not claim completion when the provider ends without a result receipt', 
     'uncertain',
   );
 });
+it('shows Kimi full streamed input rather than its truncated approval summary', async () => {
+  const { kimiApprovalDescription } =
+    await import('../src/server/hub/cli-agent');
+  const full = { command: 'python3 /workspace/dots-delegation-proof.py' };
+  const description = kimiApprovalDescription(
+    {
+      toolCallId: 'tool',
+      title: 'Bash',
+      content: [
+        {
+          type: 'content',
+          content: { type: 'text', text: 'Running: python3…' },
+        },
+      ],
+    },
+    {
+      toolCallId: 'tool',
+      content: [
+        {
+          type: 'content',
+          content: { type: 'text', text: JSON.stringify(full) },
+        },
+      ],
+    },
+  );
+  expect(JSON.parse(description).input).toEqual(full);
+  expect(() =>
+    kimiApprovalDescription({ toolCallId: 'missing', title: 'Bash' }),
+  ).toThrow('complete tool input');
+});
+it('cancels a pending tool decision without claiming successful completion', async () => {
+  sdk.query.mockImplementation(({ options }) =>
+    Object.assign(
+      (async function* () {
+        await options.canUseTool(
+          'Bash',
+          { command: 'pwd' },
+          { signal: options.abortController.signal },
+        );
+        yield {
+          type: 'result',
+          subtype: 'success',
+          is_error: false,
+          result: 'denied',
+        };
+      })(),
+      { close() {} },
+    ),
+  );
+  const { adapter } = fixture();
+  const t = await adapter.create('create', 'Task', guard);
+  await adapter.submit(t, 'run', 'execute', guard);
+  await vi.waitFor(() => expect(adapter.pendingApprovals(t)).toHaveLength(1));
+  await adapter.cancel(t, 'run', 'run', 'cancel', guard);
+  await vi.waitFor(async () =>
+    expect((await adapter.inspect(t, 'run', null, guard)).state).toBe(
+      'cancelled',
+    ),
+  );
+  expect(adapter.pendingApprovals(t)).toHaveLength(0);
+  await adapter.submit(t, 'run', 'execute', guard);
+  expect(sdk.query).toHaveBeenCalledTimes(1);
+});

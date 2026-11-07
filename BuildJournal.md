@@ -1253,3 +1253,37 @@ Real direct-adapter smoke tests returned CLAUDE_DOTS_CONNECTED and
 KIMI_DOTS_CONNECTED. Ten adapter/hub tests and eight delegation-helper tests pass;
 production build and focused lint pass. Testing actual delegated file execution
 and reports through Ryoko continues in the final verification phase. No CI.
+
+## 2026-11-07 — Delegation phase 4: real execution, reporting and restart verification
+
+Ryoko submitted and monitored both installed agents through her native terminal:
+Claude job fcb2d8fa-d3ac-4769-9f35-1240df155533 and Kimi job
+e12758f0-c6b9-4eb5-96e0-846095def0a0. Each created dots-delegation-proof.py in its
+own configured workspace, computed the sum of squares from 1 through 10 and
+executed the file. Independently inspected native terminal records: Claude printed
+CLAUDE_EXECUTION_CONFIRMED:385 and Kimi printed KIMI_EXECUTION_CONFIRMED:385; both
+exited 0. Ryoko retrieved both reports using the original IDs and relayed their
+outputs, paths and completion. No agent result was substituted or fabricated.
+Exact verification tool actions were reviewed and approved through the owner API;
+provider reports claiming they saw no prompt do not mean approvals were bypassed.
+
+Fixed Kimi approval rendering to retain full tool inputs from cumulative ACP
+updates instead of its truncated permission summary. Missing complete input is
+rejected. Verified the full command in the live Dots approval response after
+restart. Also fixed cancellation so a denied tool followed by a nominal provider
+result cannot be misreported as successful completion.
+
+After restarting Dots, Claude recalled 385 and its filename in the same native
+session; Kimi resumed its original session, re-executed the existing file and
+recalled the original task. Original job IDs remained completed on repeat submit,
+without creating additional jobs. Browser verification opened Codex, Claude and
+Kimi from the sidebar with no JavaScript errors. Tunnel API requests with each
+private key returned only the corresponding Dot. All five local runtime,
+computer, bridge, API-edge and tunnel services are active.
+
+Validation: 93 focused TypeScript tests and eight Python helper tests passed;
+the final five adapter tests passed after the cancellation fix. Production build,
+server compilation, focused lint and formatting passed. Native computer host
+qualification passed all 16 actions. Changes pushed to main; no CI and no secrets
+committed. Provider tools retain normal approvals; delegated work does not create
+an automatic callback into an already-finished Ryoko turn or Hermes child-run IDs.
