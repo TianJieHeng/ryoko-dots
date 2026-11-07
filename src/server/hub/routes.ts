@@ -1,3 +1,4 @@
+import { CliAgentAdapter } from './cli-agent.js';
 import { CodexAdapter } from './codex.js';
 import { Hono, type Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
@@ -202,7 +203,8 @@ export function hubRoutes(
     const a = hub.adapter(t.dotId);
     return c.json({
       items:
-        a instanceof CodexAdapter && t.nativeId
+        (a instanceof CodexAdapter || a instanceof CliAgentAdapter) &&
+        t.nativeId
           ? a.pendingApprovals(t.nativeId)
           : [],
     });
@@ -215,7 +217,10 @@ export function hubRoutes(
       .parse(await c.req.json());
     const t = hub.thread(c.req.param('id'));
     const a = hub.adapter(t.dotId);
-    if (!(a instanceof CodexAdapter) || !t.nativeId)
+    if (
+      !(a instanceof CodexAdapter || a instanceof CliAgentAdapter) ||
+      !t.nativeId
+    )
       throw new HTTPException(409, { message: 'Approvals unavailable.' });
     a.approve(t.nativeId, c.req.param('approvalId'), input.accept, guard);
     return c.json({ resolved: true });

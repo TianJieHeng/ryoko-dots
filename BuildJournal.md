@@ -1232,3 +1232,24 @@ Forty focused native-connection/computer tests and seven helper tests passed.
 Actual host qualification passed all 16 computer actions, including isolated
 shell execution and filesystem/network boundary checks. Full Ryoko-to-Codex
 verification continues after deploying these fixes. No CI; no secrets committed.
+
+## 2026-11-07 — Delegation phase 3: Codex proven, Claude and Kimi adapters
+
+Ryoko successfully executed her native computer shell command, submitted the real
+Codex job 784c2b5d-4d82-4fa8-b8bf-1555d1f30114, waited for completion and relayed
+CODEX_DELEGATION_CONFIRMED. Independently verified both the committed shell receipt
+(exit 0) and Codex's completed run/result. Read-only reconciliation also recovered
+the earlier rejected effect as not-applied without replaying it.
+
+Registered Claude Code and Kimi using their existing local logins. Claude uses
+the official Agent SDK and installed executable; Kimi uses ACP. Both preserve
+native sessions, durable operations and results, surface owner tool approvals,
+and support cancellation. Interrupted work stays unknown rather than replaying.
+The approval card now names the selected agent. Added the dots-agents Hermes
+skill and extended the isolated delegation client to the three fixed agents,
+with separate private per-agent keys/databases. Existing mobile scope is intact.
+
+Real direct-adapter smoke tests returned CLAUDE_DOTS_CONNECTED and
+KIMI_DOTS_CONNECTED. Ten adapter/hub tests and eight delegation-helper tests pass;
+production build and focused lint pass. Testing actual delegated file execution
+and reports through Ryoko continues in the final verification phase. No CI.

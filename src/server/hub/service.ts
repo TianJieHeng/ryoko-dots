@@ -11,7 +11,7 @@ import type {
 type DotRow = {
   id: string;
   name: string;
-  kind: 'hermes' | 'codex';
+  kind: 'hermes' | 'codex' | 'claude' | 'kimi';
   runtime: string;
   archived: number;
   isDefault: number;
@@ -71,7 +71,7 @@ export class DotHub {
     dot: {
       id: string;
       name: string;
-      kind: 'hermes' | 'codex';
+      kind: 'hermes' | 'codex' | 'claude' | 'kimi';
       runtime: string;
     },
     adapter: RuntimeAdapter,

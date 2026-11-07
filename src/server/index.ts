@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { CliAgentAdapter } from './hub/cli-agent.js';
 import { CodexAdapter } from './hub/codex.js';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -117,8 +118,10 @@ for (const entry of runtimeManifest.runtimes) {
     const directory = join(dirname(database), 'runtimes', entry.id);
     mkdirSync(directory, { recursive: true, mode: 0o700 });
     hub.register(
-      { id: entry.id, name: entry.name, kind: 'codex', runtime: entry.id },
-      new CodexAdapter(entry, join(directory, 'codex.sqlite')),
+      { id: entry.id, name: entry.name, kind: entry.kind, runtime: entry.id },
+      entry.kind === 'codex'
+        ? new CodexAdapter(entry, join(directory, 'codex.sqlite'))
+        : new CliAgentAdapter(entry, join(directory, 'agent.sqlite')),
     );
   }
 }

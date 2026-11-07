@@ -1,4 +1,4 @@
-export type RuntimeKind = 'hermes' | 'codex';
+export type RuntimeKind = 'hermes' | 'codex' | 'claude' | 'kimi';
 export type RunState =
   | 'accepted'
   | 'running'

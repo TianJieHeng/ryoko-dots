@@ -551,7 +551,7 @@ export function HubPanel({
           {thread &&
             approvals.map((a) => (
               <div key={a.id} className="notice" role="alert">
-                <strong>Codex requests approval</strong>
+                <strong>{dot?.name ?? 'Agent'} requests approval</strong>
                 <pre>{a.description}</pre>
                 <button
                   disabled={busy}

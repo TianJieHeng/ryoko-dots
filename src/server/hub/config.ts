@@ -22,6 +22,21 @@ export const runtimeManifest = z.strictObject({
           launchConfig: path,
         }),
         z.strictObject({
+          kind: z.literal('claude'),
+          id: z.string().regex(/^[a-z0-9-]{1,64}$/),
+          name: z.string().min(1).max(80),
+          executable: path,
+          cwd: path,
+          model: z.string().max(100).optional(),
+        }),
+        z.strictObject({
+          kind: z.literal('kimi'),
+          id: z.string().regex(/^[a-z0-9-]{1,64}$/),
+          name: z.string().min(1).max(80),
+          executable: path,
+          cwd: path,
+        }),
+        z.strictObject({
           kind: z.literal('codex'),
           id: z.string().regex(/^[a-z0-9-]{1,64}$/),
           name: z.string().min(1).max(80),

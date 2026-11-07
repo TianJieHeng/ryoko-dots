@@ -83,6 +83,21 @@ class DelegationTests(unittest.TestCase):
         self.assertIn('Owner must review', result['action'])
         self.assertEqual(self.client.api.call_count, 1)
 
+    def test_separate_agent_credentials_state_and_target(self):
+        key = self.root / 'kimi-delegation-key'
+        key.write_text('kimi_fixture')
+        key.chmod(0o600)
+        client = module.Delegator(self.root, 'kimi')
+        self.addCleanup(client.db.close)
+        client.api = Mock(side_effect=[{'id':'kimi-thread','state':'ready'}, {'state':'running'}, {'state':'running'}])
+        result = client.submit(self.id, 'task', 'title')
+        self.assertEqual(result['dotId'], 'kimi')
+        self.assertEqual(client.api.call_args_list[0].args[0], '/dots/kimi/conversations')
+        with self.assertRaises(ValueError):
+            self.client.job(self.id)
+        with self.assertRaises(ValueError):
+            module.Delegator(self.root, 'arbitrary-agent')
+
     def test_key_permissions(self):
         (self.root / 'codex-delegation-key').chmod(0o644)
         with self.assertRaisesRegex(ValueError, 'private'):

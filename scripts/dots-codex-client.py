@@ -9,6 +9,7 @@ import sys
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--agent', choices=['codex', 'claude', 'kimi'], default='codex')
     sub = parser.add_subparsers(dest='action', required=True)
     p = sub.add_parser('submit')
     p.add_argument('--id', required=True)

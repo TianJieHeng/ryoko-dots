@@ -19,13 +19,16 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 class Delegator:
-    def __init__(self, directory):
+    def __init__(self, directory, agent="codex"):
+        if agent not in ("codex", "claude", "kimi"):
+            raise ValueError("Unsupported agent.")
+        self.agent = agent
         self.directory = Path(directory)
-        key = self.directory / 'codex-delegation-key'
+        key = self.directory / f'{agent}-delegation-key'
         if key.stat().st_mode & 0o077:
             raise ValueError('Delegation key must be private (chmod 600).')
         self.token = key.read_text().strip()
-        self.db = sqlite3.connect(self.directory / 'codex-delegations.sqlite', timeout=30)
+        self.db = sqlite3.connect(self.directory / f'{agent}-delegations.sqlite', timeout=30)
         self.db.row_factory = sqlite3.Row
         self.db.execute('''CREATE TABLE IF NOT EXISTS jobs(
             id TEXT PRIMARY KEY, task TEXT NOT NULL, title TEXT NOT NULL,
@@ -61,9 +64,9 @@ class Delegator:
         if row['task'] != task or row['title'] != title:
             raise ValueError('Delegation ID already belongs to different input.')
         if not row['thread_id']:
-            thread = self.api('/dots/codex/conversations', {
+            thread = self.api('/dots/' + self.agent + '/conversations', {
                 'operationId': str(uuid.uuid5(uuid.UUID(job_id), 'conversation')),
-                'title': 'Ryoko → Codex: ' + title})
+                'title': 'Ryoko → ' + self.agent.title() + ': ' + title})
             with self.db:
                 self.db.execute('UPDATE jobs SET thread_id=? WHERE id=?', (thread['id'], job_id))
             if thread['state'] != 'ready':
@@ -84,7 +87,7 @@ class Delegator:
 
     def status(self, job_id):
         row = self.job(job_id)
-        result = {'jobId': row['id'], 'dotId': 'codex', 'conversationId': row['thread_id'],
+        result = {'jobId': row['id'], 'dotId': self.agent, 'conversationId': row['thread_id'],
                   'title': row['title'], 'runId': row['id'] if row['submitted'] else None}
         if not row['submitted']:
             return {**result, 'state': 'prepared', 'detail': 'No message submission attempted.'}
@@ -101,7 +104,7 @@ class Delegator:
                     break
             result['result'] = '\n\n'.join(m['text'] for m in messages)
         if run['state'] == 'waiting_approval':
-            result['action'] = 'Owner must review the request in Dots → Codex. This command cannot approve it.'
+            result['action'] = 'Owner must review the request in the target Dot. This command cannot approve it.'
         return result
 
     def wait(self, job_id, seconds):
@@ -124,6 +127,7 @@ class Delegator:
 def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--agent', choices=['codex', 'claude', 'kimi'], default='codex')
     parser.add_argument('--config-dir', default=str(Path.home() / '.config/ryoko-dots'))
     sub = parser.add_subparsers(dest='command', required=True)
     submit = sub.add_parser('submit')
@@ -138,7 +142,7 @@ def main():
     sub.add_parser('list')
     args = parser.parse_args()
     try:
-        client = Delegator(args.config_dir)
+        client = Delegator(args.config_dir, args.agent)
         if args.command == 'submit':
             task = sys.stdin.read() if args.task_file == '-' else Path(args.task_file).read_text()
             result = client.submit(args.id, task, args.title)

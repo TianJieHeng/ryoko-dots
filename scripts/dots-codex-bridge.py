@@ -62,7 +62,10 @@ def main():
                 request = json.loads(raw)
                 if not isinstance(request, dict):
                     raise ValueError('Expected object.')
-                client = module.Delegator(args.config_dir)
+                agent = request.pop('agent', 'codex')
+                if agent not in ('codex', 'claude', 'kimi'):
+                    raise ValueError('Unsupported agent.')
+                client = module.Delegator(args.config_dir, agent)
                 result = dispatch(client, request)
             except Exception as error:
                 result = {'error': str(error), 'instruction': 'Keep the original job ID; inspect before retrying.'}
