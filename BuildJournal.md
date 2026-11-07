@@ -1118,3 +1118,26 @@ and resume rules, browser-origin constraints, and a Python client example. The
 file is mode 0600 and outside Git; only this handoff description is committed.
 Validated the example's Python syntax without sending another message. Scanned
 tracked repository files for the live key; none contain it. No CI.
+
+## 2026-11-07 — DeepSeek Harness and Superagent installation
+
+Installed the requested dsh-superagent-prototype checkout on Desktop at upstream
+8c32a9dc5d72c033816c6a8110b37f40cf94fba4, its pinned pnpm/dependencies and DeepSeek
+Harness 0.2.1-rc.3. Installed missing tmux and a checksum-verified modern GitHub
+CLI. Created a separate superagent Web profile on loopback port 3082, linked and
+built the bundle, started its local panel, and added a Desktop launcher plus
+superagent control wrapper. Authenticated panel returned HTTP 200.
+
+Fixed the upstream process check locally to handle Node's MainThread process
+name while retaining executable/profile checks; reproducible patch and setup
+notes are under deployment/superagent. Start/status correctly recognize the
+existing process and report setup pending (exit 3), with no duplicate process.
+Typecheck/build passed. Upstream suite: 1196 passed, one Feishu event-health test
+failed; focused rerun reproduced it (70 passed, one failed). Feishu is disabled.
+
+Installation is complete; operational setup still requires the target repository,
+agent GitHub identity/allowed requester policy, and a model provider. No external
+messages, GitHub worker activation, auto-merge, CI, or recurring job was configured.
+Claude Code 2.1.319 is present but reports not logged in. Dots currently has no
+Claude or DSH runtime adapter; neither is advertised as an integrated Dot.
+Existing Ryoko, memory harness and public tunnel configuration were unchanged.
