@@ -1175,3 +1175,18 @@ Documented use, workspace, private login, API credential scope and the boundary:
 Codex threads are native Codex threads, not Hermes memory-harness conversations.
 The existing Ryoko-only mobile key was not broadened or replaced. No secrets were
 added to Git. Protocol reference: https://developers.openai.com/codex/app-server.
+
+## 2026-11-07 — Ryoko to Codex delegation, phase 1: local bridge
+
+Added a standard-library Python delegation helper and installed a discoverable
+Hermes skill in Ryoko's profile. Provisioned a separate 365-day Codex-only API key
+in a mode-0600 private file; verified the key sees only Codex and cannot administer
+credentials. The helper uses the existing local API, persists intent before writes,
+tracks one UUID per task, supports status/wait/result/cancel, and refuses redirects.
+Repeated submit after an attempted send is inspect-only. Native Codex approvals
+remain owner-controlled. No memory harness or Hermes source modifications.
+
+Six local tests passed: restart/repeat deduplication, lost receipt recovery,
+paginated completed results, unknown creation refusal, approval pause, and private
+key permissions. Installed the skill and command; real Ryoko-to-Codex verification
+is the next phase. No CI. Secrets and job state stay outside Git.
