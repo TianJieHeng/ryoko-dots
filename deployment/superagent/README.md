@@ -1,4 +1,9 @@
-# Local DeepSeek Superagent installation
+# Removed DeepSeek Superagent installation
+
+**Uninstalled at the owner’s request on 2026-11-07.** The following is a
+historical installation record, not the current machine state. Harness, checkout,
+profile/state and launchers were removed. Shared pnpm, tmux and GitHub CLI remain.
+The compatibility patch is retained only as historical source documentation.
 
 Installed 2026-11-07 from deepseek-ai/dsh-superagent-prototype commit
 8c32a9dc5d72c033816c6a8110b37f40cf94fba4 in

@@ -1141,3 +1141,12 @@ messages, GitHub worker activation, auto-merge, CI, or recurring job was configu
 Claude Code 2.1.319 is present but reports not logged in. Dots currently has no
 Claude or DSH runtime adapter; neither is advertised as an integrated Dot.
 Existing Ryoko, memory harness and public tunnel configuration were unchanged.
+
+## 2026-11-07 — Remove DeepSeek Superagent and Harness
+
+At the owner's request, stopped Superagent gracefully, uninstalled the global
+DeepSeek Harness package, and removed the Superagent checkout, ~/.dsh profiles,
+state and local credentials, control/panel commands and Desktop launcher. Marked
+the installation guide as historical. Retained shared pnpm, tmux and GitHub CLI.
+Verified Claude Code remains available and the Dots backend, API gateway and
+Cloudflare tunnel services remain active. No CI.
