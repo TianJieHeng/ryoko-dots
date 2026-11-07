@@ -1,5 +1,17 @@
 # Claude and Kimi in Dots
 
+Codex, Claude, Kimi, and Ryoko share one working tree:
+`~/.local/share/ryoko-dots/computer/workspace`. All three runtime manifest `cwd` fields
+point there. Ryoko sees the same directory mounted as `/workspace`. Use relative
+project paths when delegating so every agent works on the same files.
+The former `codex-workspace`, `claude-workspace`, and `kimi-workspace` paths are
+symlinks to this shared directory, including for resumed sessions. Previous files
+are preserved under `previous-workspaces/<agent>/` in the shared directory.
+
+Working files are shared; logins, native sessions and permission controls remain
+provider-specific. Ryoko’s terminal still uses its isolated mount and network
+view; sharing the working tree does not make every process sandbox identical.
+
 The runtime manifest accepts `claude` and `kimi` entries with `id`, `name`,
 absolute `executable`, and absolute `cwd`. Claude additionally supports `model`.
 Their executables use the current OS user's existing login, stored outside Dots.

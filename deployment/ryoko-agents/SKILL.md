@@ -5,6 +5,14 @@ description: Launch real Codex, Claude Code, or Kimi coding agents from Ryoko in
 
 # Delegate work to installed Dots agents
 
+All agents work on the same files as Ryoko. Their host working directory is
+`/home/ryoko/.local/share/ryoko-dots/computer/workspace`, mounted as `/workspace`
+in Ryoko's terminal. Pass relative project/file paths when delegating; do not
+create per-agent working directories or copy a project into separate trees.
+A file changed by one agent is immediately visible to the others. Coordinate
+edits to avoid having multiple agents overwrite the same file simultaneously.
+The old agent workspace paths are aliases to this shared directory.
+
 The installed agents are `codex`, `claude`, and `kimi`. They use their existing
 local logins. Use `/workspace/dots-agent --agent NAME` in the Dots native computer
 terminal. The command is available inside the isolated computer; it delegates

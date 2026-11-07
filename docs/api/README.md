@@ -69,7 +69,7 @@ while this panel is open.
 
 This workstation uses the existing ChatGPT login in `~/.codex`, the installed
 Codex 0.163.0 executable, and the private runtime manifest. Its working directory
-is `~/.local/share/ryoko-dots/codex-workspace`. Ryoko remains the default agent.
+is `~/.local/share/ryoko-dots/computer/workspace` (shared with Ryoko, Claude, and Kimi). Ryoko remains the default agent.
 Codex conversations persist in native Codex threads and the Dots registry; they
 are not imported into the Hermes memory harness by this adapter.
 

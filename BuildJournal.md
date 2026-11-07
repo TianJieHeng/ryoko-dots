@@ -1287,3 +1287,18 @@ server compilation, focused lint and formatting passed. Native computer host
 qualification passed all 16 actions. Changes pushed to main; no CI and no secrets
 committed. Provider tools retain normal approvals; delegated work does not create
 an automatic callback into an already-finished Ryoko turn or Hermes child-run IDs.
+
+## 2026-11-07 — Shared environment phase 1: one working tree
+
+At the owner's correction, all three coding agents now use Ryoko's existing
+computer workspace as their runtime cwd. The old three agent workspace paths
+are aliases to the same directory, preserving old absolute paths in resumed
+sessions. Existing files were moved without overwriting into
+computer/workspace/previous-workspaces/<agent>/. The private manifest was backed
+up before updating it; no active runs were interrupted. Skills now direct Ryoko
+to delegate relative paths in the shared working tree instead of separate trees.
+
+Ryoko sees this directory at /workspace; the CLIs see its host path. Native
+logins, sessions and tool approvals remain distinct. This shares working files,
+not the complete OS namespace of Ryoko's isolated computer. Services restarted;
+real cross-agent shared-file verification follows. No CI; no secrets committed.

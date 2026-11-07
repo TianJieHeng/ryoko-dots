@@ -5,6 +5,14 @@ description: Delegate coding, implementation, debugging, or review tasks from Ry
 
 # Delegate to Codex through Dots
 
+All agents work on the same files as Ryoko. Their host working directory is
+`/home/ryoko/.local/share/ryoko-dots/computer/workspace`, mounted as `/workspace`
+in Ryoko's terminal. Pass relative project/file paths when delegating; do not
+create per-agent working directories or copy a project into separate trees.
+A file changed by one agent is immediately visible to the others. Coordinate
+edits to avoid having multiple agents overwrite the same file simultaneously.
+The old agent workspace paths are aliases to this shared directory.
+
 Run `/workspace/dots-codex` in the available terminal.
 In a Dots conversation, terminal execution is provided by the native computer
 adapter: discover dots_computer_observe and dots_computer_propose. Observe a fresh
