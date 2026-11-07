@@ -1302,3 +1302,21 @@ Ryoko sees this directory at /workspace; the CLIs see its host path. Native
 logins, sessions and tool approvals remain distinct. This shares working files,
 not the complete OS namespace of Ryoko's isolated computer. Services restarted;
 real cross-agent shared-file verification follows. No CI; no secrets committed.
+
+## 2026-11-07 — Shared environment phase 2: live cross-agent file verification
+
+Created a random test input through the actual isolated computer shell at
+/workspace. Resumed the existing Codex, Claude and Kimi conversations; each
+read that input using a relative path and wrote its own result in the same
+working directory. Their terminal output identified the physical shared path:
+/home/ryoko/.local/share/ryoko-dots/computer/workspace. Finally, the isolated
+Ryoko shell read all three agent output files and confirmed their bytes matched
+the original input. No per-agent project copies were used.
+
+Kimi's first test hit Python shell quoting errors; cancelled that test and
+completed the same verification using a simple cp/cat command in the existing
+conversation. Normal owner approvals were used. All former workspace aliases
+resolve to the same directory, and prior test files remain preserved under
+previous-workspaces/. The computer is connected and all five services are active.
+Only local configuration and documentation changed; no application rebuild or
+new unit tests were needed. No CI and no secrets committed.
