@@ -1150,3 +1150,28 @@ state and local credentials, control/panel commands and Desktop launcher. Marked
 the installation guide as historical. Retained shared pnpm, tmux and GitHub CLI.
 Verified Claude Code remains available and the Dots backend, API gateway and
 Cloudflare tunnel services remain active. No CI.
+
+## 2026-11-07 — Codex in the main Dots navigation
+
+Verified the existing Codex adapter and private enrollment rather than creating a
+second runtime: installed Codex 0.163.0 is logged in using ChatGPT, registered as
+Dot codex, with its own workspace and persisted native threads. Added enrolled
+non-workspace agents to the main Dots sidebar and passed selection into the chat
+panel. Agent selection updates the breadcrumb and sidebar highlight. Hid the
+Hermes-only global new-chat/computer controls in this view so the panel's New chat
+creates a conversation for the selected agent. Ryoko remains the default.
+
+Validation: seven Codex adapter/hub regression tests passed; production build,
+focused ESLint and formatting passed. A live owner-authenticated Dots API request
+created one verification conversation; Codex replied CODEX_DOTS_CONNECTED. Reusing
+the same submission operation returned the same run. Browser verification opened
+Codex from the sidebar and rendered its saved history without JavaScript errors.
+Restarted the backend/gateway/tunnel, reopened that same conversation in the UI,
+and sent a follow-up requiring recall: Codex replied CODEX_RESUME_OK. Confirmed one
+New chat control and no unsupported computer button in the Codex view. All three
+services are active. No CI.
+
+Documented use, workspace, private login, API credential scope and the boundary:
+Codex threads are native Codex threads, not Hermes memory-harness conversations.
+The existing Ryoko-only mobile key was not broadened or replaced. No secrets were
+added to Git. Protocol reference: https://developers.openai.com/codex/app-server.

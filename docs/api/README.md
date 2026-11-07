@@ -58,3 +58,23 @@ telemetry. Existing Codex configuration and provider account limits still apply.
 Protocol references: https://developers.openai.com/codex/app-server and the
 installed CLI's generated definitions. The app-server protocol is experimental;
 requalify the adapter before upgrading the CLI.
+
+### Using Codex in this installation
+
+Codex appears directly in the main **Dots** sidebar. Select **Codex**, then use
+**New chat** in its conversation panel, or choose an existing conversation. The
+panel includes run status, cancellation and local approval controls. Its header
+identifies the selected agent; Hermes-only new-chat/computer controls are hidden
+while this panel is open.
+
+This workstation uses the existing ChatGPT login in `~/.codex`, the installed
+Codex 0.163.0 executable, and the private runtime manifest. Its working directory
+is `~/.local/share/ryoko-dots/codex-workspace`. Ryoko remains the default agent.
+Codex conversations persist in native Codex threads and the Dots registry; they
+are not imported into the Hermes memory harness by this adapter.
+
+The existing Ryoko mobile API credential remains scoped to Ryoko. To access Codex
+from an app, create a separate Codex-scoped credential in **Dots & API**. Use Dot
+ID `codex` with the same v1 conversation/message/run routes. Local approval is
+still required when a Codex operation requests it; the API-only tunnel does not
+expose approval administration.

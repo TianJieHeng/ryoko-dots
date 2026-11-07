@@ -1,5 +1,6 @@
 import { MemoryConversations } from './MemoryConversations';
 import { HubPanel } from './HubPanel';
+import type { HubDot } from '../shared/hub/types';
 import { ImportedHistory } from './runtime/ImportedHistory';
 import { archivedHistoryLocation } from '../shared/runtime/legacy-history';
 import { MemoryLearning } from './runtime/MemoryLearning';
@@ -205,6 +206,8 @@ function WorkspaceApp({
 }) {
   const [state, setState] = useState<State>();
   const [workspace, setWorkspace] = useState<WorkspaceState>();
+  const [hubDots, setHubDots] = useState<HubDot[]>([]);
+  const [selectedHubDot, setSelectedHubDot] = useState('');
   const [selectedDot, setSelectedDot] = useState(() => {
     try {
       return localStorage.getItem('dots.selectedDot') ?? '';
@@ -352,17 +355,20 @@ function WorkspaceApp({
   const [taskDetail, setTaskDetail] = useState<Detail>();
   const refresh = useCallback(async () => {
     try {
-      const [s, w] = await Promise.all([
+      const [s, w, h] = await Promise.all([
         api<State>('/state'),
         api<WorkspaceState>('/workspace'),
+        api<{ items: HubDot[] }>('/v1/dots').catch(() => null),
       ]);
       setState(s);
       setWorkspace(w);
+      if (h) setHubDots(h.items);
       setSelectedDot((previous) => previous || w.dots[0]?.id || '');
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         setState(undefined);
         setWorkspace(undefined);
+        setHubDots([]);
         setCapture(undefined);
         setTaskDetail(undefined);
         setSelectedThread(undefined);
@@ -643,14 +649,16 @@ function WorkspaceApp({
           </span>
           OpenDots<span className="wordmark-dot">•</span>
         </button>
-        <button
-          className="new-chat nav-item"
-          disabled={!configured}
-          onClick={() => void newConversation()}
-        >
-          <Plus size={17} />
-          <span>New chat</span>
-        </button>
+        {view !== 'hub' && (
+          <button
+            className="new-chat nav-item"
+            disabled={!configured}
+            onClick={() => void newConversation()}
+          >
+            <Plus size={17} />
+            <span>New chat</span>
+          </button>
+        )}
         <div className="spaces-heading nav-label">
           DOTS
           <button
@@ -687,6 +695,36 @@ function WorkspaceApp({
               </button>
             </div>
           ))}
+          {hubDots
+            .filter(
+              (item) =>
+                !item.archived && !workspace.dots.some((d) => d.id === item.id),
+            )
+            .map((item) => (
+              <div className="dot-nav-row" key={item.id}>
+                <button
+                  className={`dot-nav ${view === 'hub' && selectedHubDot === item.id ? 'active' : ''}`}
+                  aria-current={
+                    view === 'hub' && selectedHubDot === item.id
+                      ? 'page'
+                      : undefined
+                  }
+                  onClick={() => {
+                    setSelectedHubDot(item.id);
+                    setView('hub');
+                    setMobile(false);
+                  }}
+                >
+                  <Mascot
+                    identity={item.id}
+                    name={item.name}
+                    small
+                    decorative
+                  />
+                  <span>{item.name}</span>
+                </button>
+              </div>
+            ))}
         </nav>
         <div className="spaces-heading nav-label">
           SPACES
@@ -835,27 +873,32 @@ function WorkspaceApp({
             <strong>
               {view === 'chat'
                 ? dot.name
-                : view === 'history'
-                  ? 'Imported history'
-                  : view === 'tasks'
-                    ? 'Activity'
-                    : view === 'space'
-                      ? 'Pages'
-                      : 'Memories'}
+                : view === 'hub'
+                  ? (hubDots.find((d) => d.id === selectedHubDot)?.name ??
+                    'Your Dots')
+                  : view === 'history'
+                    ? 'Imported history'
+                    : view === 'tasks'
+                      ? 'Activity'
+                      : view === 'space'
+                        ? 'Pages'
+                        : 'Memories'}
             </strong>
           </div>
           <div className="top-actions">
             <span className="mode-badge">
               {configured ? 'SELF-HOSTED' : 'SETUP REQUIRED'}
             </span>
-            <button
-              className="icon-button"
-              aria-label={pane ? 'Hide computer' : 'Show computer'}
-              aria-expanded={pane}
-              onClick={() => setPane(!pane)}
-            >
-              <Monitor size={18} />
-            </button>
+            {view !== 'hub' && (
+              <button
+                className="icon-button"
+                aria-label={pane ? 'Hide computer' : 'Show computer'}
+                aria-expanded={pane}
+                onClick={() => setPane(!pane)}
+              >
+                <Monitor size={18} />
+              </button>
+            )}
           </div>
         </header>
         {error && (
@@ -881,7 +924,11 @@ function WorkspaceApp({
             }}
           />
         ) : view === 'hub' ? (
-          <HubPanel />
+          <HubPanel
+            key={selectedHubDot}
+            initialDotId={selectedHubDot}
+            onSelectDot={setSelectedHubDot}
+          />
         ) : view === 'history' ? (
           <ImportedHistory />
         ) : view === 'space' ? (

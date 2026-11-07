@@ -28,9 +28,15 @@ const label = (r: HubRun) =>
     cancelled: 'Stopped',
     unknown: 'Delivery uncertain — check status before resending',
   })[r.state];
-export function HubPanel() {
+export function HubPanel({
+  initialDotId = '',
+  onSelectDot,
+}: {
+  initialDotId?: string;
+  onSelectDot?: (id: string) => void;
+}) {
   const [dots, setDots] = useState<HubDot[]>([]),
-    [dotId, setDotId] = useState(''),
+    [dotId, setDotId] = useState(initialDotId),
     [threads, setThreads] = useState<HubThread[]>([]),
     [thread, setThread] = useState<HubThread>();
   const [messages, setMessages] = useState<HubMessage[]>([]),
@@ -298,7 +304,10 @@ export function HubPanel() {
               key={d.id}
               aria-current={d.id === dotId ? 'page' : undefined}
               className={d.id === dotId ? 'selected' : ''}
-              onClick={() => setDotId(d.id)}
+              onClick={() => {
+                setDotId(d.id);
+                onSelectDot?.(d.id);
+              }}
             >
               <strong>{d.name}</strong>
               <small>
