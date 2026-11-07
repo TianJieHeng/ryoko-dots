@@ -1330,3 +1330,16 @@ Added authenticated GET /api/v1/runs/:id/result. Hermes reads its existing verif
 
 ### 2026-11-07 — coordination phase 6: profiles, linked jobs and bounded builds
 Added owner job-profile editing, conversation links to the coordination thread, last-contact/recovery guidance and collapsed host-action diagnostics. Coordination metadata cannot be rebound to another participant/generation; credential-bearing link URLs are rejected. Codex results select the final answer from the exact native turn. Targeted profile/client type checks and hub/profile regressions pass; the frontend builds. Full tsc exceeded the fixed 512 MiB cap even without type checking, so runtime emission now transpiles modules independently into staged output directories. npm run build succeeds for frontend, server and computer without changing resource limits. This emission step is explicitly not a full typecheck; that remaining limitation is recorded rather than hidden. Saved pre-change dist privately for rollback. Live four-provider acceptance and final broader checks are next.
+
+## 2026-11-07 — coordination phase 7: verified Hermes producer update
+
+Live coordination exposed Hermes turn-reference metadata access outside the owning
+identity scope when a worker report contained an email address. The Hermes fix is
+published at `6f30203cb6296645ed768042d5dd0a6777abe230` and passes three canonical
+regressions, including profile A→B→A isolation and strict unbound denial. Updated
+Dots' exact clean-source pin and regenerated both contract provenance files;
+contract bytes/hashes remain unchanged. The pinned checkout retains all identity
+and egress checks; no harness/configuration changes. Source-pin and identity-service
+checks: 30 passed. Sequential server build passed under the existing fixed limits.
+The real four-provider acceptance rerun is recorded in Agent Chat's build journal.
+No CI and no Pi deployment.

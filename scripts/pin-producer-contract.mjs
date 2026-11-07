@@ -167,7 +167,7 @@ writeFileSync(
     JSON.stringify(
       {
         repository: 'TianJieHeng/ryoko-agent',
-        commit: 'abf499fdfcb2f9bd98d65e5f39e9a8c4fc0dee3b',
+        commit: '6f30203cb6296645ed768042d5dd0a6777abe230',
         typescriptSha256: hash(source),
         openrpcSha256: hash(raw),
         methods: names,
