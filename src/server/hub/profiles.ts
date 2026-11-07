@@ -21,7 +21,59 @@ export interface JobProfile {
 export class JobProfiles {
   constructor(private db: DatabaseSync) {
     db.exec(`CREATE TABLE IF NOT EXISTS hub_job_profiles(id TEXT PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS hub_coordination(conversationId TEXT PRIMARY KEY, binding TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS hub_profile_jobs(operationId TEXT PRIMARY KEY, profile TEXT NOT NULL, title TEXT NOT NULL, conversationId TEXT UNIQUE);`);
+  }
+  coordination(conversationId: string) {
+    const row = this.db
+      .prepare('SELECT binding FROM hub_coordination WHERE conversationId=?')
+      .get(conversationId);
+    return row ? JSON.parse(String(row.binding)) : null;
+  }
+  setCoordination(conversationId: string, value: unknown) {
+    const input = z
+      .strictObject({
+        hubOrigin: z.url(),
+        projectId: z.uuid(),
+        roomId: z.uuid(),
+        threadId: z.uuid(),
+        participantId: z.uuid(),
+        generation: z.number().int().positive(),
+        state: z.string().max(40),
+        lastContact: z.string().datetime(),
+      })
+      .parse(value);
+    const url = new URL(input.hubOrigin);
+    if (
+      url.username ||
+      url.password ||
+      url.pathname !== '/' ||
+      url.search ||
+      url.hash ||
+      !['http:', 'https:'].includes(url.protocol)
+    )
+      throw new HTTPException(400, { message: 'Invalid coordination origin.' });
+    const old = this.coordination(conversationId);
+    if (
+      old &&
+      [
+        'hubOrigin',
+        'projectId',
+        'roomId',
+        'threadId',
+        'participantId',
+        'generation',
+      ].some((k) => old[k] !== input[k as keyof typeof input])
+    )
+      throw new HTTPException(409, {
+        message: 'Coordination binding is immutable.',
+      });
+    this.db
+      .prepare(
+        'INSERT INTO hub_coordination VALUES(?,?) ON CONFLICT(conversationId) DO UPDATE SET binding=excluded.binding',
+      )
+      .run(conversationId, JSON.stringify(input));
+    return input;
   }
   get(id: string): JobProfile {
     const row = this.db

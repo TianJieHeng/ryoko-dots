@@ -372,10 +372,14 @@ export class CodexAdapter implements RuntimeAdapter {
         ),
     );
     return turn?.status === 'completed'
-      ? turn.items
-          .filter((i) => i.type === 'agentMessage')
-          .map((i) => i.text ?? '')
-          .join('\n\n')
+      ? ((
+          turn.items
+            .filter(
+              (i) => i.type === 'agentMessage' && i.phase === 'final_answer',
+            )
+            .at(-1) ??
+          turn.items.filter((i) => i.type === 'agentMessage').at(-1)
+        )?.text ?? '')
       : null;
   }
   private snapshot(t: Turn): RunSnapshot {

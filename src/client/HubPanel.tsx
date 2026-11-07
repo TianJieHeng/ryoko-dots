@@ -1,3 +1,5 @@
+import { CoordinationLink } from './CoordinationLink';
+import { JobProfiles } from './JobProfiles';
 import { AgentActivity } from './AgentActivity';
 import { CodeBlock } from './CodeBlock';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -28,6 +30,37 @@ const label = (r: HubRun) =>
     cancelled: 'Stopped',
     unknown: 'Delivery uncertain — check status before resending',
   })[r.state];
+function MessageBody({ text }: { text: string }) {
+  let diagnostic = text.includes(
+    'Coordination host actions are available through a structured response.',
+  );
+  try {
+    const value = JSON.parse(
+      text
+        .trim()
+        .replace(/^```json\s*/, '')
+        .replace(/\s*```$/, ''),
+    );
+    diagnostic ||=
+      !!value.coordination_calls || value.coordination_done === true;
+  } catch {
+    /* Ordinary conversation text. */
+  }
+  if (diagnostic)
+    return (
+      <details>
+        <summary>Coordination activity</summary>
+        <pre>{text}</pre>
+      </details>
+    );
+  return (
+    <ReactMarkdown
+      components={{ pre: CodeBlock, img: ({ alt }) => <span>{alt}</span> }}
+    >
+      {text}
+    </ReactMarkdown>
+  );
+}
 export function HubPanel({
   initialDotId = '',
   onSelectDot,
@@ -460,14 +493,7 @@ export function HubPanel({
                 key={m.id}
               >
                 <small>{m.role === 'user' ? 'You' : dot?.name}</small>
-                <ReactMarkdown
-                  components={{
-                    pre: CodeBlock,
-                    img: ({ alt }) => <span>{alt}</span>,
-                  }}
-                >
-                  {m.text}
-                </ReactMarkdown>
+                <MessageBody text={m.text} />
               </article>
             ))}
             {moreMessages && (
@@ -673,6 +699,8 @@ export function HubPanel({
           </details>
         </div>
       </div>
+      <CoordinationLink conversationId={thread?.id} />
+      <JobProfiles dotId={dotId} />
       <details className="hub-api">
         <summary>API access</summary>
         <p>

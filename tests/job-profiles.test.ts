@@ -50,3 +50,37 @@ it('job profiles freeze instructions per instance and do not rebind runtime iden
     db.close();
   }
 });
+
+it('coordination links preserve instance identity and reject credential-bearing URLs', () => {
+  const db = new DatabaseSync(':memory:');
+  try {
+    const profiles = new JobProfiles(db);
+    const binding = {
+      hubOrigin: 'https://coordination.example',
+      projectId: randomUUID(),
+      roomId: randomUUID(),
+      threadId: randomUUID(),
+      participantId: randomUUID(),
+      generation: 1,
+      state: 'running',
+      lastContact: new Date().toISOString(),
+    };
+    profiles.setCoordination('conversation', binding);
+    profiles.setCoordination('conversation', { ...binding, state: 'replied' });
+    expect(profiles.coordination('conversation').state).toBe('replied');
+    expect(() =>
+      profiles.setCoordination('conversation', {
+        ...binding,
+        participantId: randomUUID(),
+      }),
+    ).toThrow();
+    expect(() =>
+      profiles.setCoordination('other', {
+        ...binding,
+        hubOrigin: 'https://secret@coordination.example',
+      }),
+    ).toThrow();
+  } finally {
+    db.close();
+  }
+});

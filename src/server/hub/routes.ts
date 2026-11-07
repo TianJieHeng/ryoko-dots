@@ -178,6 +178,16 @@ export function hubRoutes(
     threadGuard(c);
     return c.json(hub.thread(c.req.param('id')));
   });
+  app.get('/conversations/:id/coordination', (c) => {
+    threadGuard(c);
+    return c.json(hub.profiles.coordination(c.req.param('id')));
+  });
+  app.post('/conversations/:id/coordination', async (c) => {
+    const guard = threadGuard(c, true);
+    const value = await c.req.json();
+    guard();
+    return c.json(hub.profiles.setCoordination(c.req.param('id'), value));
+  });
   app.get('/conversations/:id/messages', async (c) => {
     const guard = threadGuard(c);
     const r = await hub.messages(c.req.param('id'), cursor(c), guard);
@@ -394,7 +404,11 @@ export const openapi = {
       get: { parameters: [param('runId')], responses: { 200: response } },
     },
     '/runs/{runId}/result': {
-      get: { summary: 'Verified output for this completed run only', parameters: [param('runId')], responses: { 200: response } },
+      get: {
+        summary: 'Verified output for this completed run only',
+        parameters: [param('runId')],
+        responses: { 200: response },
+      },
     },
     '/runs/{runId}/events': {
       get: {

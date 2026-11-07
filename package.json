@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "concurrently -k \"node --env-file-if-exists=.env scripts/start-self-hosted.mjs --development\" \"vite\"",
-    "build": "vite build && tsc -p tsconfig.server.json && tsc -p tsconfig.computer.json",
+    "build": "vite build && npm run build:server && npm run build:computer",
     "start": "node --env-file-if-exists=.env scripts/start-self-hosted.mjs",
     "browser": "node --env-file-if-exists=.env --import tsx src/browser/index.ts",
     "browser:start": "node --env-file-if-exists=.env dist/server/browser/index.js",
@@ -28,7 +28,9 @@
     "test:production-boot": "node scripts/test-production-boot.mjs",
     "desktop": "electron desktop/main.cjs",
     "desktop:install": "node scripts/install-desktop.mjs",
-    "desktop:package": "node scripts/package-desktop.mjs"
+    "desktop:package": "node scripts/package-desktop.mjs",
+    "build:server": "node scripts/build-runtime.mjs server",
+    "build:computer": "node scripts/build-runtime.mjs computer"
   },
   "keywords": [],
   "author": "Atai Barkai",
