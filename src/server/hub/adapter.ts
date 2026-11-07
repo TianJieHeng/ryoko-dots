@@ -38,6 +38,12 @@ export interface RuntimeAdapter {
     runId: string | null,
     guard: Guard,
   ): Promise<RunSnapshot>;
+  result?(
+    nativeId: string,
+    operationId: string,
+    runId: string | null,
+    guard: Guard,
+  ): Promise<string | null>;
   cancel(
     nativeId: string,
     operationId: string,

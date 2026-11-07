@@ -213,6 +213,9 @@ export function hubRoutes(
     const guard = runGuard(c);
     return c.json(await hub.inspect(c.req.param('id'), guard));
   });
+  app.get('/runs/:id/result', async (c) => {
+    return c.json(await hub.result(c.req.param('id'), runGuard(c)));
+  });
   app.get('/runs/:id/events', async (c) => {
     const guard = runGuard(c);
     await hub.inspect(c.req.param('id'), guard);
@@ -389,6 +392,9 @@ export const openapi = {
     },
     '/runs/{runId}': {
       get: { parameters: [param('runId')], responses: { 200: response } },
+    },
+    '/runs/{runId}/result': {
+      get: { summary: 'Verified output for this completed run only', parameters: [param('runId')], responses: { 200: response } },
     },
     '/runs/{runId}/events': {
       get: {

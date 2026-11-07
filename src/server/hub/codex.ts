@@ -349,6 +349,35 @@ export class CodexAdapter implements RuntimeAdapter {
       nextCursor: messages.length > offset + 100 ? String(offset + 100) : null,
     };
   }
+  async result(
+    id: string,
+    operationId: string,
+    runId: string | null,
+    guard: Guard,
+  ) {
+    guard();
+    const record = this.db
+      .prepare(
+        'SELECT turnId FROM codex_turns WHERE operationId=? AND threadId=?',
+      )
+      .get(operationId, id);
+    if (!record) return null;
+    const thread = await this.read(id);
+    guard();
+    const turn = thread.turns.find(
+      (t) =>
+        t.id === (runId ?? record.turnId) ||
+        t.items.some(
+          (i) => i.type === 'userMessage' && i.clientId === operationId,
+        ),
+    );
+    return turn?.status === 'completed'
+      ? turn.items
+          .filter((i) => i.type === 'agentMessage')
+          .map((i) => i.text ?? '')
+          .join('\n\n')
+      : null;
+  }
   private snapshot(t: Turn): RunSnapshot {
     return {
       nativeId: t.id,

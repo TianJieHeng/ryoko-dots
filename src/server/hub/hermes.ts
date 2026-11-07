@@ -72,6 +72,24 @@ export class HermesAdapter implements RuntimeAdapter {
       nextCursor: r.nextCursor,
     };
   }
+  async result(
+    id: string,
+    operationId: string,
+    _runId: string | null,
+    guard: Guard,
+  ) {
+    if (!this.platform.delivery)
+      throw Error('Hermes result service unavailable.');
+    const result = await this.platform.delivery.readResult(
+      id,
+      operationId,
+      guard,
+    );
+    guard();
+    return result.publicationState === 'committed'
+      ? result.finalResponse
+      : null;
+  }
   private async command(
     id: string,
     operationId: string,

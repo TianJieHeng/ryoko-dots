@@ -150,6 +150,21 @@ export class CliAgentAdapter implements RuntimeAdapter {
       nextCursor: rows.length > 100 ? String(rows[99].seq) : null,
     };
   }
+  async result(
+    threadId: string,
+    operationId: string,
+    _runId: string | null,
+    guard: Guard,
+  ) {
+    guard();
+    this.thread(threadId);
+    const row = this.db
+      .prepare(
+        "SELECT m.text FROM messages m JOIN runs r ON r.id=? AND r.threadId=m.threadId WHERE m.id=? AND m.threadId=? AND m.committed=1 AND r.state='completed'",
+      )
+      .get(operationId, operationId + ':assistant', threadId);
+    return row ? String(row.text) : null;
+  }
   private message(
     id: string,
     threadId: string,

@@ -160,6 +160,41 @@ describe('versioned scoped multi-runtime API', () => {
       ).status,
     ).toBe(403);
   });
+  it('returns only the exact completed run output and protects it with dot scope', async () => {
+    const { hub, adapter, app, creds } = fixture();
+    adapter.result = vi.fn(
+      async (_thread, operation) => 'Result for ' + operation,
+    );
+    const thread = await hub.create(
+      'a',
+      randomUUID(),
+      'Scoped result',
+      () => {},
+    );
+    const first = randomUUID();
+    await hub.submit(thread.id, first, 'first', () => {});
+    expect((await hub.result(first, () => {})).text).toBe(
+      'Result for ' + first,
+    );
+    const second = randomUUID();
+    await hub.submit(thread.id, second, 'second', () => {});
+    expect((await hub.result(first, () => {})).text).toBe(
+      'Result for ' + first,
+    );
+    vi.mocked(adapter.inspect).mockResolvedValue({
+      nativeId: 'pending',
+      state: 'waiting_approval',
+    });
+    expect((await hub.result(second, () => {})).available).toBe(false);
+    const denied = creds.create('other', ['b'], false, 1);
+    expect(
+      (
+        await app.request(`http://localhost/api/v1/runs/${first}/result`, {
+          headers: { Authorization: 'Bearer ' + denied.token },
+        })
+      ).status,
+    ).toBe(403);
+  });
   it('pages more than 100 Dots and keeps default separate from runtime identity', () => {
     const { hub, adapter } = fixture();
     for (let i = 0; i < 120; i++)

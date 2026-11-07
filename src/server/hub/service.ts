@@ -365,6 +365,18 @@ export class DotHub {
     }
     return this.run(id);
   }
+  async result(id: string, guard: Guard) {
+    const run = await this.inspect(id, guard);
+    const thread = this.thread(run.threadId);
+    const adapter = this.adapter(thread.dotId);
+    if (!adapter.result) fail(409, 'Run-scoped output is unsupported.');
+    const text =
+      run.state === 'completed'
+        ? await adapter.result!(thread.nativeId!, id, run.nativeId, guard)
+        : null;
+    guard();
+    return { runId: id, state: run.state, available: text !== null, text };
+  }
   async cancel(id: string, cancelId: string, guard: Guard) {
     const r = this.run(id),
       t = this.thread(r.threadId);
