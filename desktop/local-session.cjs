@@ -9,6 +9,15 @@ async function openLocalSession({ origin, passwordFile, cookies }) {
     !['127.0.0.1', 'localhost'].includes(url.hostname)
   )
     throw Error('Automatic desktop sign-in requires a loopback origin.');
+  const saved = await cookies.get({ url: origin });
+  if (saved.length) {
+    const existing = await fetch(origin + '/api/auth/session', {
+      headers: { Cookie: saved.map((c) => `${c.name}=${c.value}`).join('; ') },
+      redirect: 'error',
+      signal: AbortSignal.timeout(10000),
+    });
+    if (existing.ok) return;
+  }
   const info = statSync(passwordFile);
   if (!info.isFile() || info.mode & 0o077 || info.uid !== process.getuid())
     throw Error(

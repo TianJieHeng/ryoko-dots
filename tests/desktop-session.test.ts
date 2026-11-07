@@ -20,7 +20,7 @@ function fixture() {
   return {
     origin: 'http://127.0.0.1:4310',
     passwordFile,
-    cookies: { set: vi.fn() },
+    cookies: { get: vi.fn().mockResolvedValue([]), set: vi.fn() },
   };
 }
 it('refuses automatic authentication to remote origins before reading credentials', async () => {
@@ -40,19 +40,17 @@ it('installs an HttpOnly session cookie without passing the password to the rend
   const input = fixture();
   vi.stubGlobal(
     'fetch',
-    vi
-      .fn()
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({ authenticated: true, expiresAt: 2000000000000 }),
-          {
-            headers: {
-              'set-cookie':
-                'dots_session=test-session; Path=/; HttpOnly; SameSite=Strict',
-            },
+    vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ authenticated: true, expiresAt: 2000000000000 }),
+        {
+          headers: {
+            'set-cookie':
+              'dots_session=test-session; Path=/; HttpOnly; SameSite=Strict',
           },
-        ),
+        },
       ),
+    ),
   );
   await openLocalSession(input);
   expect(input.cookies.set).toHaveBeenCalledWith(
@@ -66,4 +64,16 @@ it('installs an HttpOnly session cookie without passing the password to the rend
   expect(JSON.stringify(input.cookies.set.mock.calls)).not.toContain(
     'fixture-password',
   );
+});
+it('reuses a valid existing cookie without consuming another password login', async () => {
+  const input = fixture();
+  input.cookies.get.mockResolvedValue([
+    { name: 'dots-session', value: 'saved' },
+  ]);
+  const request = vi.fn().mockResolvedValue(new Response('{}'));
+  vi.stubGlobal('fetch', request);
+  await openLocalSession(input);
+  expect(request).toHaveBeenCalledTimes(1);
+  expect(request.mock.calls[0][0]).toBe(input.origin + '/api/auth/session');
+  expect(input.cookies.set).not.toHaveBeenCalled();
 });

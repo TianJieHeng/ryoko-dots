@@ -1205,3 +1205,11 @@ Three authentication tests passed, plus a fresh real Electron user-data profile
 opened the workspace without entering a password and remained signed in after
 reload. Focused lint passed. Codex delegation/terminal work continues separately.
 No CI; no secrets committed.
+
+## 2026-11-07 — Desktop automatic sign-in session reuse
+
+The desktop launcher now reuses its valid local session before attempting a new
+password login, avoiding unnecessary login throttling when reopening the app.
+Verified the actual Electron workspace opens without a password prompt; all four
+focused desktop authentication tests passed. Public API authentication remains
+intact. No CI; no credentials included in this change.
