@@ -1,3 +1,4 @@
+import { profileInput } from './profiles.js';
 import { CliAgentAdapter } from './cli-agent.js';
 import { CodexAdapter } from './codex.js';
 import { Hono, type Context } from 'hono';
@@ -72,6 +73,44 @@ export function hubRoutes(
       hub.thread(hub.run(id.parse(c.req.param('id'))).threadId).dotId,
       write,
     );
+  app.get('/profiles', (c) => {
+    authorize(c);
+    return c.json({ items: hub.profiles.list(c.get('apiPrincipal')?.dots) });
+  });
+  app.put('/profiles/:id', async (c) => {
+    authorize(c, undefined, true, true);
+    const input = profileInput.parse(await c.req.json());
+    if (input.id !== c.req.param('id'))
+      throw new HTTPException(400, { message: 'Profile ID mismatch.' });
+    hub.dot(input.dotId);
+    authorize(c, input.dotId, true, true);
+    return c.json(hub.profiles.save(input));
+  });
+  app.post('/profiles/:id/conversations', async (c) => {
+    const profileId = z.uuid().parse(c.req.param('id')).toLowerCase();
+    const input = z
+      .strictObject({
+        operationId: operation,
+        title: z.string().trim().min(1).max(200),
+      })
+      .parse(await c.req.json());
+    const guard = authorize(c, hub.profiles.get(profileId).dotId, true);
+    const profile = hub.profiles.snapshot(
+      input.operationId,
+      profileId,
+      input.title,
+    );
+    guard();
+    const conversation = await hub.create(
+      profile.dotId,
+      input.operationId,
+      input.title,
+      guard,
+    );
+    guard();
+    hub.profiles.bind(input.operationId, conversation.id);
+    return c.json({ ...conversation, profile }, 201);
+  });
   app.get('/runtime-templates', (c) => {
     authorize(c, undefined, false, true);
     return c.json({ items: hub.templates });

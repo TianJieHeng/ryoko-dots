@@ -1,3 +1,4 @@
+import { JobProfiles } from './profiles.js';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, randomUUID } from 'node:crypto';
 import { HTTPException } from 'hono/http-exception';
@@ -22,6 +23,7 @@ function fail(status: 400 | 403 | 404 | 409 | 503, message: string): never {
 const terminal = new Set(['completed', 'failed', 'cancelled']);
 export class DotHub {
   readonly db: DatabaseSync;
+  readonly profiles: JobProfiles;
   readonly adapters = new Map<string, RuntimeAdapter>();
   templates: { id: string; kind: string; name: string }[] = [];
   enroll?: (templateId: string, name: string) => HubDot;
@@ -53,6 +55,7 @@ export class DotHub {
     readonly maxConcurrent = 4,
   ) {
     this.db = new DatabaseSync(path);
+    this.profiles = new JobProfiles(this.db);
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
       CREATE TABLE IF NOT EXISTS hub_dots(id TEXT PRIMARY KEY,name TEXT NOT NULL,kind TEXT NOT NULL,runtime TEXT UNIQUE NOT NULL,archived INTEGER NOT NULL DEFAULT 0,isDefault INTEGER NOT NULL DEFAULT 0);
       CREATE UNIQUE INDEX IF NOT EXISTS hub_default ON hub_dots(isDefault) WHERE isDefault=1;
@@ -297,7 +300,12 @@ export class DotHub {
     try {
       this.settle(
         operationId,
-        await a.submit(t.nativeId, operationId, text, guard),
+        await a.submit(
+          t.nativeId,
+          operationId,
+          this.profileText(id, text),
+          guard,
+        ),
       );
     } catch {
       this.settle(operationId, {
@@ -311,6 +319,12 @@ export class DotHub {
     }
     guard();
     return this.run(operationId);
+  }
+  private profileText(id: string, text: string) {
+    const profile = this.profiles.forConversation(id);
+    return profile
+      ? `[Job profile: ${profile.name}; revision ${profile.version}]\n${profile.instructions}\n[/Job profile]\n\n${text}`
+      : text;
   }
   private event(id: string, state: HubRun['state']) {
     this.db

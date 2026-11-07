@@ -1320,3 +1320,7 @@ resolve to the same directory, and prior test files remain preserved under
 previous-workspaces/. The computer is connected and all five services are active.
 Only local configuration and documentation changed; no application rebuild or
 new unit tests were needed. No CI and no secrets committed.
+
+### 2026-11-07 — Agent Chat coordination phase 2: reusable job profiles
+Added owner-managed versioned job profiles over enrolled Dots runtimes and a scoped profile-conversation endpoint. Each creation operation freezes the profile revision before native session creation; retry retains that snapshot. Subsequent turns receive frozen profile instructions while operation IDs and original input remain unchanged. Profiles inherit runtime model/workspace/approval policy and cannot rebind to another runtime. No user job profiles were created automatically.
+Validation: changed-module TypeScript check and six profile/hub tests passed under Agent Chat's resource wrapper; source formatted. Full server TypeScript exceeded the wrapper's fixed 512 MiB heap; limits were preserved and this remains a final verification limitation. This phase is source-only; running Dots service has not yet been rebuilt/restarted. No CI or credentials committed.
