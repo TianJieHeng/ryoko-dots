@@ -12,6 +12,7 @@ const { promisify } = require('node:util');
 const run = promisify(execFile);
 const { readFileSync, existsSync } = require('node:fs');
 const { homedir } = require('node:os');
+const { openLocalSession } = require('./local-session.cjs');
 const configFile = resolve(homedir(), '.config/ryoko-dots/desktop.json');
 const installed = existsSync(configFile)
   ? JSON.parse(readFileSync(configFile, 'utf8'))
@@ -140,6 +141,11 @@ async function start() {
     const value = await response.json();
     if (!response.ok || value.application !== 'ryoko-dots')
       throw Error('The listener is not the expected Dots backend.');
+    await openLocalSession({
+      origin,
+      passwordFile: resolve(homedir(), '.config/ryoko-dots/owner-password'),
+      cookies: session.defaultSession.cookies,
+    });
     await window.loadURL(origin);
   } catch {
     const { response } = await dialog.showMessageBox(window, {

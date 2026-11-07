@@ -11,6 +11,10 @@ cpSync(resolve(root, 'node_modules/electron/dist'), output, {
 const app = resolve(output, 'resources/app');
 mkdirSync(app, { recursive: true });
 cpSync(resolve(root, 'desktop/main.cjs'), resolve(app, 'main.cjs'));
+cpSync(
+  resolve(root, 'desktop/local-session.cjs'),
+  resolve(app, 'local-session.cjs'),
+);
 writeFileSync(
   resolve(app, 'package.json'),
   JSON.stringify({ name: 'ryoko-dots', version: '1.0.0', main: 'main.cjs' }),

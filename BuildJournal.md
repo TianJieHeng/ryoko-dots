@@ -1190,3 +1190,18 @@ Six local tests passed: restart/repeat deduplication, lost receipt recovery,
 paginated completed results, unknown creation refusal, approval pause, and private
 key permissions. Installed the skill and command; real Ryoko-to-Codex verification
 is the next phase. No CI. Secrets and job state stay outside Git.
+
+## 2026-11-07 — Desktop opens without a password prompt
+
+At the owner's request, the Electron main process now authenticates automatically
+using the existing private local credential before opening the workspace. Only
+the HttpOnly session cookie enters the renderer; password contents are never
+embedded in UI code. The helper permits loopback destinations only, refuses
+redirects and requires a private user-owned credential file. Browser/API security
+and public tunnel key requirements remain intact. Desktop packaging includes the
+new helper.
+
+Three authentication tests passed, plus a fresh real Electron user-data profile
+opened the workspace without entering a password and remained signed in after
+reload. Focused lint passed. Codex delegation/terminal work continues separately.
+No CI; no secrets committed.
