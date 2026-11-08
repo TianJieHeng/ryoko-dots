@@ -1,3 +1,4 @@
+import { ScopedApprovals } from './approvals.js';
 import { profileInput } from './profiles.js';
 import { CliAgentAdapter } from './cli-agent.js';
 import { CodexAdapter } from './codex.js';
@@ -22,6 +23,7 @@ export function hubRoutes(
   auth: OwnerAuth,
 ) {
   const app = new Hono();
+  const approvals = new ScopedApprovals(hub);
   const rates = new Map<string, { at: number; n: number }>();
   app.use('*', async (c, next) => {
     c.header('Cache-Control', 'no-store');
@@ -249,17 +251,61 @@ export function hubRoutes(
       await hub.cancel(c.req.param('id'), input.operationId, guard),
     );
   });
+  const approvalGuard = (c: Context, decision = false) => {
+    const t = hub.thread(id.parse(c.req.param('id')));
+    const guard = authorize(c, t.dotId);
+    const principal = c.get('apiPrincipal');
+    if (
+      principal &&
+      (decision
+        ? principal.approvals !== 'decide'
+        : principal.approvals === 'none')
+    )
+      throw new HTTPException(403, {
+        message: 'Explicit approval permission required.',
+      });
+    return guard;
+  };
+  app.get('/approval-operations/:id', (c) => {
+    authorize(c);
+    const p = c.get('apiPrincipal');
+    if (p && p.approvals === 'none')
+      throw new HTTPException(403, {
+        message: 'Explicit approval permission required.',
+      });
+    return c.json(
+      approvals.inspect(p?.id ?? 'owner', operation.parse(c.req.param('id'))),
+    );
+  });
   app.get('/conversations/:id/approvals', (c) => {
-    threadGuard(c);
-    const t = hub.thread(c.req.param('id'));
-    const a = hub.adapter(t.dotId);
+    const guard = approvalGuard(c);
+    guard();
     return c.json({
-      items:
-        (a instanceof CodexAdapter || a instanceof CliAgentAdapter) &&
-        t.nativeId
-          ? a.pendingApprovals(t.nativeId)
-          : [],
+      items: approvals.list(c.req.param('id')),
+      remoteDecisions:
+        c.get('apiPrincipal')?.approvals === 'decide' || !c.get('apiPrincipal'),
     });
+  });
+  app.post('/conversations/:id/approvals/:approvalId/decision', async (c) => {
+    const guard = approvalGuard(c, true);
+    const input = z
+      .strictObject({
+        operationId: operation,
+        runId: id,
+        expectedVersion: z.string().regex(/^[0-9a-f]{64}$/),
+        decision: z.enum(['accept', 'reject']),
+      })
+      .parse(await c.req.json());
+    guard();
+    return c.json(
+      approvals.decide(
+        c.get('apiPrincipal')?.id ?? 'owner',
+        c.req.param('id'),
+        c.req.param('approvalId'),
+        input,
+        guard,
+      ),
+    );
   });
   app.post('/conversations/:id/approvals/:approvalId', async (c) => {
     const guard = threadGuard(c, true);
@@ -289,6 +335,7 @@ export function hubRoutes(
         dots: z.array(id).min(1).max(100),
         write: z.boolean(),
         lifetimeDays: z.number().int().min(1).max(365),
+        approvals: z.enum(['none', 'read', 'decide']).default('none'),
       })
       .parse(await c.req.json());
     input.dots.forEach((d) => hub.dot(d));
@@ -298,6 +345,7 @@ export function hubRoutes(
         input.dots,
         input.write,
         input.lifetimeDays,
+        input.approvals,
       ),
       201,
     );
@@ -366,6 +414,38 @@ export const openapi = {
     securitySchemes: { apiKey: { type: 'http', scheme: 'bearer' } },
   },
   paths: {
+    '/conversations/{conversationId}/approvals': {
+      get: {
+        summary: 'Native pending approvals; explicit read or decide grant',
+        parameters: [param('conversationId')],
+        responses: { 200: response, 403: response, 409: response },
+      },
+    },
+    '/conversations/{conversationId}/approvals/{approvalId}/decision': {
+      post: {
+        summary:
+          'Explicit scoped approval decision; immutable operation, exact run and version required',
+        parameters: [param('conversationId'), param('approvalId')],
+        requestBody: body(
+          {
+            operationId,
+            runId: { type: 'string' },
+            expectedVersion: { type: 'string', pattern: '^[0-9a-f]{64}$' },
+            decision: { enum: ['accept', 'reject'] },
+          },
+          ['operationId', 'runId', 'expectedVersion', 'decision'],
+        ),
+        responses: { 200: response, 403: response, 409: response },
+      },
+    },
+    '/approval-operations/{operationId}': {
+      get: {
+        summary:
+          'Inspect own decision receipt without repeating the native action',
+        parameters: [param('operationId')],
+        responses: { 200: response, 404: response },
+      },
+    },
     '/dots': {
       get: {
         summary: 'List accessible Dots; cursor pagination',

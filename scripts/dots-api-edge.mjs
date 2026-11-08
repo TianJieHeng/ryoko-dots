@@ -22,6 +22,9 @@ const routes = [
   ['GET', `/runs/${identifier}/events`],
   ['GET', `/runs/${identifier}/children`],
   ['POST', `/runs/${identifier}/cancel`],
+  ['GET', `/conversations/${identifier}/approvals`],
+  ['POST', `/conversations/${identifier}/approvals/${identifier}/decision`],
+  ['GET', `/approval-operations/${identifier}`],
   ['GET', '/openapi.json'],
 ].map(([method, path]) => [
   method,

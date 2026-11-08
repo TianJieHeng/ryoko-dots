@@ -233,3 +233,123 @@ describe('versioned scoped multi-runtime API', () => {
     ).rejects.toThrow('archived');
   });
 });
+
+describe('explicit scoped native approval authority', () => {
+  it('requires a separate grant, exact run/version and replays only one native decision', async () => {
+    const { hub, creds, adapter, app } = fixture();
+    let pending = true,
+      decisions = 0;
+    adapter.capabilities.approvals = true;
+    adapter.pendingApprovals = () =>
+      pending
+        ? [
+            {
+              id: 'approval-a',
+              turnId: 'native-run',
+              description: 'Run the requested shell command?',
+            },
+          ]
+        : [];
+    adapter.approve = (_thread, _id, _accept, guard) => {
+      guard();
+      decisions++;
+      pending = false;
+    };
+    const t = await hub.create('a', randomUUID(), 'approval fixture', () => {});
+    const run = await hub.submit(t.id, randomUUID(), 'fixture', () => {});
+    const ordinary = creds.create('ordinary', ['a'], true, 1),
+      scoped = creds.create('portal approvals', ['a'], false, 1, 'decide');
+    const headers = (token: string) => ({
+        authorization: 'Bearer ' + token,
+        'content-type': 'application/json',
+      }),
+      url = `http://localhost/api/v1/conversations/${t.id}/approvals`;
+    expect(
+      (await app.request(url, { headers: headers(ordinary.token) })).status,
+    ).toBe(403);
+    const list = await (
+      await app.request(url, { headers: headers(scoped.token) })
+    ).json();
+    expect(list.items[0].runId).toBe(run.id);
+    const payload = {
+      operationId: randomUUID(),
+      runId: run.id,
+      expectedVersion: list.items[0].version,
+      decision: 'accept',
+    };
+    const request = (body: unknown, token = scoped.token) =>
+      app.request(url + '/approval-a/decision', {
+        method: 'POST',
+        headers: headers(token),
+        body: JSON.stringify(body),
+      });
+    expect(
+      (await request({ ...payload, expectedVersion: '0'.repeat(64) })).status,
+    ).toBe(409);
+    expect((await request(payload, ordinary.token)).status).toBe(403);
+    expect((await request(payload)).status).toBe(200);
+    expect((await request(payload)).status).toBe(200);
+    expect(decisions).toBe(1);
+    expect((await request({ ...payload, decision: 'reject' })).status).toBe(
+      409,
+    );
+    expect(
+      (
+        await app.request(
+          'http://localhost/api/v1/approval-operations/' + payload.operationId,
+          { headers: headers(scoped.token) },
+        )
+      ).status,
+    ).toBe(200);
+    creds.revoke(scoped.id);
+    expect((await request(payload)).status).toBe(401);
+  });
+});
+
+describe('uncertain approval fence', () => {
+  it('blocks new operation IDs after a native decision loses its acknowledgement', async () => {
+    const { hub, creds, adapter, app } = fixture();
+    let effects = 0;
+    adapter.capabilities.approvals = true;
+    adapter.pendingApprovals = () => [
+      { id: 'approval-a', turnId: 'native-run', description: 'Fixture' },
+    ];
+    adapter.approve = () => {
+      effects++;
+      throw Error('Lost acknowledgement');
+    };
+    const t = await hub.create('a', randomUUID(), 'fixture', () => {});
+    const run = await hub.submit(t.id, randomUUID(), 'fixture', () => {});
+    const credential = creds.create(
+      'approval fixture',
+      ['a'],
+      false,
+      1,
+      'decide',
+    );
+    const headers = {
+      authorization: 'Bearer ' + credential.token,
+      'content-type': 'application/json',
+    };
+    const url = `http://localhost/api/v1/conversations/${t.id}/approvals`;
+    const list = await (await app.request(url, { headers })).json();
+    const body = {
+      operationId: randomUUID(),
+      runId: run.id,
+      expectedVersion: list.items[0].version,
+      decision: 'accept',
+    };
+    const send = (payload: unknown) =>
+      app.request(url + '/approval-a/decision', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+    expect((await send(body)).status).toBe(503);
+    expect((await send(body)).status).toBe(409);
+    expect((await send({ ...body, operationId: randomUUID() })).status).toBe(
+      409,
+    );
+    expect(effects).toBe(1);
+  });
+});

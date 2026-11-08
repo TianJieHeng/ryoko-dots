@@ -56,5 +56,9 @@ export interface RuntimeAdapter {
     runId: string | null,
     guard: Guard,
   ): Promise<ChildRun[]>;
+  pendingApprovals?(
+    nativeId: string,
+  ): { id: string; turnId: string; description: string }[];
+  approve?(nativeId: string, id: string, accept: boolean, guard: Guard): void;
   stop(): Promise<void>;
 }

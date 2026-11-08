@@ -19,8 +19,17 @@ export class ApiCredentials {
     this.db.exec(
       'CREATE TABLE IF NOT EXISTS hub_api_credentials(id TEXT PRIMARY KEY,name TEXT NOT NULL,digest TEXT UNIQUE NOT NULL,dots TEXT NOT NULL,writeAccess INTEGER NOT NULL,createdAt INTEGER NOT NULL,expiresAt INTEGER NOT NULL,revoked INTEGER NOT NULL DEFAULT 0)',
     );
+    this.db.exec(
+      "CREATE TABLE IF NOT EXISTS hub_api_approval_grants(credentialId TEXT PRIMARY KEY,mode TEXT NOT NULL CHECK(mode IN ('read','decide')))",
+    );
   }
-  create(name: string, dots: string[], write: boolean, lifetimeDays: number) {
+  create(
+    name: string,
+    dots: string[],
+    write: boolean,
+    lifetimeDays: number,
+    approvals: 'none' | 'read' | 'decide' = 'none',
+  ) {
     const token = 'dots_' + randomBytes(32).toString('base64url');
     const id = randomUUID();
     this.db
@@ -34,6 +43,10 @@ export class ApiCredentials {
         Date.now(),
         Date.now() + lifetimeDays * 86400000,
       );
+    if (approvals !== 'none')
+      this.db
+        .prepare('INSERT INTO hub_api_approval_grants VALUES(?,?)')
+        .run(id, approvals);
     return { id, token };
   }
   list() {
@@ -42,7 +55,7 @@ export class ApiCredentials {
         'SELECT id,name,dots,writeAccess,createdAt,expiresAt,revoked FROM hub_api_credentials ORDER BY createdAt DESC',
       )
       .all()
-      .map((r) => ({ ...r, dots: JSON.parse(String(r.dots)) }));
+      .map((r) => ({ ...r, dots: JSON.parse(String(r.dots)),approvals:this.db.prepare("SELECT mode FROM hub_api_approval_grants WHERE credentialId=?").get(r.id)?.mode??"none" }));
   }
   revoke(id: string) {
     this.db
@@ -74,6 +87,11 @@ export class ApiCredentials {
       id: row.id,
       dots: JSON.parse(row.dots) as string[],
       write: !!row.writeAccess,
+      approvals: (this.db
+        .prepare(
+          'SELECT mode FROM hub_api_approval_grants WHERE credentialId=?',
+        )
+        .get(row.id)?.mode ?? 'none') as 'none' | 'read' | 'decide',
       assertCurrent,
     };
   }
