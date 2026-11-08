@@ -3,7 +3,7 @@
 Description=Ryoko Dots API-only Cloudflare Tunnel
 After=network-online.target ryoko-dots-api-edge.service
 Wants=network-online.target
-Requires=ryoko-dots-api-edge.service
+Wants=ryoko-dots-api-edge.service
 ConditionPathExists=%h/.config/ryoko-dots/cloudflare/config.yml
 
 [Service]

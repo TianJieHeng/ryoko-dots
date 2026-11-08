@@ -85,3 +85,27 @@ checks passed. Agent Chat documents the initial consent failure and explicit
 recovery, with sanitized evidence in `docs/native-migration-acceptance.json`.
 Bridge identity/wakeup ownership and individual approval controls remain intact.
 The final adapter code is deployed at 2141d64. Broad typecheck memory limitations above remain applicable.
+
+## 2026-11-08 — Workstation automatic startup and recovery
+
+Enabled a reproducible nine-service workstation target and recovery drop-ins;
+existing Linger=yes starts user services at boot before desktop login. Includes
+Dots/computer/delegation bridge/API edge/tunnel, Agent Chat bridge, independent
+Hermes API/tunnel and Portal Dashboard. Ten-second retry delay, no startup retry
+cap; native workers remain on demand. Removed hard Requires dependencies that
+left the Dots tunnel and edge stopped after Dots restarts. Preserved credentials,
+API authentication, resource limits and independent recovery endpoint.
+
+Inventory found the computer supervisor crash-looping on a missing compiled
+browser/security.js. Added browser modules to computer build roots, rebuilt, and
+reran actual 16-action host qualification after the stale receipt was correctly
+rejected. Browser, filesystem, symlink refusal and isolated shell checks passed;
+new receipt matches the actual target. No qualification bypass.
+
+Validated shell syntax/systemd units, nine enabled/running services, Dots HTTP
+200 and computer protocol health. Restarted Dots: computer recovered and edge/
+tunnel remained active. Killed the Dots tunnel process: systemd restarted it and
+Cloudflare registered new connections after ten seconds. Both tunnel public
+unauthenticated probes returned 403; no authenticated external API claim.
+No reboot/power cut performed. Firmware power-on-after-AC-loss remains a physical
+host setting to verify. See deployment/workstation-startup/README.md.

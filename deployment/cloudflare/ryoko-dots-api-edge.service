@@ -1,7 +1,7 @@
 [Unit]
 Description=Ryoko Dots API-only loopback gateway
 After=ryoko-dots.service
-Requires=ryoko-dots.service
+Wants=ryoko-dots.service
 
 [Service]
 Type=simple

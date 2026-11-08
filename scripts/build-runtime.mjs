@@ -16,7 +16,7 @@ if (!['server', 'computer'].includes(target))
 const roots =
   target === 'server'
     ? ['server', 'browser', 'shared', 'computer']
-    : ['computer', 'shared'];
+    : ['computer', 'browser', 'shared'];
 const output = resolve('dist', target),
   stage = output + '.next';
 await rm(stage, { recursive: true, force: true });
