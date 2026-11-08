@@ -43,3 +43,12 @@ was preserved, not relaxed. New coordinator conversation successfully reached re
 
 TypeScript, server build and 19 focused hub/profile/native-adapter tests passed.
 Hermes' canonical test runner passed 40 policy/budget/mutation tests. No CI.
+
+## Native migration phase 6 qualification — 2026-11-08
+
+Authenticated discovery smoke passed in actual installed Codex, Claude and Kimi
+clients. The script now requires an enrolled private binding rather than a dummy
+capability. Pinned Hermes cfa0209fd2: discovers granted MCP servers inside an
+admitted turn before tool snapshot refresh. Canonical Hermes budget tests: 12
+passed. Server build passed; live six-slot model handoff remains in progress,
+tracked in Agent Chat's build journal. Host recovery service remains separate.

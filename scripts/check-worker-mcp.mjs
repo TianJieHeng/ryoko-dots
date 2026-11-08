@@ -11,15 +11,8 @@ import assert from 'node:assert/strict';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 const connector = resolve(process.argv[2]);
 const dir = mkdtempSync(join(tmpdir(), 'native-mcp-discovery-'));
-const binding = join(dir, 'binding.json');
-writeFileSync(
-  binding,
-  JSON.stringify({
-    url: 'http://127.0.0.1:1/worker-tools',
-    token: '0'.repeat(64),
-  }),
-  { mode: 0o600 },
-);
+if (!process.argv[3]) throw Error('Supply a private enrolled worker binding file for authenticated discovery.');
+const binding = resolve(process.argv[3]);
 // Observe protocol method names only; do not record params, credentials or responses.
 const proxy = join(dir, 'observe.py');
 writeFileSync(

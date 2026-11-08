@@ -17,7 +17,7 @@ import type {
   WorkflowRecord,
 } from '../../shared/runtime/be06-producer/wire.generated.js';
 
-export const BE06_PRODUCER_COMMIT = '08ebfadbfc3b48f70dc4cb22a1e22e9c2ea5b171';
+export const BE06_PRODUCER_COMMIT = 'cfa0209fd2d9279ca0f0fb27a4d7da7d6c64ab99';
 export type Guard = () => void;
 /** Construct only from verified server bindings + producer session inspection, never browser settings. */
 export interface Be06Binding {
