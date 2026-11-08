@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { workerMcp, type WorkerMcpConfig } from './worker-mcp.js';
 import { spawn } from 'node:child_process';
 import { Readable, Writable } from 'node:stream';
 import { DatabaseSync } from 'node:sqlite';
@@ -14,11 +16,13 @@ import type { RuntimeAdapter, Guard, RunSnapshot } from './adapter.js';
 import type { HubMessage, RunState } from '../../shared/hub/types.js';
 export interface CliAgentConfig {
   kind: 'claude' | 'kimi';
+  workerMcp?: WorkerMcpConfig;
   executable: string;
   cwd: string;
   model?: string;
 }
 interface Thread {
+  operationId: string;
   id: string;
   title: string;
   nativeId: string | null;
@@ -297,6 +301,7 @@ export class CliAgentAdapter implements RuntimeAdapter {
     this.db
       .prepare('UPDATE threads SET nativeId=? WHERE id=?')
       .run(sessionId, threadId);
+    const mcp = workerMcp(this.config.workerMcp, t.operationId);
     const stream = query({
       prompt: text,
       options: {
@@ -305,6 +310,7 @@ export class CliAgentAdapter implements RuntimeAdapter {
         abortController: abort,
         permissionMode: 'default',
         settingSources: ['user', 'project', 'local'],
+        ...(mcp ? { mcpServers: { agent_chat: mcp } } : {}),
         ...(t.nativeId ? { resume: sessionId } : { sessionId }),
         ...(this.config.model ? { model: this.config.model } : {}),
         canUseTool: async (tool, input, { signal }) =>
@@ -442,28 +448,49 @@ export class CliAgentAdapter implements RuntimeAdapter {
         clientCapabilities: {},
         clientInfo: { name: 'opendots', version: '1' },
       });
+      const mcp = workerMcp(
+        this.config.workerMcp,
+        this.thread(threadId).operationId,
+      );
+      const mcpServers = mcp
+        ? [
+            {
+              name: 'agent_chat',
+              command: mcp.command,
+              args: mcp.args,
+              env: Object.entries(mcp.env).map(([name, value]) => ({
+                name,
+                value,
+              })),
+            },
+          ]
+        : [];
       let nativeId = this.thread(threadId).nativeId;
       if (nativeId)
         await connection.agent.request('session/load', {
           sessionId: nativeId,
           cwd: this.config.cwd,
-          mcpServers: [],
+          mcpServers,
         });
       else {
-        const session = await connection.agent.request('session/new', {
-          cwd: this.config.cwd,
-          mcpServers: [],
-        });
+        const session = z.object({ sessionId: z.string().min(1) }).parse(
+          await connection.agent.request('session/new', {
+            cwd: this.config.cwd,
+            mcpServers,
+          }),
+        );
         nativeId = session.sessionId;
         this.db
           .prepare('UPDATE threads SET nativeId=? WHERE id=?')
           .run(nativeId, threadId);
       }
       prompting = true;
-      const result = await connection.agent.request('session/prompt', {
-        sessionId: nativeId,
-        prompt: [{ type: 'text', text }],
-      });
+      const result = z.object({ stopReason: z.string() }).parse(
+        await connection.agent.request('session/prompt', {
+          sessionId: nativeId,
+          prompt: [{ type: 'text', text }],
+        }),
+      );
       this.message(id + ':assistant', threadId, 'assistant', content);
       this.state(
         id,

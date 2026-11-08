@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 const sdk = vi.hoisted(() => ({ query: vi.fn() }));
@@ -189,4 +189,38 @@ it('cancels a pending tool decision without claiming successful completion', asy
   expect(adapter.pendingApprovals(t)).toHaveLength(0);
   await adapter.submit(t, 'run', 'execute', guard);
   expect(sdk.query).toHaveBeenCalledTimes(1);
+});
+
+it('passes the bound per-conversation MCP connector to Claude without exposing a token', async () => {
+  const { adapter, config } = fixture();
+  const operationId = 'aa000000-0000-4000-8000-000000000001';
+  Object.assign(config, {
+    workerMcp: {
+      directory: config.cwd,
+      command: '/usr/bin/node',
+      script: '/owner/connector.ts',
+    },
+  });
+  writeFileSync(join(config.cwd, operationId + '.json'), '{}', { mode: 0o600 });
+  sdk.query.mockImplementation(() =>
+    Object.assign(
+      (async function* () {
+        yield {
+          type: 'result',
+          subtype: 'success',
+          is_error: false,
+          result: 'DONE',
+        };
+      })(),
+      { close() {} },
+    ),
+  );
+  const id = await adapter.create(operationId, 'MCP', guard);
+  await adapter.submit(id, 'mcp-run', 'Read assigned thread', guard);
+  await vi.waitFor(() => expect(sdk.query).toHaveBeenCalledTimes(1));
+  const options = sdk.query.mock.calls[0][0].options;
+  expect(options.mcpServers.agent_chat.env).toEqual({
+    AGENT_CHAT_BINDING_FILE: join(config.cwd, operationId + '.json'),
+  });
+  expect(options.permissionMode).toBe('default');
 });

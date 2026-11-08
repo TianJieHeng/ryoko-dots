@@ -9,6 +9,13 @@ import {
 } from '../runtime/stdio.js';
 import { HermesAdapter } from './hermes.js';
 import type { DotHub } from './service.js';
+const workerMcp = z
+  .strictObject({
+    directory: z.string().refine(isAbsolute),
+    command: z.string().refine(isAbsolute),
+    script: z.string().refine(isAbsolute),
+  })
+  .optional();
 const path = z.string().refine(isAbsolute);
 export const runtimeManifest = z.strictObject({
   version: z.literal(1),
@@ -23,6 +30,7 @@ export const runtimeManifest = z.strictObject({
         }),
         z.strictObject({
           kind: z.literal('claude'),
+          workerMcp,
           id: z.string().regex(/^[a-z0-9-]{1,64}$/),
           name: z.string().min(1).max(80),
           executable: path,
@@ -31,6 +39,7 @@ export const runtimeManifest = z.strictObject({
         }),
         z.strictObject({
           kind: z.literal('kimi'),
+          workerMcp,
           id: z.string().regex(/^[a-z0-9-]{1,64}$/),
           name: z.string().min(1).max(80),
           executable: path,
@@ -38,6 +47,7 @@ export const runtimeManifest = z.strictObject({
         }),
         z.strictObject({
           kind: z.literal('codex'),
+          workerMcp,
           id: z.string().regex(/^[a-z0-9-]{1,64}$/),
           name: z.string().min(1).max(80),
           executable: path,

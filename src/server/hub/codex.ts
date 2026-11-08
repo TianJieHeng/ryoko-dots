@@ -1,3 +1,4 @@
+import { workerMcp, type WorkerMcpConfig } from './worker-mcp.js';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { DatabaseSync } from 'node:sqlite';
@@ -50,6 +51,7 @@ interface Approval {
   description: string;
 }
 export interface CodexConfig {
+  workerMcp?: WorkerMcpConfig;
   executable: string;
   cwd: string;
   home: string;
@@ -260,12 +262,23 @@ export class CodexAdapter implements RuntimeAdapter {
     if (!this.db.prepare('SELECT id FROM codex_threads WHERE id=?').get(id))
       throw Error('Codex thread is not enrolled in this Dot.');
   }
+  private mcpConfig(operationId: string) {
+    const mcp = workerMcp(this.config.workerMcp, operationId);
+    return mcp ? { config: { mcp_servers: { agent_chat: mcp } } } : {};
+  }
   private async resume(id: string) {
     this.assertThread(id);
     await this.start();
     if (!this.resumed.has(id)) {
       await this.rpc('thread/resume', {
         threadId: id,
+        ...this.mcpConfig(
+          String(
+            this.db
+              .prepare('SELECT operationId FROM codex_threads WHERE id=?')
+              .get(id)!.operationId,
+          ),
+        ),
         cwd: this.config.cwd,
         approvalPolicy: 'on-request',
         sandbox: 'workspace-write',
@@ -283,6 +296,7 @@ export class CodexAdapter implements RuntimeAdapter {
     guard();
     const r = z.object({ thread }).parse(
       await this.rpc('thread/start', {
+        ...this.mcpConfig(operationId),
         cwd: this.config.cwd,
         approvalPolicy: 'on-request',
         sandbox: 'workspace-write',
