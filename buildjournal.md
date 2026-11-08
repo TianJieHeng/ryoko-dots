@@ -65,3 +65,12 @@ protocol reference: https://learn.chatgpt.com/docs/app-server, verified against
 installed Codex 0.163.0 generated schemas. Pilot 5c4655f0 was explicitly cancelled
 and drained before deployment; its first backend artifact exists but native
 reporting failed, so it is not acceptance evidence. Fresh pilot follows.
+
+Phase 6 protocol correction: an actual Codex 0.163.0 model probe (with both stable
+and experimental capability settings) showed write consent uses
+mcpServer/elicitation/request with codex_approval_kind=mcp_tool_call and an empty
+object form. Added that exact form to the same approval queue. Replies grant only
+one action, never the offered session/always persistence. All six adapter tests
+and targeted TypeScript pass, including both protocol shapes, accept/decline,
+foreign thread, revoked guard and stale response. Diagnostic probes explicitly
+declined consent and produced no external message. No approval policy was disabled.

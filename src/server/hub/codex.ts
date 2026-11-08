@@ -50,6 +50,7 @@ interface Approval {
   requestId: number | string;
   description: string;
   questionId?: string;
+  mcpConsent?: boolean;
 }
 export interface CodexConfig {
   workerMcp?: WorkerMcpConfig;
@@ -236,12 +237,30 @@ export class CodexAdapter implements RuntimeAdapter {
       question.data.options.every((o) =>
         ['Accept', 'Decline', 'Cancel'].includes(o.label),
       );
+    const mcpConsent =
+      method === 'mcpServer/elicitation/request' &&
+      turnId !== '' &&
+      z
+        .object({
+          serverName: z.string().min(1),
+          mode: z.literal('form'),
+          message: z.string(),
+          requestedSchema: z
+            .object({
+              type: z.literal('object'),
+              properties: z.object({}).strict(),
+            })
+            .strict(),
+          _meta: z.object({ codex_approval_kind: z.literal('mcp_tool_call') }),
+        })
+        .safeParse(p).success;
     if (
       ![
         'item/commandExecution/requestApproval',
         'item/fileChange/requestApproval',
       ].includes(method) &&
-      !toolConsent
+      !toolConsent &&
+      !mcpConsent
     ) {
       this.write({
         id: requestId,
@@ -262,15 +281,26 @@ export class CodexAdapter implements RuntimeAdapter {
       ...(toolConsent && question.success
         ? { questionId: question.data.id }
         : {}),
+      ...(mcpConsent ? { mcpConsent: true } : {}),
       description: JSON.stringify(
-        toolConsent && question.success
-          ? { question: question.data.question, options: question.data.options }
-          : {
-              command: p.command ?? null,
-              cwd: p.cwd ?? null,
-              reason: p.reason ?? null,
-              grantRoot: p.grantRoot ?? null,
-            },
+        mcpConsent
+          ? {
+              server: p.serverName,
+              message: p.message,
+              arguments:
+                (p._meta as Record<string, unknown>).tool_params ?? null,
+            }
+          : toolConsent && question.success
+            ? {
+                question: question.data.question,
+                options: question.data.options,
+              }
+            : {
+                command: p.command ?? null,
+                cwd: p.cwd ?? null,
+                reason: p.reason ?? null,
+                grantRoot: p.grantRoot ?? null,
+              },
         null,
         2,
       ),
@@ -279,7 +309,14 @@ export class CodexAdapter implements RuntimeAdapter {
   pendingApprovals(threadId: string) {
     return [...this.approvals.values()]
       .filter((a) => a.threadId === threadId)
-      .map(({ requestId: _, questionId: _questionId, ...a }) => a);
+      .map(
+        ({
+          requestId: _,
+          questionId: _questionId,
+          mcpConsent: _mcpConsent,
+          ...a
+        }) => a,
+      );
   }
   approve(threadId: string, id: string, accept: boolean, guard: Guard) {
     guard();
@@ -288,13 +325,15 @@ export class CodexAdapter implements RuntimeAdapter {
       throw Error('Approval expired or does not belong to this conversation.');
     this.write({
       id: a.requestId,
-      result: a.questionId
-        ? {
-            answers: {
-              [a.questionId]: { answers: [accept ? 'Accept' : 'Decline'] },
-            },
-          }
-        : { decision: accept ? 'accept' : 'decline' },
+      result: a.mcpConsent
+        ? { action: accept ? 'accept' : 'decline', content: accept ? {} : null }
+        : a.questionId
+          ? {
+              answers: {
+                [a.questionId]: { answers: [accept ? 'Accept' : 'Decline'] },
+              },
+            }
+          : { decision: accept ? 'accept' : 'decline' },
     });
     this.approvals.delete(id);
   }

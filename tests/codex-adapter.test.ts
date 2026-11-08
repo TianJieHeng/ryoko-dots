@@ -13,7 +13,7 @@ const clean: (() => Promise<void>)[] = [];
 afterEach(async () => {
   for (const f of clean.splice(0)) await f();
 });
-function fixture(consent = false) {
+function fixture(consent: boolean | 'mcp' = false) {
   const root = mkdtempSync(join(tmpdir(), 'dots-codex-fixture-'));
   const exe = join(root, 'runtime.py');
   writeFileSync(
@@ -32,7 +32,9 @@ for line in sys.stdin:
  elif m=='thread/resume': result={}
  elif m=='turn/start':
   if ${consent ? 'True' : 'False'}:
-   print(json.dumps({'id':901,'method':'item/tool/requestUserInput','params':{'threadId':'owned-thread','turnId':'turn-1','questions':[{'id':'mcp-consent','question':'Post this fixture report?','options':[{'label':'Accept','description':'Post once'},{'label':'Decline','description':'Do not post'},{'label':'Cancel','description':'Cancel'}]}]}}),flush=True)
+   if ${consent === 'mcp' ? 'True' : 'False'}:
+    print(json.dumps({'id':901,'method':'mcpServer/elicitation/request','params':{'threadId':'owned-thread','turnId':'turn-1','serverName':'agent_chat','mode':'form','message':'Post this fixture report?','requestedSchema':{'type':'object','properties':{}},'_meta':{'codex_approval_kind':'mcp_tool_call','persist':['session','always'],'tool_params':{'content':'fixture report'}}}}),flush=True)
+   else: print(json.dumps({'id':901,'method':'item/tool/requestUserInput','params':{'threadId':'owned-thread','turnId':'turn-1','questions':[{'id':'mcp-consent','question':'Post this fixture report?','options':[{'label':'Accept','description':'Post once'},{'label':'Decline','description':'Do not post'},{'label':'Cancel','description':'Cancel'}]}]}}),flush=True)
   t={'id':'turn-1','status':'completed','items':[{'id':'user','type':'userMessage','clientId':p['clientUserMessageId'],'content':p['input']},{'id':'answer','type':'agentMessage','text':'Fixture response.'}]}
   with open(path,'w') as f: json.dump(t,f)
   result={'turn':t}
@@ -91,36 +93,43 @@ it('keeps missing execution evidence unknown and cannot approve a stale request'
   );
 });
 
-for (const accept of [true, false])
-  it(`routes native MCP consent to a scoped ${accept ? 'accept' : 'decline'} answer`, async () => {
-    const f = fixture(true);
-    const id = await f.adapter.create('create-1', 'Thread', () => {});
-    await f.adapter.submit(id, 'op-1', 'request approval', () => {});
-    const [approval] = f.adapter.pendingApprovals(id);
-    expect(approval.description).toContain('Post this fixture report?');
-    expect(() =>
-      f.adapter.approve('foreign-thread', approval.id, accept, () => {}),
-    ).toThrow();
-    expect(() =>
-      f.adapter.approve(id, approval.id, accept, () => {
-        throw Error('revoked');
-      }),
-    ).toThrow('revoked');
-    f.adapter.approve(id, approval.id, accept, () => {});
-    await vi.waitFor(() =>
-      expect(
-        JSON.parse(readFileSync(join(f.root, 'answer.json'), 'utf8')),
-      ).toEqual({
-        id: 901,
-        result: {
-          answers: {
-            'mcp-consent': { answers: [accept ? 'Accept' : 'Decline'] },
-          },
-        },
-      }),
-    );
-    expect(f.adapter.pendingApprovals(id)).toHaveLength(0);
-    expect(() => f.adapter.approve(id, approval.id, accept, () => {})).toThrow(
-      'expired',
-    );
-  });
+for (const mode of ['question', 'mcp'])
+  for (const accept of [true, false])
+    it(`routes native ${mode} consent to a scoped ${accept ? 'accept' : 'decline'} answer`, async () => {
+      const f = fixture(mode === 'mcp' ? 'mcp' : true);
+      const id = await f.adapter.create('create-1', 'Thread', () => {});
+      await f.adapter.submit(id, 'op-1', 'request approval', () => {});
+      const [approval] = f.adapter.pendingApprovals(id);
+      expect(approval.description).toContain('Post this fixture report?');
+      expect(() =>
+        f.adapter.approve('foreign-thread', approval.id, accept, () => {}),
+      ).toThrow();
+      expect(() =>
+        f.adapter.approve(id, approval.id, accept, () => {
+          throw Error('revoked');
+        }),
+      ).toThrow('revoked');
+      f.adapter.approve(id, approval.id, accept, () => {});
+      await vi.waitFor(() =>
+        expect(
+          JSON.parse(readFileSync(join(f.root, 'answer.json'), 'utf8')),
+        ).toEqual({
+          id: 901,
+          result:
+            mode === 'mcp'
+              ? {
+                  action: accept ? 'accept' : 'decline',
+                  content: accept ? {} : null,
+                }
+              : {
+                  answers: {
+                    'mcp-consent': { answers: [accept ? 'Accept' : 'Decline'] },
+                  },
+                },
+        }),
+      );
+      expect(f.adapter.pendingApprovals(id)).toHaveLength(0);
+      expect(() =>
+        f.adapter.approve(id, approval.id, accept, () => {}),
+      ).toThrow('expired');
+    });
