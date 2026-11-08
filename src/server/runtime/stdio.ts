@@ -411,7 +411,7 @@ export class StdioConversationTransport implements ConversationTransport {
       stage = 'source_pin';
       verifyGitCheckout(
         this.config.checkout,
-        '6f30203cb6296645ed768042d5dd0a6777abe230',
+        '08ebfadbfc3b48f70dc4cb22a1e22e9c2ea5b171',
       );
       for (const [file, expected] of pins)
         if (sha(readFileSync(join(this.config.checkout, file))) !== expected)

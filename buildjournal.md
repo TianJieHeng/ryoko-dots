@@ -31,3 +31,15 @@ services; both active. Codex/Hermes report disconnected until their lazy native
 connections are used; Claude/Kimi report ready. Agent Chat's separate repository
 contains the shared skill, scoped relay, six-profile installer, tests and phased
 remaining-tool migration plan. No CI; no changes to host-recovery Hermes.
+
+## 2026-11-08 — Native migration phase 4: qualified Hermes coordinator
+
+Advanced both producer provenance records and runtime source pins to clean Hermes
+08ebfadbfc3b48f70dc4cb22a1e22e9c2ea5b171, adding the opt-in owned MCP session header.
+Generated protocol contract bytes remain unchanged. Enrolled a separate owner
+Hermes runtime/profile for new build coordination; original host-recovery profile
+and historical Dots runtime remain intact. The primary-only launch qualification
+was preserved, not relaxed. New coordinator conversation successfully reached ready.
+
+TypeScript, server build and 19 focused hub/profile/native-adapter tests passed.
+Hermes' canonical test runner passed 40 policy/budget/mutation tests. No CI.
