@@ -52,3 +52,16 @@ capability. Pinned Hermes cfa0209fd2: discovers granted MCP servers inside an
 admitted turn before tool snapshot refresh. Canonical Hermes budget tests: 12
 passed. Server build passed; live six-slot model handoff remains in progress,
 tracked in Agent Chat's build journal. Host recovery service remains separate.
+
+Phase 6 live pilot found Codex MCP write consent arrives as a native single
+Accept/Decline requestUserInput prompt, previously rejected as unsupported by
+Dots. Added narrowly recognized binary prompts to the existing scoped approval
+queue, retaining explicit one-action owner decisions and denial of other forms.
+Four real subprocess adapter tests passed (accept/decline, foreign thread,
+revoked guard and stale request). Targeted adapter TypeScript passed. The full
+and server-project typechecks hit the bounded wrapper's 512 MB V8 heap limit;
+limits were not increased. The earlier 19 focused adapter tests passed. Read
+protocol reference: https://learn.chatgpt.com/docs/app-server, verified against
+installed Codex 0.163.0 generated schemas. Pilot 5c4655f0 was explicitly cancelled
+and drained before deployment; its first backend artifact exists but native
+reporting failed, so it is not acceptance evidence. Fresh pilot follows.

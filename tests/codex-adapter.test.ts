@@ -1,5 +1,11 @@
-import { afterEach, expect, it } from 'vitest';
-import { mkdtempSync, writeFileSync, chmodSync, rmSync } from 'node:fs';
+import { afterEach, expect, it, vi } from 'vitest';
+import {
+  mkdtempSync,
+  writeFileSync,
+  readFileSync,
+  chmodSync,
+  rmSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CodexAdapter } from '../src/server/hub/codex';
@@ -7,7 +13,7 @@ const clean: (() => Promise<void>)[] = [];
 afterEach(async () => {
   for (const f of clean.splice(0)) await f();
 });
-function fixture() {
+function fixture(consent = false) {
   const root = mkdtempSync(join(tmpdir(), 'dots-codex-fixture-'));
   const exe = join(root, 'runtime.py');
   writeFileSync(
@@ -18,10 +24,15 @@ path=os.path.join(os.getcwd(),'turn.json')
 for line in sys.stdin:
  r=json.loads(line);m=r.get('method');p=r.get('params',{});i=r.get('id')
  if i is None: continue
+ if m is None:
+  with open(os.path.join(os.getcwd(),'answer.json'),'w') as f: json.dump(r,f)
+  continue
  if m=='initialize': result={}
  elif m=='thread/start': result={'thread':{'id':'owned-thread','turns':[]}}
  elif m=='thread/resume': result={}
  elif m=='turn/start':
+  if ${consent ? 'True' : 'False'}:
+   print(json.dumps({'id':901,'method':'item/tool/requestUserInput','params':{'threadId':'owned-thread','turnId':'turn-1','questions':[{'id':'mcp-consent','question':'Post this fixture report?','options':[{'label':'Accept','description':'Post once'},{'label':'Decline','description':'Do not post'},{'label':'Cancel','description':'Cancel'}]}]}}),flush=True)
   t={'id':'turn-1','status':'completed','items':[{'id':'user','type':'userMessage','clientId':p['clientUserMessageId'],'content':p['input']},{'id':'answer','type':'agentMessage','text':'Fixture response.'}]}
   with open(path,'w') as f: json.dump(t,f)
   result={'turn':t}
@@ -43,6 +54,7 @@ for line in sys.stdin:
     rmSync(root, { recursive: true, force: true });
   });
   return {
+    root,
     get adapter() {
       return adapter;
     },
@@ -78,3 +90,37 @@ it('keeps missing execution evidence unknown and cannot approve a stale request'
     'expired',
   );
 });
+
+for (const accept of [true, false])
+  it(`routes native MCP consent to a scoped ${accept ? 'accept' : 'decline'} answer`, async () => {
+    const f = fixture(true);
+    const id = await f.adapter.create('create-1', 'Thread', () => {});
+    await f.adapter.submit(id, 'op-1', 'request approval', () => {});
+    const [approval] = f.adapter.pendingApprovals(id);
+    expect(approval.description).toContain('Post this fixture report?');
+    expect(() =>
+      f.adapter.approve('foreign-thread', approval.id, accept, () => {}),
+    ).toThrow();
+    expect(() =>
+      f.adapter.approve(id, approval.id, accept, () => {
+        throw Error('revoked');
+      }),
+    ).toThrow('revoked');
+    f.adapter.approve(id, approval.id, accept, () => {});
+    await vi.waitFor(() =>
+      expect(
+        JSON.parse(readFileSync(join(f.root, 'answer.json'), 'utf8')),
+      ).toEqual({
+        id: 901,
+        result: {
+          answers: {
+            'mcp-consent': { answers: [accept ? 'Accept' : 'Decline'] },
+          },
+        },
+      }),
+    );
+    expect(f.adapter.pendingApprovals(id)).toHaveLength(0);
+    expect(() => f.adapter.approve(id, approval.id, accept, () => {})).toThrow(
+      'expired',
+    );
+  });

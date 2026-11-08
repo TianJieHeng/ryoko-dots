@@ -49,6 +49,7 @@ interface Approval {
   method: string;
   requestId: number | string;
   description: string;
+  questionId?: string;
 }
 export interface CodexConfig {
   workerMcp?: WorkerMcpConfig;
@@ -208,11 +209,39 @@ export class CodexAdapter implements RuntimeAdapter {
       });
       return;
     }
+    const question = z
+      .object({
+        id: z.string().min(1),
+        question: z.string(),
+        options: z.array(
+          z.object({ label: z.string(), description: z.string() }),
+        ),
+        isSecret: z.boolean().optional(),
+      })
+      .safeParse(
+        Array.isArray(p.questions) && p.questions.length === 1
+          ? p.questions[0]
+          : null,
+      );
+    // MCP write consent uses a single Accept/Decline question. Never interpret
+    // arbitrary questions or persistent permission choices as binary approval.
+    const toolConsent =
+      ['item/tool/requestUserInput', 'tool/requestUserInput'].includes(
+        method,
+      ) &&
+      question.success &&
+      !question.data.isSecret &&
+      question.data.options.some((o) => o.label === 'Accept') &&
+      question.data.options.some((o) => o.label === 'Decline') &&
+      question.data.options.every((o) =>
+        ['Accept', 'Decline', 'Cancel'].includes(o.label),
+      );
     if (
       ![
         'item/commandExecution/requestApproval',
         'item/fileChange/requestApproval',
-      ].includes(method)
+      ].includes(method) &&
+      !toolConsent
     ) {
       this.write({
         id: requestId,
@@ -230,13 +259,18 @@ export class CodexAdapter implements RuntimeAdapter {
       turnId,
       method,
       requestId,
+      ...(toolConsent && question.success
+        ? { questionId: question.data.id }
+        : {}),
       description: JSON.stringify(
-        {
-          command: p.command ?? null,
-          cwd: p.cwd ?? null,
-          reason: p.reason ?? null,
-          grantRoot: p.grantRoot ?? null,
-        },
+        toolConsent && question.success
+          ? { question: question.data.question, options: question.data.options }
+          : {
+              command: p.command ?? null,
+              cwd: p.cwd ?? null,
+              reason: p.reason ?? null,
+              grantRoot: p.grantRoot ?? null,
+            },
         null,
         2,
       ),
@@ -245,7 +279,7 @@ export class CodexAdapter implements RuntimeAdapter {
   pendingApprovals(threadId: string) {
     return [...this.approvals.values()]
       .filter((a) => a.threadId === threadId)
-      .map(({ requestId: _, ...a }) => a);
+      .map(({ requestId: _, questionId: _questionId, ...a }) => a);
   }
   approve(threadId: string, id: string, accept: boolean, guard: Guard) {
     guard();
@@ -254,7 +288,13 @@ export class CodexAdapter implements RuntimeAdapter {
       throw Error('Approval expired or does not belong to this conversation.');
     this.write({
       id: a.requestId,
-      result: { decision: accept ? 'accept' : 'decline' },
+      result: a.questionId
+        ? {
+            answers: {
+              [a.questionId]: { answers: [accept ? 'Accept' : 'Decline'] },
+            },
+          }
+        : { decision: accept ? 'accept' : 'decline' },
     });
     this.approvals.delete(id);
   }
