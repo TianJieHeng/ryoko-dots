@@ -74,3 +74,14 @@ one action, never the offered session/always persistence. All six adapter tests
 and targeted TypeScript pass, including both protocol shapes, accept/decline,
 foreign thread, revoked guard and stale response. Diagnostic probes explicitly
 declined consent and produced no external message. No approval policy was disabled.
+
+## 2026-11-08 — Native migration live acceptance complete
+
+Build `52ab49df-37da-4005-ae55-565043b85fed` completed with all six distinct
+worker profiles using native thread reads and final reports. Ryoko launched six
+children and resumed its existing native conversation for report notifications.
+All jobs and deliveries replied; coordinator acceptance and independent fixture
+checks passed. Agent Chat documents the initial consent failure and explicit
+recovery, with sanitized evidence in `docs/native-migration-acceptance.json`.
+Bridge identity/wakeup ownership and individual approval controls remain intact.
+The final adapter code is deployed at 2141d64. Broad typecheck memory limitations above remain applicable.
