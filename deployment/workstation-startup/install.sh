@@ -1,8 +1,12 @@
 #!/bin/bash
-# Install recovery policy for existing, already configured workstation services.
+# Install recovery policy for existing, already configured workstation services at login.
 set -euo pipefail
 units=(ryoko-dots ryoko-computer ryoko-dots-codex-bridge ryoko-dots-api-edge ryoko-dots-tunnel dots-bridge hermes-host-api hermes-host-tunnel portal-dashboard)
 unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+if [[ $(loginctl show-user "$USER" -p Linger --value) != no ]]; then
+  echo "Disable lingering before installing login-only startup: sudo loginctl disable-linger $USER" >&2
+  exit 1
+fi
 for unit in "${units[@]}"; do
   test -f "$unit_dir/$unit.service" || { echo "Missing configured unit: $unit" >&2; exit 1; }
 done
@@ -42,7 +46,7 @@ After=dots-bridge.service hermes-host-api.service
 EOF
 {
   echo '[Unit]'
-  echo 'Description=Ryoko workstation agents, endpoints and tunnels'
+  echo 'Description=Ryoko login agents, endpoints and tunnels'
   printf 'Wants='
   printf '%s.service ' "${units[@]}"
   printf '\n[Install]\nWantedBy=default.target\n'
@@ -50,4 +54,4 @@ EOF
 systemctl --user daemon-reload
 systemctl --user enable "${units[@]/%/.service}" ryoko-workstation.target
 systemctl --user start ryoko-workstation.target
-echo 'Verify loginctl show-user "$USER" -p Linger reports yes; enable lingering if needed.'
+echo 'Login-only startup requires Linger=no. Verify with: loginctl show-user "$USER" -p Linger'

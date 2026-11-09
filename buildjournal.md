@@ -109,3 +109,14 @@ Cloudflare registered new connections after ten seconds. Both tunnel public
 unauthenticated probes returned 403; no authenticated external API claim.
 No reboot/power cut performed. Firmware power-on-after-AC-loss remains a physical
 host setting to verify. See deployment/workstation-startup/README.md.
+
+## 2026-11-09 — Correct startup to LOGIN ONLY
+
+Owner explicitly required on-login startup. The previous boot/linger setup did
+not honor that requirement. Disabled lingering for ryoko; loginctl confirms
+Linger=no. user@1000.service is static; no system-level Ryoko/Dots/Hermes/Portal
+units were found. Existing user default.target services now start on first user
+login (desktop or SSH), not boot. Current logged-in services remain running.
+Installer now rejects lingering and documentation removes boot-start instructions.
+Validated shell syntax and installed state. No reboot/logout performed; Pi not
+modified in this correction. Prior boot-start journal entry is superseded.
